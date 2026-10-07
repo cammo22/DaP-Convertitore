@@ -120,6 +120,8 @@ export interface Stato {
   categorie: { id: Categoria; nome: string }[];
   impostazioni: Impostazioni;
   modo: 'finestra' | 'rapido';
+  /** La versione nuova già scaricata, se c'è. */
+  aggiornamento?: string | null;
   file: InfoFile[];
   lavori: Lavoro[];
   office: { libreOffice: boolean; word: boolean };

@@ -47,9 +47,15 @@ jobs:
         run: ./scripts/prendi-ffmpeg.ps1
 
       - name: Prove
+        id: prove
         continue-on-error: true
         shell: pwsh
         run: dotnet test test/DaPConvertitore.Prove -nologo
+
+      - name: Esito delle prove
+        if: steps.prove.outcome == 'failure'
+        shell: pwsh
+        run: Write-Host "::warning title=Prove::Qualche prova non è passata: guarda il passo Prove (la release esce lo stesso)"
 
       - name: Pacchetto
         if: steps.versione.outputs.esiste == 'no'

@@ -50,6 +50,21 @@ public sealed class Analisi(Strumenti strumenti)
         catch (Exception e) { Registro.Scrivi($"FFprobe su {Path.GetFileName(percorso)}: {e.Message}"); return null; }
     }
 
+    /// <summary>
+    /// Le misure di una foto: prima Windows (gira la foto come la vede il telefono), e se Windows quel formato non lo
+    /// legge (WEBP, AVIF, HEIC senza le estensioni dello Store) ci pensa FFprobe.
+    /// </summary>
+    public async Task<(int w, int h)?> Misure(string percorso)
+    {
+        if (await Immagini.Misure(percorso) is { } m) return m;
+        try
+        {
+            var info = await Sonda.Leggi(strumenti, percorso);
+            return info.Video is { } v ? (v.Larghezza, v.Altezza) : null;
+        }
+        catch { return null; }
+    }
+
     /// <summary>I dettagli che l'interfaccia mostra sotto il nome.</summary>
     public async Task<Dictionary<string, object?>> Dettagli(InfoFile f)
     {
@@ -82,7 +97,7 @@ public sealed class Analisi(Strumenti strumenti)
                 break;
             }
             case "immagine":
-                if (await Immagini.Misure(f.Percorso) is { } mis) { d["larghezza"] = mis.w; d["altezza"] = mis.h; }
+                if (await Misure(f.Percorso) is { } mis) { d["larghezza"] = mis.w; d["altezza"] = mis.h; }
                 break;
             case "pdf":
                 d["pagine"] = await Pdf.Pagine(f.Percorso);

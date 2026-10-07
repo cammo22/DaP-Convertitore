@@ -131,8 +131,9 @@ public class ProveConversioni(Banco b)
         {
             var l = await b.Converti(png, f, new Opzioni { Immagine = { Lato = 800 } });
             Assert.True(l.PesoDopo > 100, f);
+            // con Analisi: sui PC (e sui server di GitHub) senza l'estensione WebP le misure le dà FFprobe
             if (f is "img.jpg" or "img.png" or "img.webp")
-                Assert.Equal((800, 450), (await Immagini.Misure(l.Uscita!))!.Value);
+                Assert.Equal((800, 450), (await new Analisi(b.Strumenti).Misure(l.Uscita!))!.Value);
         }
     }
 

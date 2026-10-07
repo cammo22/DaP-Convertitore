@@ -2,6 +2,17 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.0.1 — 7 ottobre 2026
+
+- Le misure delle foto in coda (larghezza × altezza) ci sono anche per i formati che Windows da solo non legge,
+  come WEBP e AVIF sui PC senza le estensioni dello Store: le chiede a FFprobe.
+- **Gli aggiornamenti arrivano da soli**: all'avvio il convertitore guarda se c'è una versione nuova e la
+  scarica in silenzio (solo la differenza). In alto compare **«Nuova X · riavvia»**; se non lo premi, la versione
+  nuova si mette da sola quando chiudi l'app. Dalla 1.0.0 si passa una volta a mano: *Impostazioni → Cerca
+  aggiornamenti* (la 1.0.0 non guardava da sola).
+- Nelle GitHub Actions, se qualche prova non passa compare un avviso giallo invece di un verde finto.
+- La prima release che esce da sola da GitHub Actions: da qui in avanti ogni versione nuova si pubblica così.
+
 ## 1.0.0 — 7 ottobre 2026
 
 La prima. Tasto destro su un file → **DaP Convertitore**, e il file convertito compare accanto all'originale

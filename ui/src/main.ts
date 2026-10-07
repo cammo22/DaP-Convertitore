@@ -37,6 +37,7 @@ const s = {
   carico: { cpu: 0, encoder: 0, decoder: 0, grafica: 0 } as Carico,
   giro: [] as string[],
   impostazioniAperte: false,
+  aggiornamento: null as string | null,
 };
 
 const nomeCat = (c: string) => s.stato.categorie.find((x) => x.id === c)?.nome ?? c;
@@ -79,6 +80,7 @@ function disegnaTesta() {
     ),
     h('div.trascina', { 'data-regione': 'trascina' }),
     h('div.chip-hw', null,
+      s.aggiornamento ? h('button.chip.agg', { title: 'Installa la versione nuova e riapre il convertitore', onclick: () => { clac(true); void chiedi('aggiorna', { installa: true }); } }, h('i.led.verde'), `Nuova  · riavvia`) : null,
       hw?.acceleratore ? h('span.chip.gpu', { title: hw.gpu.map((g) => g.nome).join(' · ') }, h('i.led.verde'), hw.acceleratore) : h('span.chip', null, h('i.led'), 'Solo CPU'),
       hw ? h('span.chip', { title: hw.cpu }, h('i.led.ambra'), `${cpuCorta(hw.cpu)} · ${hw.thread} thread`) : h('span.chip', null, h('i.led.lampeggia'), 'Guardo la macchina…'),
     ),
@@ -899,6 +901,7 @@ async function avvia() {
     if (!s.giro.includes(l.id) && s.vista !== 'scegli') s.giro.push(l.id);
     if (s.vista === 'lavoro') aggiornaLavoro();
   });
+  ascolta('aggiornamento', (a: { versione: string }) => { s.aggiornamento = a.versione; if (s.stato.modo === 'finestra') disegnaTesta(); });
   ascolta('hardware', (hw) => {
     if (!hw) return;
     s.stato.hardware = hw;
@@ -922,6 +925,7 @@ async function avvia() {
   });
 
   s.stato = await chiedi<Stato>('stato');
+  s.aggiornamento = s.stato.aggiornamento ?? null;
   accendiSuoni(s.stato.impostazioni.suoni);
   opzioniSalvate();
   for (const f of s.stato.file) { s.file.set(f.id, f); s.ordine.push(f.id); }

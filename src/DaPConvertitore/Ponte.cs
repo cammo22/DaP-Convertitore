@@ -73,7 +73,10 @@ public sealed class Ponte
     {
         timerCarico.Stop();
         monitor?.Dispose();
+        Aggiornamenti.AllaChiusura();
     }
+
+    string? versioneNuova;
 
     // ————————————————————————— richieste da fuori (riga di comando, altre istanze) —————————————————————————
 
@@ -189,6 +192,12 @@ public sealed class Ponte
         switch (cmd)
         {
             case "stato":
+                if (!pronta)
+                    _ = Task.Run(async () =>
+                    {
+                        versioneNuova = await Aggiornamenti.Prepara();
+                        if (versioneNuova is not null) Manda("aggiornamento", new { versione = versioneNuova });
+                    });
                 pronta = true;
                 timerCarico.Start();
                 return new
@@ -198,6 +207,7 @@ public sealed class Ponte
                     formati = Catalogo.Formati.Select(f => new { f.Id, categoria = Catalogo.Chiave(f.Categoria), f.Etichetta, f.Descrizione, f.Estensione, f.Unisce, manca = Conversioni.Manca(f, strumenti) }),
                     categorie = Enum.GetValues<Categoria>().Select(c => new { id = Catalogo.Chiave(c), nome = Catalogo.NomeCategoria(c) }),
                     impostazioni = imp,
+                    aggiornamento = versioneNuova,
                     modo = finestra.Modo,
                     file = Ordinati().Select(FileDto),
                     lavori = Coda.Tutti.Where(l => giro.Contains(l.Id)).Select(LavoroDto),

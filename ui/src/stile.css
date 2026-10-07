@@ -82,6 +82,9 @@ code { font: 600 12px 'Cascadia Mono', Consolas, monospace; color: var(--oro); b
 .chip-hw { display: flex; gap: 8px; }
 .chip { display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 11px; border-radius: 13px; background: #101016; border: 1px solid var(--bordo); color: var(--testo2); font: 700 12px var(--ui); letter-spacing: 0.02em; white-space: nowrap; }
 .chip.gpu { color: var(--testo); }
+.chip.agg { color: var(--oro); border-color: rgba(255, 213, 74, 0.45); background: #1d1a10; cursor: pointer; animation: respira 2.4s ease-in-out infinite; }
+.chip.agg:hover { background: #2a2414; }
+@keyframes respira { 50% { box-shadow: 0 0 14px rgba(255, 213, 74, 0.35); } }
 .finestra { display: flex; gap: 2px; margin-left: 4px; }
 .btn-fin { width: 34px; height: 30px; display: grid; place-items: center; border-radius: 6px; color: var(--testo2); }
 .btn-fin svg { width: 16px; height: 16px; }
