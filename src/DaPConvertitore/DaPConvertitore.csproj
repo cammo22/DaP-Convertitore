@@ -27,6 +27,10 @@
     <None Include="..\..\motori\ffmpeg\**" LinkBase="motori\ffmpeg" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\ui\dist\**" LinkBase="ui" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\risorse\icona-256.png" Link="icona.png" CopyToOutputDirectory="PreserveNewest" />
+    <!-- il menu di Windows 11: la DLL, il pacchetto sparse firmato e la parte pubblica del certificato -->
+    <None Include="..\..\menu\out\DaPConvertitore.Menu.dll" Link="DaPConvertitore.Menu.dll" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\menu\out\DaPConvertitore.Menu.dll')" />
+    <None Include="..\..\menu\out\DaPConvertitore.Menu.msix" Link="DaPConvertitore.Menu.msix" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\menu\out\DaPConvertitore.Menu.msix')" />
+    <None Include="..\..\risorse\DaProdProduzioni-firma.cer" Link="DaProdProduzioni-firma.cer" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

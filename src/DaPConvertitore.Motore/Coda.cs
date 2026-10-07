@@ -7,7 +7,7 @@ namespace DaP.Convertitore;
 /// core); il resto va in parallelo. Ogni lavoro scrive in una bozza accanto all'originale e solo alla fine prende
 /// il suo nome: se qualcosa va storto non resta un file a metà col nome giusto.
 /// </summary>
-public sealed class Coda(Strumenti strumenti, Func<InfoHardware> hardware, Func<IStampante?> stampante, Func<string> scritta)
+public sealed class Coda(Strumenti strumenti, Func<InfoHardware> hardware, Func<IStampante?> stampante, Func<string> scritta, Func<bool>? cestino = null)
 {
     readonly SemaphoreSlim pesanti = new(1, 1);
     readonly SemaphoreSlim leggeri = new(Math.Clamp(Environment.ProcessorCount / 4, 2, 4));
@@ -111,6 +111,14 @@ public sealed class Coda(Strumenti strumenti, Func<InfoHardware> hardware, Func<
             await Conversioni.Esegui(l, ctx);
             ct.ThrowIfCancellationRequested();
             Consegna(l);
+            // l'originale nel Cestino solo a lavoro consegnato, e solo se il convertito ne prende il posto
+            if (cestino?.Invoke() == true && l.Formato.Sostituisce && l.Sorgenti.Count == 1)
+            {
+                var perche = Cestino.Sposta(l.Sorgente);
+                l.NelCestino = perche is null;
+                l.NotaCestino = perche;
+                Registro.Scrivi(perche is null ? $"[{l.Id}] originale nel Cestino" : $"[{l.Id}] originale tenuto: {perche}");
+            }
             l.Frazione = 1;
             l.Secondi = orologio.Elapsed.TotalSeconds;
             Chiudi(l, StatoLavoro.Fatto);

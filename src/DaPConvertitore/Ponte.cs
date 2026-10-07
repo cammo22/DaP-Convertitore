@@ -52,7 +52,7 @@ public sealed class Ponte
         analisi = new Analisi(strumenti);
         Processi.Priorita = imp.AlMassimo ? ProcessPriorityClass.Normal : ProcessPriorityClass.BelowNormal;
         rilevazione = Task.Run(() => Hardware.Rileva(strumenti));
-        Coda = new Coda(strumenti, () => hardware ?? rilevazione.GetAwaiter().GetResult(), () => new StampanteInAttesa(stampante.Task), imp.ScrittaPulita);
+        Coda = new Coda(strumenti, () => hardware ?? rilevazione.GetAwaiter().GetResult(), () => new StampanteInAttesa(stampante.Task), imp.ScrittaPulita, () => imp.Cestino);
         Coda.Cambiato += l => finestra.Dispatcher.BeginInvoke(() => LavoroCambiato(l));
         timerRapide = new DispatcherTimer(TimeSpan.FromMilliseconds(450), DispatcherPriority.Normal, (_, _) => PartonoRapide(), finestra.Dispatcher) { IsEnabled = false };
         timerCarico = new DispatcherTimer(TimeSpan.FromMilliseconds(700), DispatcherPriority.Background, (_, _) => Carico(), finestra.Dispatcher) { IsEnabled = false };
@@ -204,7 +204,7 @@ public sealed class Ponte
                 {
                     versione = Versione,
                     hardware = HardwareDto(),
-                    formati = Catalogo.Formati.Select(f => new { f.Id, categoria = Catalogo.Chiave(f.Categoria), f.Etichetta, f.Descrizione, f.Estensione, f.Unisce, manca = Conversioni.Manca(f, strumenti) }),
+                    formati = Catalogo.Formati.Select(f => new { f.Id, categoria = Catalogo.Chiave(f.Categoria), f.Etichetta, f.Descrizione, f.Estensione, f.Unisce, f.Sostituisce, manca = Conversioni.Manca(f, strumenti) }),
                     categorie = Enum.GetValues<Categoria>().Select(c => new { id = Catalogo.Chiave(c), nome = Catalogo.NomeCategoria(c) }),
                     impostazioni = imp,
                     aggiornamento = versioneNuova,
@@ -212,6 +212,7 @@ public sealed class Ponte
                     file = Ordinati().Select(FileDto),
                     lavori = Coda.Tutti.Where(l => giro.Contains(l.Id)).Select(LavoroDto),
                     office = new { libreOffice = strumenti.LibreOffice is not null, word = strumenti.Word },
+                    menu11 = StatoMenu11(),
                 };
             case "pronto":
                 return true;
@@ -296,10 +297,33 @@ public sealed class Ponte
                 if (a["alMassimo"] is { } am) { imp.AlMassimo = am.GetValue<bool>(); Processi.Priorita = imp.AlMassimo ? ProcessPriorityClass.Normal : ProcessPriorityClass.BelowNormal; }
                 if (a["suoni"] is { } su) imp.Suoni = su.GetValue<bool>();
                 if (a["apriCartella"] is { } ac) imp.ApriCartella = ac.GetValue<bool>();
+                if (a["cestino"] is { } ce) imp.Cestino = ce.GetValue<bool>();
                 if (a["formati"] is JsonObject fo) imp.Formati = fo.ToDictionary(kv => kv.Key, kv => (string?)kv.Value ?? "");
                 if (a["scelte"] is JsonObject sc) imp.Scelte = (JsonObject)sc.DeepClone();
                 imp.Salva();
                 return true;
+            }
+            case "menu11":
+            {
+                var cartella = AppContext.BaseDirectory;
+                switch ((string?)a["azione"])
+                {
+                    case "attiva":
+                        imp.Menu11Chiesto = true;
+                        imp.Salva();
+                        // l'unico permesso da amministratore: Windows mostra la sua finestra, una volta sola
+                        if (!Menu11.Fidato(cartella) && !await Menu11.RendiFidato(cartella))
+                            return new { stato = StatoMenu11(), errore = "Senza il permesso Windows non accetta il menu nuovo. Puoi riprovare quando vuoi." };
+                        var e = await Menu11.Registra(cartella);
+                        return new { stato = StatoMenu11(), errore = e };
+                    case "togli":
+                        await Menu11.Rimuovi();
+                        return new { stato = StatoMenu11(), errore = (string?)null };
+                    default: // "non ora"
+                        imp.Menu11Chiesto = true;
+                        imp.Salva();
+                        return new { stato = StatoMenu11(), errore = (string?)null };
+                }
             }
             case "menu":
             {
@@ -409,7 +433,7 @@ public sealed class Ponte
         stato = l.Stato.ToString().ToLowerInvariant(),
         frazione = double.IsFinite(l.Frazione) ? l.Frazione : 0,
         l.Fase, l.Velocita, l.Fps, eta = l.Eta is { } e && double.IsFinite(e) ? e : (double?)null,
-        l.Uscita, l.PesoPrima, l.PesoDopo, l.Errore, l.Dettaglio, l.Secondi,
+        l.Uscita, l.PesoPrima, l.PesoDopo, l.Errore, l.Dettaglio, l.Secondi, l.NelCestino, l.NotaCestino,
     };
 
     object? HardwareDto() => hardware is null ? null : new
@@ -418,6 +442,20 @@ public sealed class Ponte
         gpu = hardware.Gpu.Select(g => new { g.Nome, g.Marca, g.Vram, g.Driver }),
         encoder = hardware.Encoder, acceleratore = hardware.Acceleratore,
     };
+
+    /// <summary>Il menu nuovo di Windows 11: si può avere qui? c'è già? manca solo il permesso?</summary>
+    object StatoMenu11()
+    {
+        var cartella = AppContext.BaseDirectory;
+        var supportato = Menu11.Windows11 && Menu11.Presente(cartella);
+        return new
+        {
+            supportato,
+            registrato = supportato && Menu11.Registrato(),
+            fidato = supportato && Menu11.Fidato(cartella),
+            chiesto = imp.Menu11Chiesto,
+        };
+    }
 
     [System.Runtime.InteropServices.DllImport("shlwapi.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
     static extern int StrCmpLogicalW(string a, string b);

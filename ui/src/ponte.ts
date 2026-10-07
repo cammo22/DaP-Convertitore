@@ -12,6 +12,8 @@ export interface Formato {
   descrizione: string;
   estensione: string;
   unisce: boolean;
+  /** Il convertito prende il posto dell'originale: con l'opzione accesa, l'originale va nel Cestino. */
+  sostituisce: boolean;
   manca: string | null;
 }
 
@@ -64,6 +66,8 @@ export interface Impostazioni {
   alMassimo: boolean;
   suoni: boolean;
   apriCartella: boolean;
+  cestino: boolean;
+  menu11Chiesto: boolean;
   formati: Record<string, string>;
   scelte?: Record<string, unknown> | null;
 }
@@ -88,6 +92,8 @@ export interface Lavoro {
   errore: string | null;
   dettaglio: string | null;
   secondi: number;
+  nelCestino: boolean;
+  notaCestino: string | null;
 }
 
 export interface Piano {
@@ -125,6 +131,18 @@ export interface Stato {
   file: InfoFile[];
   lavori: Lavoro[];
   office: { libreOffice: boolean; word: boolean };
+  /** Il tasto destro nuovo di Windows 11. */
+  menu11: StatoMenu11;
+}
+
+export interface StatoMenu11 {
+  /** Windows 11 e il pacchetto del menu c'è. */
+  supportato: boolean;
+  registrato: boolean;
+  /** Il certificato di DaProd è già fidato: il permesso è già stato dato. */
+  fidato: boolean;
+  /** L'invito è già stato mostrato. */
+  chiesto: boolean;
 }
 
 export interface OpzioniVideo {

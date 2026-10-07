@@ -31,9 +31,15 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
 
 - **.NET e non Tauri** perché sul PC di Cammo non c'è MSVC (niente Rust). .NET dà gratis WIC, Windows.Data.Pdf,
   l'OCR e il registro.
-- **Il menu di Windows 11** (quello corto, senza «Mostra altre opzioni») vuole un pacchetto sparse firmato + una
-  DLL IExplorerCommand nativa: serve MSVC e un certificato fidato sulla macchina. Per ora la voce sta nel menu
-  classico (Maiusc + tasto destro). È il prossimo passo grosso, da decidere con Cammo.
+- **Il menu di Windows 11** (dalla 1.0.2): DLL IExplorerCommand in C++ (`menu/DaPMenu.cpp`) compilata con **Zig**
+  (niente MSVC sul PC) + pacchetto sparse `menu/AppxManifest.xml` impacchettato con makeappx (NuGet
+  Microsoft.Windows.SDK.BuildTools) e **firmato** col certificato `CN=DaProdProduzioni` (pubblico in
+  `risorse/DaProdProduzioni-firma.cer`, la chiave nell'archivio certificati di Cammo e nei segreti
+  `DAP_FIRMA_PFX`/`DAP_FIRMA_PASSWORD`). Provato il 7 ottobre: un pacchetto **non firmato** con comandi Windows non
+  lo registra per un utente solo (0x80073D2B), e la fiducia nel certificato messa per l'utente non basta
+  (0x800B0109): serve «Persone attendibili» del computer, cioè **un permesso di amministratore, una volta**
+  (certutil, dal tasto Attiva). Le voci del sottomenu la DLL le legge da `menu.tsv`, scritto dall'app dal Catalogo.
+  Se si cambia la DLL si prova con `ProveMenu11` (la carica in-process, niente registrazione).
 - **Istanza unica**: Esplora file lancia un processo per file; il primo apre la finestra (mutex
   `Local\DaProd.Convertitore`), gli altri mandano i file da una named pipe. Le azioni rapide aspettano 450 ms che
   arrivino tutti, poi le conversioni che uniscono mettono i file in ordine di nome (`StrCmpLogicalW`).

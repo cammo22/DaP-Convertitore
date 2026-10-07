@@ -19,6 +19,13 @@ public sealed record Formato(
 {
     /// <summary>L'uscita è una cartella (pagine di un PDF, archivio estratto).</summary>
     public bool Cartella => Estensione.Length == 0;
+
+    /// <summary>
+    /// Il convertito prende il posto dell'originale (MOV → MP4, PNG → JPG, DOCX → PDF): solo allora, se l'opzione è
+    /// accesa, l'originale va nel Cestino. Non lo fanno le cose che ne tirano fuori un pezzo (l'audio di un video, il
+    /// testo di un PDF, le pagine in JPG), quelle che uniscono tanti file, gli archivi estratti e le cartelle compresse.
+    /// </summary>
+    public bool Sostituisce => !Unisce && Categoria is not (Categoria.Cartella or Categoria.Altro) && !Catalogo.Derivati.Contains(Id);
 }
 
 /// <summary>Una voce del menu del tasto destro: un formato con le sue scelte già fatte.</summary>
@@ -52,6 +59,13 @@ public static class Catalogo
         Metti(Categoria.Sottotitoli, "srt vtt ass ssa");
         Metti(Categoria.Archivio, "zip 7z rar tar gz tgz bz2 tbz2 xz txz zst tzst cab iso");
     }
+
+    /// <summary>I formati che tirano fuori un pezzo dell'originale: l'originale serve ancora, non va nel Cestino.</summary>
+    public static readonly IReadOnlySet<string> Derivati = new HashSet<string>
+    {
+        "video.gif", "video.mp3", "video.wav", "video.srt", "img.txt",
+        "pdf.jpg", "pdf.png", "pdf.txt", "foglio.csv", "foglio.json", "arch.estrai",
+    };
 
     static IReadOnlySet<string> Solo(string elenco) =>
         elenco.Split(' ').Select(e => "." + e).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -201,6 +215,9 @@ public static class Catalogo
 
         new("cartella-zip", Categoria.Cartella, "Comprimi in ZIP", "cartella.zip"),
         new("cartella-7z", Categoria.Cartella, "Comprimi in 7Z", "cartella.7z"),
+
+        new("altro-zip", Categoria.Altro, "Comprimi in ZIP", "altro.zip"),
+        new("altro-7z", Categoria.Altro, "Comprimi in 7Z", "altro.7z"),
     ];
 
     public static IEnumerable<string> EstensioniDi(Categoria c) =>

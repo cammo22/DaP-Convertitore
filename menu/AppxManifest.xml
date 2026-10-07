@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Il pacchetto "sparse" del menu di Windows 11: dentro ci sono solo questo manifest e due icone, i file veri
+  restano nella cartella dell'app (ExternalLocation). Dà identità ai due comandi della DLL e li mette nel tasto
+  destro nuovo. È firmato col certificato di DaProd (risorse\DaProdProduzioni-firma.cer): il Publisher deve essere
+  uguale al soggetto del certificato. Un pacchetto non firmato Windows non lo registra per un utente solo.
+  {{VERSIONE}} la mette scripts\compila-menu.ps1 (4 numeri, da Directory.Build.props).
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
+  xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap10 desktop4 desktop5 com rescap">
+
+  <Identity Name="DaProd.Convertitore.Menu"
+            Publisher="CN=DaProdProduzioni"
+            Version="{{VERSIONE}}"
+            ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>DaP Convertitore</DisplayName>
+    <PublisherDisplayName>DaProd</PublisherDisplayName>
+    <Logo>icona-150.png</Logo>
+    <uap10:AllowExternalContent>true</uap10:AllowExternalContent>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22000.0" MaxVersionTested="10.0.26200.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="it-it" />
+  </Resources>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <rescap:Capability Name="unvirtualizedResources" />
+  </Capabilities>
+
+  <Applications>
+    <Application Id="DaPConvertitore" Executable="DaPConvertitore.exe"
+                 uap10:TrustLevel="mediumIL" uap10:RuntimeBehavior="win32App">
+      <uap:VisualElements AppListEntry="none" DisplayName="DaP Convertitore" Description="Converti qualsiasi file dal tasto destro"
+                          BackgroundColor="transparent" Square150x150Logo="icona-150.png" Square44x44Logo="icona-44.png" />
+      <Extensions>
+        <desktop4:Extension Category="windows.fileExplorerContextMenus">
+          <desktop4:FileExplorerContextMenus>
+            <desktop5:ItemType Type="*">
+              <desktop5:Verb Id="DaPApri" Clsid="9C1D5F3A-7B21-4E58-A6F2-3D8E0B4C61A1" />
+              <desktop5:Verb Id="DaPConverti" Clsid="5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2" />
+            </desktop5:ItemType>
+            <desktop5:ItemType Type="Directory">
+              <desktop5:Verb Id="DaPApri" Clsid="9C1D5F3A-7B21-4E58-A6F2-3D8E0B4C61A1" />
+              <desktop5:Verb Id="DaPConverti" Clsid="5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2" />
+            </desktop5:ItemType>
+          </desktop4:FileExplorerContextMenus>
+        </desktop4:Extension>
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:SurrogateServer DisplayName="DaP Convertitore — menu">
+              <com:Class Id="9C1D5F3A-7B21-4E58-A6F2-3D8E0B4C61A1" Path="DaPConvertitore.Menu.dll" ThreadingModel="STA" />
+              <com:Class Id="5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2" Path="DaPConvertitore.Menu.dll" ThreadingModel="STA" />
+            </com:SurrogateServer>
+          </com:ComServer>
+        </com:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+</Package>

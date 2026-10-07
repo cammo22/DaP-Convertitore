@@ -2,7 +2,7 @@
   <!-- La versione sta solo qui. Si alza di 0.0.1 e si scrive la voce nel CHANGELOG:
        la CI la legge da questo file e pubblica la release da sola. -->
   <PropertyGroup>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Authors>DaProd</Authors>
     <Company>DaProdProduzioni</Company>
     <Product>DaP Convertitore</Product>

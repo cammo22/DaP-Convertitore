@@ -2,6 +2,22 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.0.2 — 7 ottobre 2026
+
+- **Nel tasto destro di Windows 11**, quello nuovo, senza passare da «Mostra altre opzioni»: in cima
+  **DaP Convertitore** apre la piastra coi file scelti, sotto **Converti al volo ›** ha le conversioni rapide
+  del tipo di file. Si accende col tasto **Attiva** (alla prima apertura o in Impostazioni): Windows chiede il
+  permesso **una volta sola**, per fidarsi del certificato di DaProd; poi aggiornamenti compresi non chiede più
+  niente. Sulle versioni più nuove di Windows 11 le voci delle app possono stare sotto «Estensioni app»: da
+  *Impostazioni → Personalizzazione → Menu contestuale* le porti in cima.
+- Dal menu nuovo tutti i file scelti arrivano in un colpo solo, anche centinaia.
+- **L'originale nel Cestino**: a conversione riuscita, quando il convertito ne prende il posto (MOV → MP4,
+  PNG → JPG, DOCX → PDF…), l'originale va nel Cestino di Windows, da dove lo ripeschi se serve. È acceso di
+  partenza e si spegne in Impostazioni. Non succede quando ne tiri fuori un pezzo (l'audio di un video, il testo
+  di un PDF, le pagine in JPG), quando unisci più file, e su chiavette e dischi di rete (lì Windows il Cestino
+  non ce l'ha e cancellerebbe davvero). Prima di premere CONVERTI lo dice, e alla fine pure.
+- «Comprimi in ZIP / 7Z» anche per i file che il convertitore non conosce.
+
 ## 1.0.1 — 7 ottobre 2026
 
 - Le misure delle foto in coda (larghezza × altezza) ci sono anche per i formati che Windows da solo non legge,

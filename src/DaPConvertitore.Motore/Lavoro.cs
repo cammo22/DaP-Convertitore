@@ -36,6 +36,10 @@ public sealed class Lavoro
     public string? Errore { get; internal set; }
     public string? Dettaglio { get; internal set; }
     public DateTime Inizio { get; internal set; }
+    /// <summary>L'originale è andato nel Cestino (opzione accesa e formato che lo sostituisce).</summary>
+    public bool NelCestino { get; internal set; }
+    /// <summary>Se l'opzione era accesa ma l'originale è rimasto: il perché.</summary>
+    public string? NotaCestino { get; internal set; }
     public double Secondi { get; internal set; }
 
     /// <summary>Dove il motore scrive (accanto all'uscita, col ".~" davanti). Alla fine diventa <see cref="Uscita"/>.</summary>

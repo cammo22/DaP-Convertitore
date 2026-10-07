@@ -3,7 +3,7 @@
 import type { Formato, InfoFile, Lavoro, Piano, Stato } from './ponte';
 
 const f = (id: string, etichetta: string, descrizione: string, estensione: string, unisce = false, manca: string | null = null): Formato =>
-  ({ id, categoria: ({ video: 'video', audio: 'audio', img: 'immagine', pdf: 'pdf', doc: 'documento', arch: 'archivio' } as any)[id.split('.')[0]], etichetta, descrizione, estensione, unisce, manca });
+  ({ id, categoria: ({ video: 'video', audio: 'audio', img: 'immagine', pdf: 'pdf', doc: 'documento', arch: 'archivio' } as any)[id.split('.')[0]], etichetta, descrizione, estensione, unisce, sostituisce: !unisce && !['video.mp3', 'video.wav', 'video.srt', 'video.gif', 'img.txt', 'pdf.jpg', 'pdf.png', 'pdf.txt', 'arch.estrai'].includes(id), manca });
 
 const formati: Formato[] = [
   f('video.mp4', 'MP4', 'va ovunque', '.mp4'), f('video.mkv', 'MKV', 'tiene tutte le tracce', '.mkv'), f('video.webm', 'WEBM', 'per il web', '.webm'),
@@ -107,11 +107,12 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
           encoder: ['h264_nvenc', 'hevc_nvenc', 'av1_nvenc', 'libx264', 'libx265', 'libsvtav1'], acceleratore: 'RTX 4060 · NVENC' },
         formati,
         categorie: [{ id: 'video', nome: 'Video' }, { id: 'audio', nome: 'Audio' }, { id: 'immagine', nome: 'Immagini' }, { id: 'pdf', nome: 'PDF' }, { id: 'documento', nome: 'Documenti' }, { id: 'archivio', nome: 'Archivi' }],
-        impostazioni: { scritta: 'convertito', menu: true, alMassimo: false, suoni: true, apriCartella: false, formati: {} },
+        impostazioni: { scritta: 'convertito', menu: true, alMassimo: false, suoni: true, apriCartella: false, cestino: true, menu11Chiesto: false, formati: {} },
         modo,
         file: modo === 'rapido' ? [esempi[0]] : esempi,
         lavori: [],
         office: { libreOffice: true, word: false },
+        menu11: { supportato: true, registrato: false, fidato: false, chiesto: false },
       } satisfies Stato;
     }
     case 'piano': {
@@ -126,7 +127,7 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
         for (const g of gruppi) {
           const file = esempi.find((e) => e.id === g[0])!;
           const l: Lavoro = { id: `L${++nl}`, fileId: file.id, sorgenti: g.map((i) => esempi.find((e) => e.id === i)!.percorso), formato: fmt.id, etichetta: fmt.etichetta,
-            stato: 'attesa', frazione: 0, fase: null, velocita: null, fps: null, eta: null, uscita: null, pesoPrima: file.peso, pesoDopo: null, errore: null, dettaglio: null, secondi: 0 };
+            stato: 'attesa', frazione: 0, fase: null, velocita: null, fps: null, eta: null, uscita: null, pesoPrima: file.peso, pesoDopo: null, errore: null, dettaglio: null, secondi: 0, nelCestino: false, notaCestino: null };
           lavori.push(l);
           ids.push(l.id);
           emetti('lavoro', l);
@@ -166,6 +167,7 @@ function simula(l: Lavoro, emetti: (e: string, d: any) => void) {
       l.uscita = l.sorgenti[0].replace(/\.[^.]+$/, ` (convertito)${formati.find((x) => x.id === l.formato)?.estensione || ''}`);
       l.pesoDopo = Math.round(l.pesoPrima * 0.21);
       l.secondi = durata / 1000;
+      l.nelCestino = !!formati.find((x) => x.id === l.formato)?.sostituisce;
       l.eta = null;
     }
     emetti('lavoro', { ...l });

@@ -9,6 +9,9 @@ Releases/
 # FFmpeg si scarica con scripts/prendi-ffmpeg.ps1, non sta nel repo
 motori/
 
+# il menu di Windows 11 compilato (scripts/compila-menu.ps1)
+menu/out/
+
 # interfaccia
 ui/node_modules/
 ui/dist/

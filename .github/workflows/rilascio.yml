@@ -19,6 +19,10 @@ concurrency:
 jobs:
   rilascio:
     runs-on: windows-latest
+    env:
+      # la chiave che firma il pacchetto del menu di Windows 11 (la parte pubblica è risorse/DaProdProduzioni-firma.cer)
+      DAP_FIRMA_PFX: ${{ secrets.DAP_FIRMA_PFX }}
+      DAP_FIRMA_PASSWORD: ${{ secrets.DAP_FIRMA_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +51,10 @@ jobs:
       - name: FFmpeg
         shell: pwsh
         run: ./scripts/prendi-ffmpeg.ps1
+
+      - name: Menu di Windows 11
+        shell: pwsh
+        run: ./scripts/compila-menu.ps1
 
       - name: Prove
         id: prove

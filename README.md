@@ -43,16 +43,19 @@ Per toglierlo: *Impostazioni → App → DaP Convertitore → Disinstalla*, e la
 
 ## Come si usa
 
-**Tasto destro** su uno o più file → **DaP Convertitore**. Il sottomenu ha due strade:
+**Tasto destro** su uno o più file. Nel menu di Windows 11 ci sono due voci:
 
-- **le conversioni al volo** (MP4, Metà peso, Solo l'audio, JPG, Pagine in JPG, Estrai qui…): partono subito
-  in una finestrella in basso a destra con le bobine che girano, e alla fine arriva la notifica di Windows con
-  **Apri** e **Mostra nella cartella**;
-- **Scegli tu…**: apre la piastra con tutte le regolazioni.
+- **DaP Convertitore** apre la piastra coi file scelti, con tutte le regolazioni;
+- **Converti al volo ›** ha le conversioni rapide del tipo di file (MP4, Metà peso, Solo l'audio, JPG, Pagine in
+  JPG, Estrai qui…): partono subito in una finestrella in basso a destra con le bobine che girano, e alla fine
+  arriva la notifica di Windows con **Apri** e **Mostra nella cartella**.
 
-> Su **Windows 11** le voci aggiunte dai programmi stanno sotto **«Mostra altre opzioni»**. Scorciatoia:
-> **Maiusc + tasto destro** apre subito il menu completo. Funziona anche **Invia a → DaP Convertitore**, e
-> puoi trascinare i file dentro la finestra.
+> **Il tasto destro nuovo di Windows 11** vuole un comando firmato: alla prima apertura il convertitore propone
+> **Attiva**, e Windows chiede il permesso **una volta sola** (serve a fidarsi del certificato di DaProd; dopo,
+> aggiornamenti compresi, non chiede più niente). Sulle versioni più nuove di Windows 11 le voci delle app possono
+> stare sotto **«Estensioni app»**: da *Impostazioni → Personalizzazione → Menu contestuale* le porti in cima.
+> Le stesse voci ci sono anche nel menu classico (Maiusc + tasto destro, o «Mostra altre opzioni»), in
+> **Invia a → DaP Convertitore**, e puoi trascinare i file dentro la finestra.
 
 Con più file selezionati va tutto in un colpo: un video per volta sulla scheda video, il resto in parallelo.
 Le conversioni che uniscono (tante foto in **un PDF solo**, **unisci PDF**, **cartelle in uno ZIP**) mettono i
@@ -61,6 +64,12 @@ file in ordine di nome, come li vedi in Esplora file.
 **Il nome**: `Vacanze.mov` diventa `Vacanze (convertito).mp4`, nella stessa cartella. Se c'è già,
 `(convertito 2)`. Non si sovrascrive mai niente, e se annulli non resta un file a metà. La parola fra
 parentesi si cambia nelle impostazioni.
+
+**L'originale nel Cestino**: quando il convertito ne prende il posto (MOV → MP4, PNG → JPG, DOCX → PDF…),
+a conversione riuscita l'originale va nel **Cestino di Windows**: se ti serve lo ripeschi. È acceso di
+partenza e si spegne in Impostazioni. Non succede quando ne tiri fuori un pezzo (l'audio di un video, il testo
+di un PDF, le pagine in JPG), quando unisci più file, né su chiavette e dischi di rete, dove Windows il Cestino
+non ce l'ha. La piastra lo dice prima di premere CONVERTI.
 
 | La piastra mentre lavora | Fatto: quanto pesava, quanto pesa |
 | --- | --- |
@@ -148,12 +157,13 @@ Per documenti, fogli e presentazioni serve **[LibreOffice](https://it.libreoffic
 | Motore | `src/DaPConvertitore.Motore`: catalogo dei formati, piano del video, coda dei lavori, un motore per famiglia |
 | Video e audio | **FFmpeg 9.0** con NVENC/AMF/Quick Sync, x264, x265, SVT-AV1, libvpx, libaom, LAME, Opus |
 | Windows | WIC (HEIC, RAW, orientamento), Windows.Data.Pdf, Windows.Media.Ocr, `tar.exe`, contatori "GPU Engine", notifiche, barra delle applicazioni |
-| Tasto destro | registro in HKCU (`SystemFileAssociations\.ext\shell` + sottomenu `ExtendedSubCommandsKey`), protocollo `dap-convertitore:` per i bottoni delle notifiche, istanza unica con named pipe (Esplora file lancia un processo per file) |
+| Tasto destro di Windows 11 | `menu/DaPMenu.cpp`: due comandi **IExplorerCommand** in una DLL nativa (compilata con **Zig**, niente Visual Studio), registrati da un pacchetto MSIX **sparse** (`menu/AppxManifest.xml`, solo manifest e icone) firmato col certificato di DaProd; le voci la DLL le legge da `menu.tsv`, che l'app scrive dal Catalogo |
+| Menu classico | registro in HKCU (`SystemFileAssociations\.ext\shell` + sottomenu `ExtendedSubCommandsKey`), protocollo `dap-convertitore:` per i bottoni delle notifiche, istanza unica con named pipe (Esplora file lancia un processo per file) |
 | Installer | **Velopack**: per utente, senza amministratore, aggiornamenti delta dalle release di GitHub |
 
 ```powershell
 .\scripts\prendi-ffmpeg.ps1        # FFmpeg in motori\ffmpeg (una volta)
-.\scripts\compila.ps1              # interfaccia + app (Debug)
+.\scripts\compila.ps1              # menu di Windows 11 (Zig + makeappx, scaricati da soli) + interfaccia + app (Debug)
 dotnet test test\DaPConvertitore.Prove
 .\scripts\pacchetto.ps1            # Setup.exe e portatile in Releases\
 ```

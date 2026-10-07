@@ -291,6 +291,21 @@ input[type='range'] { -webkit-appearance: none; appearance: none; background: tr
 .destinazione .freccia svg { width: 18px; height: 18px; color: var(--oro); }
 .dest-nome { font: 700 15px var(--ui); color: var(--testo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dest-dove { font: 600 13px var(--ui); color: var(--testo3); white-space: nowrap; }
+.dest-cestino, .ris-cestino { display: inline-flex; align-items: center; gap: 5px; font: 700 12px var(--ui); color: var(--ambra); background: rgba(255, 178, 61, 0.1); border: 1px solid rgba(255, 178, 61, 0.25); padding: 2px 8px; border-radius: 7px; white-space: nowrap; }
+.dest-cestino svg, .ris-cestino svg { width: 13px; height: 13px; }
+.ris-cestino.tenuto { color: var(--testo3); background: none; border-color: var(--bordo); }
+.r-cestino svg { width: 14px; height: 14px; color: var(--ambra); margin-left: 4px; }
+.spunta svg { display: inline-block; width: 15px; height: 15px; color: var(--verde); margin-left: 6px; vertical-align: -2px; }
+
+/* l'invito al menu di Windows 11 */
+.invito { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 14px; margin-bottom: 14px; border-radius: 12px; text-align: left;
+  background: linear-gradient(90deg, rgba(255, 213, 74, 0.1), rgba(255, 61, 242, 0.06)); border: 1px solid rgba(255, 213, 74, 0.35); box-shadow: 0 0 24px rgba(255, 213, 74, 0.08); animation: entra 0.25s ease-out; }
+.invito-figura svg { width: 50px; height: 50px; }
+.invito-testo b { font: 700 15px var(--ui); color: var(--oro); }
+.invito-testo p { margin: 3px 0 0; color: var(--testo2); font-size: 13px; line-height: 1.4; }
+.invito-testo p b { font-size: 13px; color: var(--testo); }
+.invito-tasti { display: flex; gap: 6px; }
+.benvenuto .invito { margin-top: 22px; max-width: 640px; }
 .converti {
   display: inline-flex; align-items: center; gap: 12px; height: 50px; padding: 0 26px 0 20px; border-radius: 12px;
   background: linear-gradient(180deg, #ffe58a 0%, #ffd54a 45%, #f0b51c 100%); color: #1d1405;

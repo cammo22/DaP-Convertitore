@@ -15,6 +15,10 @@ public sealed class Impostazioni
     public bool Suoni { get; set; } = true;
     /// <summary>Alla fine apre la cartella con il file selezionato.</summary>
     public bool ApriCartella { get; set; }
+    /// <summary>A conversione riuscita l'originale va nel Cestino (lo ha chiesto Cammo: di partenza è acceso).</summary>
+    public bool Cestino { get; set; } = true;
+    /// <summary>L'invito a mettere il convertitore nel menu di Windows 11 è già stato mostrato (e chiuso).</summary>
+    public bool Menu11Chiesto { get; set; }
     /// <summary>L'ultimo formato scelto per ogni categoria ("video" → "video.mp4").</summary>
     public Dictionary<string, string> Formati { get; set; } = [];
     /// <summary>Le ultime scelte dell'interfaccia (codec, qualità, motore…), tali e quali.</summary>

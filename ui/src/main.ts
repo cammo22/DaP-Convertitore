@@ -7,7 +7,7 @@ import '@fontsource/rajdhani/600.css';
 import '@fontsource/rajdhani/700.css';
 import './stile.css';
 import { ascolta, avviaFinto, chiedi, dentroApp } from './ponte';
-import type { Carico, Categoria, Formato, InfoFile, Lavoro, Opzioni, Piano, Stato } from './ponte';
+import type { Carico, Categoria, Formato, InfoFile, Lavoro, Opzioni, Piano, Stato, StatoMenu11 } from './ponte';
 import { h, peso, pesoDisplay, durata, orologio, numero, risoluzione, clamp, MB, GB } from './util';
 import { icone, iconaCategoria, coloreCategoria } from './icone';
 import { Bobine, Lancetta } from './grafica';
@@ -184,6 +184,7 @@ function disegnaScegli() {
         rigaMotore('Documenti', s.stato.office.word ? 'Microsoft Office' : s.stato.office.libreOffice ? 'LibreOffice' : 'serve LibreOffice'),
         rigaMotore('Archivi 7Z, ZIP, RAR', 'tar di Windows'),
       ),
+      invitoMenu11(),
     ));
     return;
   }
@@ -210,12 +211,40 @@ function disegnaScegli() {
   )));
 
   banco.replaceChildren(
+    ...[invitoMenu11()].filter((x): x is HTMLElement => !!x),
     schede ?? h('div'),
     h('div.titolo-sezione', null, h('span', null, 'IN COSA LO TRASFORMO?'), h('span.conta', null, nomeCat(att))),
     griglia,
     regolazioni(att, scelto),
   );
   if (eVideoVero(scelto) && s.opzioni.video.modo !== 'copia') aggiornaPiano();
+}
+
+// ——— il menu di Windows 11 ———
+
+/** L'invito, una volta: su Windows 11 la voce va nel tasto destro nuovo, ma serve un permesso di Windows. */
+function invitoMenu11(): HTMLElement | null {
+  const m = s.stato.menu11;
+  if (!m?.supportato || m.registrato || m.chiesto) return null;
+  return h('div.invito', null,
+    h('div.invito-figura', { html: logoSvg }),
+    h('div.invito-testo', null,
+      h('b', null, 'Mettimi nel tasto destro di Windows 11'),
+      h('p', null, 'Adesso sto sotto «Mostra altre opzioni». Con un clic vado nel menu principale, con le conversioni al volo. ',
+        'Windows chiede il permesso ', h('b', null, 'una volta sola'), ': serve a fidarsi del certificato di DaProd.')),
+    h('div.invito-tasti', null,
+      h('button.tasto.su', { onclick: (e: Event) => void attivaMenu11(e.currentTarget as HTMLButtonElement) }, h('i.led.verde'), 'Attiva'),
+      h('button.tasto', { onclick: () => { clac(); s.stato.menu11.chiesto = true; void chiedi('menu11', { azione: 'non-ora' }); disegnaScegli(); } }, 'Non ora')));
+}
+
+async function attivaMenu11(b?: HTMLButtonElement) {
+  clac(true);
+  if (b) { b.disabled = true; b.lastChild!.textContent = 'Aspetto Windows…'; }
+  const r = await chiedi<{ stato: StatoMenu11; errore: string | null }>('menu11', { azione: 'attiva' });
+  s.stato.menu11 = r.stato;
+  if (r.errore) mostraAvviso(r.errore); else dinDon();
+  if (document.querySelector('.cassetto')) apriImpostazioni();
+  if (s.vista === 'scegli') disegnaScegli();
 }
 
 function rigaMotore(cosa: string, chi: string) {
@@ -507,11 +536,14 @@ function disegnaPiede() {
       const e = elementi[0];
       dest = nomeUscita(s.file.get(e.ids[0])!, formato(e.formato)!);
     } else if (n > 1) dest = `${n} conversioni, ognuna accanto al suo originale`;
+    // l'originale nel Cestino: si dice prima di premere, non dopo
+    const cestino = s.stato.impostazioni.cestino && elementi.some((e) => formato(e.formato)?.sostituisce);
     piede.replaceChildren(
       h('div.destinazione', null,
         n ? h('span.freccia', { html: icone.freccia }) : null,
         h('span.dest-nome', { title: dest }, n ? dest : 'Aggiungi qualcosa da convertire'),
-        n === 1 ? h('span.dest-dove', null, 'nella stessa cartella') : null),
+        n === 1 ? h('span.dest-dove', null, 'nella stessa cartella') : null,
+        n && cestino ? h('span.dest-cestino', { title: 'Si cambia in Impostazioni' }, h('span', { html: icone.cestino }), n > 1 ? 'originali nel Cestino' : 'originale nel Cestino') : null),
       h('button.converti', { disabled: !n, onclick: () => void converti() }, h('i.led'), h('span', null, 'CONVERTI'), n > 1 ? h('small', null, String(n)) : null),
     );
   } else if (s.vista === 'lavoro') {
@@ -697,14 +729,17 @@ function schedaRisultato(l: Lavoro) {
     );
   }
   const rapporto = l.pesoPrima > 0 && l.pesoDopo != null ? l.pesoDopo / l.pesoPrima : 1;
-  const confrontabile = f && (f.categoria === 'video' || f.categoria === 'immagine') && l.sorgenti.length === 1 && !['video.mp3', 'video.wav', 'video.srt', 'img.pdf', 'img.txt'].includes(l.formato);
+  // senza l'originale (andato nel Cestino) il confronto non ha da cosa leggere
+  const confrontabile = !l.nelCestino && f && (f.categoria === 'video' || f.categoria === 'immagine') && l.sorgenti.length === 1 && !['video.mp3', 'video.wav', 'video.srt', 'img.pdf', 'img.txt'].includes(l.formato);
   return h('div.risultato.fatto', null,
     h('div.ris-figura', null, f?.anteprima ? h('img', { src: f.anteprima }) : h('span', { html: iconaCategoria[f?.categoria ?? 'altro'] }), h('i.ok', { html: icone.ok })),
     h('div.ris-testo', null,
       h('div.ris-nome', { title: l.uscita ?? '' }, nomeUscitaFile),
       h('div.ris-pesi', null,
         h('span', null, peso(l.pesoPrima)), h('span.ris-freccia', { html: icone.freccia }), h('b', null, peso(l.pesoDopo)),
-        l.pesoDopo != null && l.pesoPrima > 0 ? h(`span.ris-delta${rapporto <= 1 ? '.giu' : '.su'}`, null, `${rapporto <= 1 ? '−' : '+'}${numero(Math.abs(1 - rapporto) * 100)}%`) : null),
+        l.pesoDopo != null && l.pesoPrima > 0 ? h(`span.ris-delta${rapporto <= 1 ? '.giu' : '.su'}`, null, `${rapporto <= 1 ? '−' : '+'}${numero(Math.abs(1 - rapporto) * 100)}%`) : null,
+        l.nelCestino ? h('span.ris-cestino', { title: 'Se ti serve, lo ripeschi dal Cestino' }, h('span', { html: icone.cestino }), 'originale nel Cestino') : null,
+        !l.nelCestino && l.notaCestino ? h('span.ris-cestino.tenuto', { title: l.notaCestino }, 'originale tenuto: ' + l.notaCestino) : null),
       h('div.ris-barre', null, h('i.prima'), h('i.dopo', { style: { width: `${Math.min(100, rapporto * 100)}%` } })),
     ),
     h('div.ris-azioni', null,
@@ -763,6 +798,21 @@ async function confronta(l: Lavoro, posizione = 0.35) {
 
 // ————————————————————————————————— impostazioni —————————————————————————————————
 
+/** La riga del menu di Windows 11: attiva (col permesso di Windows, una volta) o togli. */
+function rigaMenu11(): HTMLElement | null {
+  const m = s.stato.menu11;
+  if (!m?.supportato) return null;
+  const testo = m.registrato
+    ? 'Attivo: «DaP Convertitore» e «Converti al volo» stanno nel tasto destro principale. Sulle versioni più nuove di Windows 11 possono stare sotto «Estensioni app»: da Impostazioni → Personalizzazione → Menu contestuale le porti in cima.'
+    : m.fidato
+      ? 'Il permesso c\'è già: un clic e la voce va nel tasto destro principale.'
+      : 'La voce nel tasto destro principale, senza «Mostra altre opzioni». Windows chiede il permesso una volta sola: serve a fidarsi del certificato di DaProd.';
+  const tasto = m.registrato
+    ? h('button.tasto', { onclick: async () => { clac(); const r = await chiedi<{ stato: StatoMenu11 }>('menu11', { azione: 'togli' }); s.stato.menu11 = r.stato; apriImpostazioni(); } }, 'Togli')
+    : h('button.tasto.su', { onclick: (e: Event) => void attivaMenu11(e.currentTarget as HTMLButtonElement) }, h('i.led.verde'), 'Attiva');
+  return h('div.imp-riga', null, h('div', null, h('b', null, 'Nel tasto destro di Windows 11', m.registrato ? h('span.spunta', { html: icone.ok }) : null), h('p', null, testo)), tasto);
+}
+
 function apriImpostazioni() {
   clac();
   document.querySelector('.cassetto')?.remove();
@@ -780,7 +830,10 @@ function apriImpostazioni() {
   cassetto.append(h('div.cassetto', null,
     h('div.confronto-testa', null, h('b', null, 'IMPOSTAZIONI'), h('span'), h('button.btn-fin', { html: icone.chiudi, onclick: () => cassetto.remove() })),
     riga('La scritta nel nome', 'Foto.jpg diventa «Foto (convertito).webp». Puoi cambiarla.', scritta),
-    riga('Nel tasto destro', 'La voce DaP Convertitore in Esplora file, col sottomenu delle conversioni al volo. Su Windows 11 sta in «Mostra altre opzioni» (o Maiusc + tasto destro).', leva(imp.menu, (v) => { salva({ menu: v }); void chiedi('menu', { attivo: v }); })),
+    riga('L\'originale nel Cestino', 'Quando il convertito ne prende il posto (MOV → MP4, PNG → JPG…) l\'originale va nel Cestino: se ti serve lo ripeschi. Non succede quando ne tiri fuori un pezzo (l\'audio, il testo, le pagine) né su chiavette e dischi di rete.',
+      leva(imp.cestino, (v) => { salva({ cestino: v }); disegnaPiede(); })),
+    rigaMenu11(),
+    riga('Nel menu classico', 'La voce DaP Convertitore anche nel menu di prima: «Mostra altre opzioni» o Maiusc + tasto destro, e «Invia a».', leva(imp.menu, (v) => { salva({ menu: v }); void chiedi('menu', { attivo: v }); })),
     riga('Spingi al massimo', 'FFmpeg a priorità normale: un po\' più veloce, ma mentre converte il PC si sente.', leva(imp.alMassimo, (v) => salva({ alMassimo: v }))),
     riga('Suoni', 'Il clac dei tasti e il din-don alla fine.', leva(imp.suoni, (v) => { salva({ suoni: v }); accendiSuoni(v); })),
     riga('Apri la cartella alla fine', 'Quando ha finito, apre Esplora file col file convertito già selezionato.', leva(imp.apriCartella, (v) => salva({ apriCartella: v }))),
@@ -839,7 +892,8 @@ function disegnaRapido() {
     t.replaceChildren(
       h('div.r-nome', null, ok.length ? (ultimo.uscita?.split('\\').pop() ?? '') : nome),
       ok.length
-        ? h('div.r-fase.ok', null, h('span', { html: icone.ok }), ok.length > 1 ? `${ok.length} file fatti` : 'Fatto', ` · ${peso(ok.reduce((a, x) => a + x.pesoPrima, 0))} → ${peso(ok.reduce((a, x) => a + (x.pesoDopo ?? 0), 0))}`)
+        ? h('div.r-fase.ok', null, h('span', { html: icone.ok }), ok.length > 1 ? `${ok.length} file fatti` : 'Fatto', ` · ${peso(ok.reduce((a, x) => a + x.pesoPrima, 0))} → ${peso(ok.reduce((a, x) => a + (x.pesoDopo ?? 0), 0))}`,
+            ok.some((x) => x.nelCestino) ? h('span.r-cestino', { html: icone.cestino, title: 'L\'originale è nel Cestino' }) : null)
         : h('div.r-fase.ko', null, h('span', { html: icone.attenzione }), giro[0].errore ?? 'Annullato'),
       h('div.r-azioni', null,
         ultimo ? h('button.tasto.piccolo', { onclick: () => chiedi('apri', { percorso: ultimo.uscita }) }, 'Apri') : null,

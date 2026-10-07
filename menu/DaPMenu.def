@@ -1,0 +1,4 @@
+LIBRARY DaPConvertitore.Menu
+EXPORTS
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE

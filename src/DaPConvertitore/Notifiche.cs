@@ -19,7 +19,8 @@ public static class Notifiche
         var prima = ok.Sum(l => l.PesoPrima);
         var dopo = ok.Sum(l => l.PesoDopo ?? 0);
         var riga = ok.Count == 1 ? nome : $"L'ultimo: {nome}";
-        Mostra(titolo, riga, $"{Peso(prima)} → {Peso(dopo)}", ultimo.Uscita);
+        var cestino = ok.Any(l => l.NelCestino) ? (ok.Count == 1 ? " · l'originale è nel Cestino" : " · gli originali sono nel Cestino") : "";
+        Mostra(titolo, riga, $"{Peso(prima)} → {Peso(dopo)}{cestino}", ultimo.Uscita);
     }
 
     public static void Errore(Lavoro l) =>

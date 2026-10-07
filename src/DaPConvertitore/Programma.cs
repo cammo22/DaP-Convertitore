@@ -18,6 +18,19 @@ public sealed record Richiesta(string? Azione, IReadOnlyList<string> Percorsi, b
             var a = args[i];
             if (a == "--azione" && i + 1 < args.Length) { azione = args[++i]; continue; }
             if (a == "--apri") { finestra = true; continue; }
+            // il menu di Windows 11 passa tutti i file in un file di testo, uno per riga: niente limite di lunghezza
+            if (a == "--lista" && i + 1 < args.Length)
+            {
+                var lista = args[++i].Trim('"');
+                try
+                {
+                    foreach (var riga in File.ReadAllLines(lista))
+                        if (riga.Trim() is { Length: > 0 } p2 && (File.Exists(p2) || Directory.Exists(p2))) file.Add(Path.GetFullPath(p2));
+                    File.Delete(lista);
+                }
+                catch (Exception e) { Registro.Errore("lista dal menu", e); }
+                continue;
+            }
             if (a.StartsWith("--")) continue;
             var p = a.Trim('"');
             if (File.Exists(p) || Directory.Exists(p)) file.Add(Path.GetFullPath(p));
@@ -37,13 +50,15 @@ public static class Programma
         // Velopack per primo: installazione, aggiornamento e disinstallazione passano da qui e finiscono subito
         VelopackApp.Build()
             .SetAppUserModelId(MenuContestuale.Aumid)
-            .OnAfterInstallFastCallback(_ => Registra())
-            .OnAfterUpdateFastCallback(_ => { if (Impostazioni.Carica().Menu) Registra(); })
-            .OnBeforeUninstallFastCallback(_ => MenuContestuale.Rimuovi())
+            .OnAfterInstallFastCallback(_ => { Registra(); RegistraWindows11(); })
+            .OnAfterUpdateFastCallback(_ => { if (Impostazioni.Carica().Menu) { Registra(); RegistraWindows11(); } })
+            // la DLL del menu di Windows 11 sta aperta in un dllhost: si ferma, se no la cartella non si sostituisce
+            .OnBeforeUpdateFastCallback(_ => Menu11.FermaSurrogato())
+            .OnBeforeUninstallFastCallback(_ => { MenuContestuale.Rimuovi(); Menu11.Rimuovi().GetAwaiter().GetResult(); })
             .Run();
 
-        if (args.Contains("--registra")) { Registra(); return; }
-        if (args.Contains("--rimuovi")) { MenuContestuale.Rimuovi(); return; }
+        if (args.Contains("--registra")) { Registra(); RegistraWindows11(); return; }
+        if (args.Contains("--rimuovi")) { MenuContestuale.Rimuovi(); Menu11.Rimuovi().GetAwaiter().GetResult(); return; }
         var url = Array.IndexOf(args, "--url");
         if (url >= 0 && url + 1 < args.Length) { Url(args[url + 1]); return; }
 
@@ -66,6 +81,17 @@ public static class Programma
     {
         var exe = Environment.ProcessPath!;
         MenuContestuale.Registra(exe, Path.Combine(Path.GetDirectoryName(exe)!, "icona.png"));
+    }
+
+    /// <summary>
+    /// Il menu nuovo di Windows 11, se il certificato di DaProd è già fidato su questo PC (se no lo chiede l'app,
+    /// una volta, con la finestra del permesso: qui durante l'installazione non si disturba).
+    /// </summary>
+    static void RegistraWindows11()
+    {
+        var cartella = AppContext.BaseDirectory;
+        if (Menu11.Windows11 && Menu11.Presente(cartella) && Menu11.Fidato(cartella))
+            Menu11.Registra(cartella).GetAwaiter().GetResult();
     }
 
     /// <summary>I bottoni delle notifiche: dap-convertitore:mostra?p=… e dap-convertitore:apri?p=…</summary>
