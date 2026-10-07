@@ -31,6 +31,8 @@ jobs:
           "numero=$v" >> $env:GITHUB_OUTPUT
           gh release view "v$v" --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -eq 0) { "esiste=si" >> $env:GITHUB_OUTPUT; Write-Host "La v$v c'è già: niente da pubblicare" } else { "esiste=no" >> $env:GITHUB_OUTPUT }
+          # "release non trovata" lascia il codice 1, e Actions chiuderebbe il passo come fallito
+          exit 0
         env:
           GH_TOKEN: ${{ github.token }}
 
