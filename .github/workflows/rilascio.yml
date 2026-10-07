@@ -1,0 +1,69 @@
+# Ogni volta che su main arriva una versione nuova (il <Version> di Directory.Build.props) GitHub fa le prove,
+# compila, impacchetta con Velopack e pubblica la release vX.Y.Z con Setup.exe, portatile e i pacchetti per gli
+# aggiornamenti automatici. Le prove girano ma non fermano la release (come in DaProd Video): i runner di GitHub
+# non hanno LibreOffice né le estensioni HEIF, quindi qualche prova lì può dire cose che sul PC vero non succedono.
+name: Rilascio
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rilascio
+  cancel-in-progress: false
+
+jobs:
+  rilascio:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versione
+        id: versione
+        shell: pwsh
+        run: |
+          [xml]$p = Get-Content Directory.Build.props
+          $v = $p.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          "numero=$v" >> $env:GITHUB_OUTPUT
+          gh release view "v$v" --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) { "esiste=si" >> $env:GITHUB_OUTPUT; Write-Host "La v$v c'è già: niente da pubblicare" } else { "esiste=no" >> $env:GITHUB_OUTPUT }
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: FFmpeg
+        shell: pwsh
+        run: ./scripts/prendi-ffmpeg.ps1
+
+      - name: Prove
+        continue-on-error: true
+        shell: pwsh
+        run: dotnet test test/DaPConvertitore.Prove -nologo
+
+      - name: Pacchetto
+        if: steps.versione.outputs.esiste == 'no'
+        shell: pwsh
+        run: |
+          dotnet tool restore
+          # la release prima, se c'è: Velopack ne ricava l'aggiornamento "delta" (scarichi solo la differenza)
+          dotnet vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ github.token }} -o Releases
+          ./scripts/pacchetto.ps1
+
+      - name: Pubblica
+        if: steps.versione.outputs.esiste == 'no'
+        shell: pwsh
+        run: |
+          $v = "${{ steps.versione.outputs.numero }}"
+          dotnet vpk upload github --repoUrl https://github.com/${{ github.repository }} --token ${{ github.token }} `
+            -o Releases --publish --releaseName "DaP Convertitore $v" --tag "v$v"

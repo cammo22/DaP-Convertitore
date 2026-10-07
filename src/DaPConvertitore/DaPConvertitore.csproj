@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- L'app: una finestra WPF con dentro l'interfaccia HTML (WebView2). Il lavoro lo fa il motore. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>DaPConvertitore</AssemblyName>
+    <RootNamespace>DaP.Convertitore.App</RootNamespace>
+    <ApplicationIcon>..\..\risorse\icona.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <SelfContained>true</SelfContained>
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+    <PackageReference Include="Velopack" Version="1.2.161" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DaPConvertitore.Motore\DaPConvertitore.Motore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="..\..\risorse\icona.ico" Link="icona.ico" />
+    <!-- FFmpeg e l'interfaccia viaggiano accanto all'exe -->
+    <None Include="..\..\motori\ffmpeg\**" LinkBase="motori\ffmpeg" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\ui\dist\**" LinkBase="ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\risorse\icona-256.png" Link="icona.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

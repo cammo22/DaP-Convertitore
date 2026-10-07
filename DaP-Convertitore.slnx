@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DaPConvertitore.Motore/DaPConvertitore.Motore.csproj" />
+    <Project Path="src/DaPConvertitore/DaPConvertitore.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/DaPConvertitore.Prove/DaPConvertitore.Prove.csproj" />
+  </Folder>
+</Solution>

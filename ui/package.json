@@ -1,0 +1,22 @@
+{
+  "name": "dap-convertitore-ui",
+  "private": true,
+  "description": "L'interfaccia di DaP Convertitore: gira dentro WebView2. La versione vera sta in Directory.Build.props.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/orbitron": "^5.2.8",
+    "@fontsource/rajdhani": "^5.2.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.1.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

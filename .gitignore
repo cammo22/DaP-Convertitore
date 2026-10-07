@@ -1,0 +1,18 @@
+# compilati
+bin/
+obj/
+publish/
+Releases/
+*.user
+.vs/
+
+# FFmpeg si scarica con scripts/prendi-ffmpeg.ps1, non sta nel repo
+motori/
+
+# interfaccia
+ui/node_modules/
+ui/dist/
+
+# prove
+test/.out/
+TestResults/
