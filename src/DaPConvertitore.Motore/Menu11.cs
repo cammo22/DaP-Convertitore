@@ -143,6 +143,52 @@ public static class Menu11
         }
     }
 
+    // ——— il menu classico al posto di quello nuovo, e il riavvio di Esplora file ———
+
+    /// <summary>
+    /// La chiave che Windows 11 guarda per decidere quale menu aprire: se c'è (vuota), il tasto destro apre
+    /// subito il menu classico di Windows 10, con tutte le voci a un clic. Sta in HKCU: vale solo per Cammo,
+    /// niente amministratore, e togliendola si torna al menu nuovo. Vale da quando riparte Esplora file.
+    /// </summary>
+    const string ChiaveClassico = @"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
+
+    public static bool ClassicoOvunque
+    {
+        get
+        {
+            using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(ChiaveClassico + @"\InprocServer32");
+            return k is not null;
+        }
+        set
+        {
+            if (value)
+            {
+                using var k = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(ChiaveClassico + @"\InprocServer32");
+                k.SetValue(null, "");
+            }
+            else Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(ChiaveClassico, false);
+            Registro.Scrivi($"Menu classico ovunque: {value}");
+        }
+    }
+
+    /// <summary>
+    /// Riavvia Esplora file: la barra delle applicazioni sparisce un secondo e le cartelle aperte si chiudono.
+    /// Serve perché Esplora file legge i comandi del menu (e la scelta classico/nuovo) solo quando parte.
+    /// </summary>
+    public static async Task RiavviaEsplora()
+    {
+        foreach (var p in Process.GetProcessesByName("explorer"))
+        {
+            try { p.Kill(); p.WaitForExit(5000); } catch { }
+            finally { p.Dispose(); }
+        }
+        // di solito Windows lo riaccende da solo; se dopo un attimo non c'è, lo si accende
+        for (var i = 0; i < 20 && Process.GetProcessesByName("explorer").Length == 0; i++) await Task.Delay(200);
+        if (Process.GetProcessesByName("explorer").Length == 0)
+            Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
+        Registro.Scrivi("Esplora file riavviato");
+    }
+
     /// <summary>
     /// menu.tsv accanto alla DLL: le estensioni con la loro categoria e le voci del sottomenu, dal Catalogo.
     /// Una cosa sola, uguale ovunque: la DLL non sa niente dei formati, legge da qui.
@@ -150,8 +196,8 @@ public static class Menu11
     public static void ScriviMenu(string cartella)
     {
         var sb = new StringBuilder();
-        sb.Append("T\tapri\tDaP Convertitore\n");
-        sb.Append("T\tconverti\tConverti al volo\n");
+        sb.Append("T\tapri\tApri nel convertitore…\n");
+        sb.Append("T\tconverti\tDaP Convertitore\n");
         foreach (var est in Catalogo.TutteLeEstensioni.OrderBy(e => e))
             sb.Append($"E\t{est}\t{Catalogo.Chiave(Catalogo.CategoriaDi("x" + est))}\n");
         foreach (var r in Catalogo.Rapide)

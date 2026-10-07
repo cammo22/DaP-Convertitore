@@ -2,8 +2,10 @@
 //
 // Windows 11 nel menu nuovo mette solo comandi IExplorerCommand registrati da un pacchetto con identità: questa DLL
 // è il comando, menu\AppxManifest.xml il pacchetto (sparse: i file restano nella cartella dell'app). Due voci:
-//   «DaP Convertitore»      → apre la piastra con i file scelti
-//   «Converti al volo  ›»   → sottomenu con le conversioni rapide della categoria del file
+//   «DaP Convertitore ›»  un comando solo (come fa VS Code), col sottomenu:
+//        «Apri nel convertitore…»   la piastra coi file scelti
+//        ———
+//        le conversioni al volo della categoria del file
 // Cosa c'è nel sottomenu non sta qui: lo scrive l'app in menu.tsv accanto alla DLL, leggendo il Catalogo.
 // Una cosa sola, uguale ovunque. Clic → si lancia DaPConvertitore.exe con tutti i file in un colpo solo.
 //
@@ -15,9 +17,9 @@
 #include <shobjidl.h>
 #include <shlobj.h>
 #include <new>
+#include <cstdarg>
 
-// {9C1D5F3A-7B21-4E58-A6F2-3D8E0B4C61A1} apri, {5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2} converti
-static const CLSID CLSID_Apri = {0x9c1d5f3a, 0x7b21, 0x4e58, {0xa6, 0xf2, 0x3d, 0x8e, 0x0b, 0x4c, 0x61, 0xa1}};
+// {5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2}: il comando del menu (in AppxManifest.xml è l'unico Verb)
 static const CLSID CLSID_Converti = {0x5e2a8c47, 0x1f93, 0x4b6d, {0x8e, 0x0a, 0x72, 0xc4, 0xd9, 0xb1, 0x35, 0xf2}};
 
 static HMODULE g_modulo = nullptr;
@@ -33,14 +35,50 @@ static Voce g_voci[96];
 static int g_nVoci = 0;
 static Estensione g_est[320];
 static int g_nEst = 0;
-static wchar_t g_titoloApri[96] = L"DaP Convertitore";
-static wchar_t g_titoloConverti[96] = L"Converti al volo";
+static wchar_t g_titoloApri[96] = L"Apri nel convertitore…";
+static wchar_t g_titoloConverti[96] = L"DaP Convertitore";
 static bool g_letto = false;
 
 static void Cartella(wchar_t* dove, DWORD max)
 {
     GetModuleFileNameW(g_modulo, dove, max);
     PathRemoveFileSpecW(dove);
+}
+
+/// Il diario per capire cosa chiede Esplora file: si accende solo se accanto alla DLL c'è un file «menu.debug»,
+/// e scrive in %TEMP%\DaP Convertitore\menu-diario.txt.
+static void Diario(const wchar_t* formato, ...)
+{
+    static int acceso = -1;
+    if (acceso < 0)
+    {
+        wchar_t p[MAX_PATH];
+        Cartella(p, MAX_PATH);
+        PathAppendW(p, L"menu.debug");
+        acceso = GetFileAttributesW(p) != INVALID_FILE_ATTRIBUTES ? 1 : 0;
+    }
+    if (!acceso) return;
+    wchar_t riga[600];
+    SYSTEMTIME t;
+    GetLocalTime(&t);
+    int k = wsprintfW(riga, L"%02d:%02d:%02d.%03d  ", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds);
+    va_list a;
+    va_start(a, formato);
+    k += wvsprintfW(riga + k, formato, a);
+    va_end(a);
+    lstrcatW(riga, L"\r\n");
+    wchar_t percorso[MAX_PATH];
+    GetTempPathW(MAX_PATH, percorso);
+    PathAppendW(percorso, L"DaP Convertitore");
+    CreateDirectoryW(percorso, nullptr);
+    PathAppendW(percorso, L"menu-diario.txt");
+    HANDLE f = CreateFileW(percorso, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, 0, nullptr);
+    if (f == INVALID_HANDLE_VALUE) return;
+    char buf[1800];
+    int n = WideCharToMultiByte(CP_UTF8, 0, riga, -1, buf, sizeof(buf), nullptr, nullptr);
+    DWORD scritti;
+    if (n > 1) WriteFile(f, buf, (DWORD)(n - 1), &scritti, nullptr);
+    CloseHandle(f);
 }
 
 static void Copia(wchar_t* dest, size_t max, const wchar_t* da, size_t n)
@@ -239,22 +277,49 @@ public:
     IFACEMETHODIMP GetFlags(EXPCMDFLAGS* f) override { *f = ECF_DEFAULT; return S_OK; }
     IFACEMETHODIMP Invoke(IShellItemArray* sel, IBindCtx*) override
     {
+        Diario(L"Rapida.Invoke %s", id);
         wchar_t arg[64];
         wsprintfW(arg, L"--azione %s", id);
         return Lancia(sel, arg);
     }
 };
 
+/// In cima al sottomenu: «Apri nel convertitore…», la piastra con tutte le scelte.
+class ApriVoce final : public Base
+{
+public:
+    IFACEMETHODIMP GetTitle(IShellItemArray*, LPWSTR* t) override { return SHStrDupW(g_titoloApri, t); }
+    IFACEMETHODIMP GetIcon(IShellItemArray*, LPWSTR* i) override { return Icona(i); }
+    IFACEMETHODIMP GetState(IShellItemArray*, BOOL, EXPCMDSTATE* s) override { *s = ECS_ENABLED; return S_OK; }
+    IFACEMETHODIMP GetFlags(EXPCMDFLAGS* f) override { *f = ECF_DEFAULT; return S_OK; }
+    IFACEMETHODIMP Invoke(IShellItemArray* sel, IBindCtx*) override { Diario(L"Apri.Invoke"); return Lancia(sel, L"--apri"); }
+};
+
+/// La linea fra «Apri nel convertitore…» e le conversioni al volo.
+class Separatore final : public Base
+{
+public:
+    IFACEMETHODIMP GetTitle(IShellItemArray*, LPWSTR* t) override { *t = nullptr; return E_NOTIMPL; }
+    IFACEMETHODIMP GetIcon(IShellItemArray*, LPWSTR* i) override { *i = nullptr; return E_NOTIMPL; }
+    IFACEMETHODIMP GetState(IShellItemArray*, BOOL, EXPCMDSTATE* s) override { *s = ECS_ENABLED; return S_OK; }
+    IFACEMETHODIMP GetFlags(EXPCMDFLAGS* f) override { *f = ECF_ISSEPARATOR; return S_OK; }
+    IFACEMETHODIMP Invoke(IShellItemArray*, IBindCtx*) override { return E_NOTIMPL; }
+};
+
 class Elenco final : public IEnumExplorerCommand
 {
     LONG rif = 1;
-    IExplorerCommand* voci[96] = {};
+    IExplorerCommand* voci[100] = {};
     ULONG n = 0, pos = 0;
 public:
     Elenco(const wchar_t* categoria)
     {
         InterlockedIncrement(&g_oggetti);
-        for (int i = 0; i < g_nVoci && n < 96; i++)
+        voci[n++] = new (std::nothrow) ApriVoce();
+        int rapide = 0;
+        for (int i = 0; i < g_nVoci; i++) rapide += lstrcmpiW(g_voci[i].categoria, categoria) == 0;
+        if (rapide > 0) voci[n++] = new (std::nothrow) Separatore();
+        for (int i = 0; i < g_nVoci && n < 100; i++)
             if (lstrcmpiW(g_voci[i].categoria, categoria) == 0) voci[n++] = new (std::nothrow) Rapida(g_voci[i]);
     }
     ~Elenco() { for (ULONG i = 0; i < n; i++) if (voci[i]) voci[i]->Release(); InterlockedDecrement(&g_oggetti); }
@@ -279,36 +344,25 @@ public:
     IFACEMETHODIMP Clone(IEnumExplorerCommand** e) override { *e = nullptr; return E_NOTIMPL; }
 };
 
-/// «DaP Convertitore»: apre la piastra.
-class Apri final : public Base
-{
-public:
-    IFACEMETHODIMP GetTitle(IShellItemArray*, LPWSTR* t) override { LeggiMenu(); return SHStrDupW(g_titoloApri, t); }
-    IFACEMETHODIMP GetIcon(IShellItemArray*, LPWSTR* i) override { return Icona(i); }
-    IFACEMETHODIMP GetState(IShellItemArray* sel, BOOL, EXPCMDSTATE* s) override
-    {
-        DWORD n = 0;
-        *s = sel && SUCCEEDED(sel->GetCount(&n)) && n > 0 ? ECS_ENABLED : ECS_HIDDEN;
-        return S_OK;
-    }
-    IFACEMETHODIMP GetFlags(EXPCMDFLAGS* f) override { *f = ECF_DEFAULT; return S_OK; }
-    IFACEMETHODIMP Invoke(IShellItemArray* sel, IBindCtx*) override { return Lancia(sel, L"--apri"); }
-};
+/// La categoria dell'ultima selezione. Condivisa e non dentro l'oggetto: Esplora file può chiedere lo stato a
+/// un'istanza del comando e il sottomenu a un'altra (il surrogato è uno, a thread singolo: basta così).
+static wchar_t g_categoria[24] = L"";
 
-/// «Converti al volo ›»: il sottomenu della categoria del file.
-class Converti final : public Base
+/// «DaP Convertitore ›»: l'unico comando nel menu (come VS Code: un comando per app), col sottomenu
+/// «Apri nel convertitore…» in cima e sotto le conversioni al volo del tipo di file.
+class Radice final : public Base
 {
-    wchar_t categoria[24] = L"";
 public:
     IFACEMETHODIMP GetTitle(IShellItemArray*, LPWSTR* t) override { LeggiMenu(); return SHStrDupW(g_titoloConverti, t); }
     IFACEMETHODIMP GetIcon(IShellItemArray*, LPWSTR* i) override { return Icona(i); }
-    IFACEMETHODIMP GetState(IShellItemArray* sel, BOOL, EXPCMDSTATE* s) override
+    IFACEMETHODIMP GetState(IShellItemArray* sel, BOOL lento, EXPCMDSTATE* s) override
     {
         LeggiMenu();
-        CategoriaDi(sel, categoria, 24);
-        bool c = false;
-        for (int i = 0; i < g_nVoci && !c; i++) c = lstrcmpiW(g_voci[i].categoria, categoria) == 0;
-        *s = c ? ECS_ENABLED : ECS_HIDDEN;
+        // sempre visibile: anche senza selezione (Esplora file a volte chiede così) e per i file sconosciuti
+        // c'è almeno «Apri nel convertitore…»
+        *s = ECS_ENABLED;
+        if (sel) CategoriaDi(sel, g_categoria, 24);
+        Diario(L"Radice.GetState sel=%d categoria=%s voci=%d lento=%d", sel != nullptr, g_categoria, g_nVoci, lento);
         return S_OK;
     }
     IFACEMETHODIMP GetFlags(EXPCMDFLAGS* f) override { *f = ECF_HASSUBCOMMANDS; return S_OK; }
@@ -316,8 +370,9 @@ public:
     IFACEMETHODIMP EnumSubCommands(IEnumExplorerCommand** e) override
     {
         LeggiMenu();
-        auto el = new (std::nothrow) Elenco(categoria);
+        auto el = new (std::nothrow) Elenco(g_categoria);
         if (!el) return E_OUTOFMEMORY;
+        Diario(L"Radice.EnumSubCommands categoria=%s", g_categoria);
         *e = el;
         return S_OK;
     }
@@ -360,9 +415,9 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE h, DWORD perche, LPVOID)
 STDAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void** ppv)
 {
     *ppv = nullptr;
+    Diario(L"DllGetClassObject");
     IClassFactory* f = nullptr;
-    if (IsEqualCLSID(clsid, CLSID_Apri)) f = new (std::nothrow) Fabbrica<Apri>();
-    else if (IsEqualCLSID(clsid, CLSID_Converti)) f = new (std::nothrow) Fabbrica<Converti>();
+    if (IsEqualCLSID(clsid, CLSID_Converti)) f = new (std::nothrow) Fabbrica<Radice>();
     else return CLASS_E_CLASSNOTAVAILABLE;
     if (!f) return E_OUTOFMEMORY;
     HRESULT hr = f->QueryInterface(riid, ppv);

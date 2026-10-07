@@ -49,20 +49,18 @@
       <Extensions>
         <desktop4:Extension Category="windows.fileExplorerContextMenus">
           <desktop4:FileExplorerContextMenus>
+            <!-- un comando solo per tipo, come VS Code: le voci stanno nel suo sottomenu -->
             <desktop5:ItemType Type="*">
-              <desktop5:Verb Id="DaPApri" Clsid="9C1D5F3A-7B21-4E58-A6F2-3D8E0B4C61A1" />
-              <desktop5:Verb Id="DaPConverti" Clsid="5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2" />
+              <desktop5:Verb Id="DaPConvertitore" Clsid="5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2" />
             </desktop5:ItemType>
             <desktop5:ItemType Type="Directory">
-              <desktop5:Verb Id="DaPApri" Clsid="9C1D5F3A-7B21-4E58-A6F2-3D8E0B4C61A1" />
-              <desktop5:Verb Id="DaPConverti" Clsid="5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2" />
+              <desktop5:Verb Id="DaPConvertitore" Clsid="5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2" />
             </desktop5:ItemType>
           </desktop4:FileExplorerContextMenus>
         </desktop4:Extension>
         <com:Extension Category="windows.comServer">
           <com:ComServer>
             <com:SurrogateServer DisplayName="DaP Convertitore — menu">
-              <com:Class Id="9C1D5F3A-7B21-4E58-A6F2-3D8E0B4C61A1" Path="DaPConvertitore.Menu.dll" ThreadingModel="STA" />
               <com:Class Id="5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2" Path="DaPConvertitore.Menu.dll" ThreadingModel="STA" />
             </com:SurrogateServer>
           </com:ComServer>

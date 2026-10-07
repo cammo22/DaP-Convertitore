@@ -9,7 +9,6 @@ namespace DaP.Convertitore.Prove;
 /// </summary>
 public class ProveMenu11
 {
-    static readonly Guid Apri = new("9C1D5F3A-7B21-4E58-A6F2-3D8E0B4C61A1");
     static readonly Guid Converti = new("5E2A8C47-1F93-4B6D-8E0A-72C4D9B135F2");
 
     [ComImport, Guid("a08ce4d0-fa25-44ab-b57c-c7b1c323e0b9"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -84,11 +83,16 @@ public class ProveMenu11
             return (IExplorerCommand)o;
         }
 
-        var apri = Crea(Apri);
-        Assert.Equal(0, apri.GetTitle(null, out var titolo));
+        // un comando solo: «DaP Convertitore ›», con l'icona dell'app e il sottomenu
+        var radice = Crea(Converti);
+        Assert.Equal(0, radice.GetTitle(null, out var titolo));
         Assert.Equal("DaP Convertitore", titolo);
-        Assert.Equal(0, apri.GetIcon(null, out var icona));
+        Assert.Equal(0, radice.GetIcon(null, out var icona));
         Assert.EndsWith("DaPConvertitore.exe,0", icona);
+        Assert.Equal(0, radice.GetFlags(out var flags));
+        Assert.Equal(1u, flags & 1u); // ECF_HASSUBCOMMANDS
+        Assert.Equal(0, radice.GetState(null, false, out var senza));
+        Assert.Equal(0u, senza); // visibile anche quando Esplora file chiede senza selezione
 
         // un file per categoria, compresi un .tar.gz, una cartella e un'estensione che non conosce nessuno
         var prove = Path.Combine(cartella, "prove");
@@ -98,34 +102,33 @@ public class ProveMenu11
             ("film.MOV", Categoria.Video), ("foto.heic", Categoria.Immagine), ("conti.xlsx", Categoria.Foglio),
             ("backup.tar.gz", Categoria.Archivio), ("Vacanze", Categoria.Cartella), ("strano.xyz", Categoria.Altro),
         };
-        var converti = Crea(Converti);
-        Assert.Equal(0, converti.GetTitle(null, out var titoloConverti));
-        Assert.Equal("Converti al volo", titoloConverti);
         foreach (var (nome, c) in casi)
         {
             var p = Path.Combine(prove, nome);
             if (c != Categoria.Cartella) File.WriteAllText(p, "x");
             var sel = Selezione(p);
-            Assert.Equal(0, converti.GetState(sel, true, out var stato));
+            Assert.Equal(0, radice.GetState(sel, false, out var stato));
             Assert.Equal(0u, stato); // ECS_ENABLED
-            Assert.Equal(0, converti.EnumSubCommands(out var elenco));
+            // il sottomenu lo può chiedere un'altra istanza: la categoria deve arrivarci lo stesso
+            Assert.Equal(0, Crea(Converti).EnumSubCommands(out var elenco));
             var titoli = new List<string>();
             var una = new IExplorerCommand[1];
             while (elenco.Next(1, una, out var n) == 0 && n == 1)
             {
-                una[0].GetTitle(sel, out var t);
-                titoli.Add(t);
+                una[0].GetFlags(out var f);
+                titoli.Add((f & 8u) != 0 ? "———" : una[0].GetTitle(sel, out var t) == 0 ? t : "?"); // 8 = ECF_ISSEPARATOR
             }
-            Assert.Equal(Catalogo.Rapide.Where(r => r.Categoria == c).Select(r => r.Etichetta), titoli);
+            Assert.Equal(["Apri nel convertitore…", "———", .. Catalogo.Rapide.Where(r => r.Categoria == c).Select(r => r.Etichetta)], titoli);
         }
 
         // il clic scrive la lista dei file per l'app (qui l'exe non c'è, quindi il lancio fallisce: la lista resta da guardare)
         var video = Path.Combine(prove, "film.MOV");
+        radice.GetState(Selezione(video), false, out _);
         var cartellaListe = Path.Combine(Path.GetTempPath(), "DaP Convertitore");
         var prima = Directory.Exists(cartellaListe) ? Directory.GetFiles(cartellaListe, "lista-*.txt").ToHashSet() : [];
-        converti.EnumSubCommands(out var e2);
+        radice.EnumSubCommands(out var e2);
         var voce = new IExplorerCommand[1];
-        e2.Next(1, voce, out _);
+        e2.Next(1, voce, out _); // «Apri nel convertitore…»
         Assert.NotEqual(0, voce[0].Invoke(Selezione(video), IntPtr.Zero));
         var nuova = Directory.GetFiles(cartellaListe, "lista-*.txt").Single(f => !prima.Contains(f));
         Assert.Equal([video], File.ReadAllLines(nuova));

@@ -303,6 +303,12 @@ public sealed class Ponte
                 imp.Salva();
                 return true;
             }
+            case "esplora":
+                await Menu11.RiavviaEsplora();
+                return true;
+            case "classico":
+                Menu11.ClassicoOvunque = a["attivo"]?.GetValue<bool>() == true;
+                return StatoMenu11();
             case "menu11":
             {
                 var cartella = AppContext.BaseDirectory;
@@ -454,6 +460,8 @@ public sealed class Ponte
             registrato = supportato && Menu11.Registrato(),
             fidato = supportato && Menu11.Fidato(cartella),
             chiesto = imp.Menu11Chiesto,
+            windows11 = Menu11.Windows11,
+            classico = Menu11.ClassicoOvunque,
         };
     }
 

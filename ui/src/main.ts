@@ -242,9 +242,24 @@ async function attivaMenu11(b?: HTMLButtonElement) {
   if (b) { b.disabled = true; b.lastChild!.textContent = 'Aspetto Windows…'; }
   const r = await chiedi<{ stato: StatoMenu11; errore: string | null }>('menu11', { azione: 'attiva' });
   s.stato.menu11 = r.stato;
-  if (r.errore) mostraAvviso(r.errore); else dinDon();
   if (document.querySelector('.cassetto')) apriImpostazioni();
   if (s.vista === 'scegli') disegnaScegli();
+  if (r.errore) mostraAvviso(r.errore);
+  else { dinDon(); proponiRiavvio('Fatto. Esplora file legge il menu solo quando parte: riavvialo e trovi «DaP Convertitore» nel tasto destro.'); }
+}
+
+/** Esplora file va riavviato perché veda il menu nuovo (o il classico): lo si chiede, non lo si fa di nascosto. */
+function proponiRiavvio(testo: string) {
+  document.querySelector('.velo.riavvio')?.remove();
+  const velo = h('div.velo.riavvio', { onclick: (e: Event) => { if (e.target === velo) velo.remove(); } });
+  velo.append(h('div.cassetto.piccolo', null,
+    h('div.confronto-testa', null, h('b', null, 'RIAVVIA ESPLORA FILE'), h('span')),
+    h('p.spiega', null, testo),
+    h('p.spiega.piccolo', null, 'La barra delle applicazioni sparisce un secondo e le cartelle aperte si chiudono. I file non si toccano.'),
+    h('div.invito-tasti', null,
+      h('button.tasto.su', { onclick: async () => { clac(true); velo.remove(); await chiedi('esplora'); } }, h('i.led.verde'), 'Riavvia adesso'),
+      h('button.tasto', { onclick: () => { clac(); velo.remove(); } }, 'Più tardi'))));
+  document.body.append(velo);
 }
 
 function rigaMotore(cosa: string, chi: string) {
@@ -803,7 +818,7 @@ function rigaMenu11(): HTMLElement | null {
   const m = s.stato.menu11;
   if (!m?.supportato) return null;
   const testo = m.registrato
-    ? 'Attivo: «DaP Convertitore» e «Converti al volo» stanno nel tasto destro principale. Sulle versioni più nuove di Windows 11 possono stare sotto «Estensioni app»: da Impostazioni → Personalizzazione → Menu contestuale le porti in cima.'
+    ? 'Attivo: «DaP Convertitore ›» sta nel tasto destro principale, con «Apri nel convertitore…» in cima e sotto le conversioni al volo. Se non lo vedi, riavvia Esplora file qui sotto. Sulle versioni più nuove di Windows 11 può stare dentro «Estensioni app»: da Impostazioni → Personalizzazione → Menu contestuale lo porti in cima.'
     : m.fidato
       ? 'Il permesso c\'è già: un clic e la voce va nel tasto destro principale.'
       : 'La voce nel tasto destro principale, senza «Mostra altre opzioni». Windows chiede il permesso una volta sola: serve a fidarsi del certificato di DaProd.';
@@ -832,8 +847,19 @@ function apriImpostazioni() {
     riga('La scritta nel nome', 'Foto.jpg diventa «Foto (convertito).webp». Puoi cambiarla.', scritta),
     riga('L\'originale nel Cestino', 'Quando il convertito ne prende il posto (MOV → MP4, PNG → JPG…) l\'originale va nel Cestino: se ti serve lo ripeschi. Non succede quando ne tiri fuori un pezzo (l\'audio, il testo, le pagine) né su chiavette e dischi di rete.',
       leva(imp.cestino, (v) => { salva({ cestino: v }); disegnaPiede(); })),
+    h('div.imp-sezione', null, 'TASTO DESTRO'),
     rigaMenu11(),
+    s.stato.menu11?.windows11
+      ? riga('Menu classico ovunque', 'Il tasto destro apre subito il menu di Windows 10, con tutte le voci a un clic e senza «Mostra altre opzioni». Spegnilo per tornare al menu di Windows 11.',
+          leva(s.stato.menu11.classico, async (v) => {
+            s.stato.menu11 = await chiedi<StatoMenu11>('classico', { attivo: v });
+            proponiRiavvio(v ? 'Il menu classico arriva quando riparte Esplora file.' : 'Il menu di Windows 11 torna quando riparte Esplora file.');
+          }))
+      : null,
     riga('Nel menu classico', 'La voce DaP Convertitore anche nel menu di prima: «Mostra altre opzioni» o Maiusc + tasto destro, e «Invia a».', leva(imp.menu, (v) => { salva({ menu: v }); void chiedi('menu', { attivo: v }); })),
+    riga('Riavvia Esplora file', 'Esplora file legge le voci del tasto destro solo quando parte: se una voce non compare, di solito basta questo.',
+      h('button.tasto', { onclick: () => { clac(); proponiRiavvio('Esplora file si spegne e si riaccende subito.'); } }, 'Riavvia')),
+    h('div.imp-sezione', null, 'ALTRO'),
     riga('Spingi al massimo', 'FFmpeg a priorità normale: un po\' più veloce, ma mentre converte il PC si sente.', leva(imp.alMassimo, (v) => salva({ alMassimo: v }))),
     riga('Suoni', 'Il clac dei tasti e il din-don alla fine.', leva(imp.suoni, (v) => { salva({ suoni: v }); accendiSuoni(v); })),
     riga('Apri la cartella alla fine', 'Quando ha finito, apre Esplora file col file convertito già selezionato.', leva(imp.apriCartella, (v) => salva({ apriCartella: v }))),

@@ -43,12 +43,16 @@ Per toglierlo: *Impostazioni → App → DaP Convertitore → Disinstalla*, e la
 
 ## Come si usa
 
-**Tasto destro** su uno o più file. Nel menu di Windows 11 ci sono due voci:
+**Tasto destro** su uno o più file → **DaP Convertitore ›**:
 
-- **DaP Convertitore** apre la piastra coi file scelti, con tutte le regolazioni;
-- **Converti al volo ›** ha le conversioni rapide del tipo di file (MP4, Metà peso, Solo l'audio, JPG, Pagine in
-  JPG, Estrai qui…): partono subito in una finestrella in basso a destra con le bobine che girano, e alla fine
-  arriva la notifica di Windows con **Apri** e **Mostra nella cartella**.
+- in cima **Apri nel convertitore…** apre la piastra coi file scelti, con tutte le regolazioni;
+- sotto ci sono le conversioni al volo del tipo di file (MP4, Metà peso, Solo l'audio, JPG, Pagine in JPG,
+  Estrai qui…): partono subito in una finestrella in basso a destra con le bobine che girano, e alla fine arriva
+  la notifica di Windows con **Apri** e **Mostra nella cartella**.
+
+Preferisci il menu di Windows 10, tutto a un clic? *Impostazioni → Tasto destro → Menu classico ovunque*
+(e lo stesso interruttore lo rimette com'era). Lì c'è anche **Riavvia Esplora file**, che serve quando una voce
+non compare: Esplora file legge il menu solo quando parte.
 
 > **Il tasto destro nuovo di Windows 11** vuole un comando firmato: alla prima apertura il convertitore propone
 > **Attiva**, e Windows chiede il permesso **una volta sola** (serve a fidarsi del certificato di DaProd; dopo,

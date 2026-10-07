@@ -112,7 +112,7 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
         file: modo === 'rapido' ? [esempi[0]] : esempi,
         lavori: [],
         office: { libreOffice: true, word: false },
-        menu11: { supportato: true, registrato: false, fidato: false, chiesto: false },
+        menu11: { supportato: true, registrato: false, fidato: false, chiesto: false, windows11: true, classico: false },
       } satisfies Stato;
     }
     case 'piano': {

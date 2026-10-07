@@ -2,6 +2,21 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.0.3 — 8 ottobre 2026
+
+- **Un comando solo nel tasto destro di Windows 11**, come fa VS Code: **DaP Convertitore ›**, e dentro
+  **Apri nel convertitore…** in cima e sotto, dopo una linea, le conversioni al volo del tipo di file. Con due
+  comandi separati il menu nuovo non li mostrava.
+- Il sottomenu non resta più vuoto quando Esplora file chiede lo stato a un'istanza del comando e le voci a
+  un'altra.
+- **Impostazioni → Tasto destro**, tutto in un posto:
+  - **Menu classico ovunque**: il tasto destro apre subito il menu di Windows 10, tutte le voci a un clic.
+    Spegnendolo si torna al menu di Windows 11.
+  - **Riavvia Esplora file**: Esplora file legge le voci del menu solo quando parte. Dopo «Attiva» (e dopo il
+    menu classico) il convertitore propone da solo di riavviarlo.
+- Un diario per capire cosa chiede Esplora file al menu: si accende mettendo un file `menu.debug` accanto
+  all'app, scrive in `%TEMP%\DaP Convertitore\menu-diario.txt`.
+
 ## 1.0.2 — 7 ottobre 2026
 
 - **Nel tasto destro di Windows 11**, quello nuovo, senza passare da «Mostra altre opzioni»: in cima

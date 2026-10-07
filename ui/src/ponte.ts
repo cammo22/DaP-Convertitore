@@ -143,6 +143,9 @@ export interface StatoMenu11 {
   fidato: boolean;
   /** L'invito è già stato mostrato. */
   chiesto: boolean;
+  windows11: boolean;
+  /** Il tasto destro apre subito il menu classico (come Windows 10). */
+  classico: boolean;
 }
 
 export interface OpzioniVideo {

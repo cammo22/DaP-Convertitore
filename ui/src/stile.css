@@ -413,6 +413,10 @@ input[type='range'] { -webkit-appearance: none; appearance: none; background: tr
 .imp-riga p { margin: 2px 0 0; color: var(--testo2); font-size: 13px; line-height: 1.35; }
 .campo { height: 34px; width: 170px; padding: 0 10px; border-radius: 8px; background: #0b0a0f; border: 1px solid var(--bordo-forte); color: var(--oro); font: 700 14px var(--ui); outline: none; user-select: text; }
 .campo:focus { border-color: var(--oro); }
+.imp-sezione { font: 700 10.5px var(--marchio); letter-spacing: 0.22em; color: var(--oro); padding: 14px 0 2px; }
+.cassetto { max-height: calc(100vh - 52px); overflow-y: auto; }
+.cassetto.piccolo { width: min(460px, 100%); gap: 10px; }
+.cassetto.piccolo .invito-tasti { justify-content: flex-end; margin-top: 6px; }
 .imp-piede { display: flex; gap: 14px; align-items: center; padding-top: 12px; color: var(--testo3); font-size: 13px; }
 .imp-piede span { flex: 1; }
 
