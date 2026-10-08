@@ -10,6 +10,8 @@ Video, audio, foto, PDF, documenti, archivi: qualsiasi file, nel formato che vuo
 Il risultato compare accanto all'originale, col nome `(convertito)`.
 Usa la scheda video (NVIDIA, AMD, Intel) quando c'è, la CPU quando serve. Tutto sul tuo PC.
 
+E per **guardarli**: un lettore leggero per qualsiasi file, con una pagina fatta apposta per ogni tipo.
+
 [![versione](https://img.shields.io/github/v/release/cammo22/DaP-Convertitore?label=versione&color=ffd54a&labelColor=1a1428)](https://github.com/cammo22/DaP-Convertitore/releases/latest)
 [![Windows](https://img.shields.io/badge/Windows-10%20·%2011-35e8ff?labelColor=1a1428)](#requisiti)
 [![NVENC](https://img.shields.io/badge/NVIDIA-NVENC%20·%20AV1-5dffb4?labelColor=1a1428)](#la-scheda-video)
@@ -33,7 +35,7 @@ Usa la scheda video (NVIDIA, AMD, Intel) quando c'è, la CPU quando serve. Tutto
 
 1. Scarica **[DaPConvertitore-win-Setup.exe](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe)**.
 2. Doppio clic. Si installa da solo per il tuo utente, **senza chiedere la password di amministratore**, e
-   mette la voce nel tasto destro.
+   mette la voce nel tasto destro e il lettore in «Apri con».
    Se Windows SmartScreen avvisa (l'app non è firmata): *Ulteriori informazioni → Esegui comunque*.
 3. Fine. Gli aggiornamenti arrivano da soli: si scarica solo la differenza.
 
@@ -69,11 +71,12 @@ file in ordine di nome, come li vedi in Esplora file.
 `(convertito 2)`. Non si sovrascrive mai niente, e se annulli non resta un file a metà. La parola fra
 parentesi si cambia nelle impostazioni.
 
-**L'originale nel Cestino**: quando il convertito ne prende il posto (MOV → MP4, PNG → JPG, DOCX → PDF…),
-a conversione riuscita l'originale va nel **Cestino di Windows**: se ti serve lo ripeschi. È acceso di
-partenza e si spegne in Impostazioni. Non succede quando ne tiri fuori un pezzo (l'audio di un video, il testo
-di un PDF, le pagine in JPG), quando unisci più file, né su chiavette e dischi di rete, dove Windows il Cestino
-non ce l'ha. La piastra lo dice prima di premere CONVERTI.
+**L'originale nel Cestino**: l'originale resta dov'è. Se non ti serve più, accanto al risultato c'è il
+**cestino**: il primo clic chiede «sicuro?», il secondo lo manda nel **Cestino di Windows** (da dove lo ripeschi).
+Con più file c'è **ORIGINALI NEL CESTINO** per tutti insieme. Se preferisci che lo faccia da solo:
+*Impostazioni → L'originale nel Cestino da solo* (vale quando il convertito ne prende il posto: MOV → MP4,
+PNG → JPG, DOCX → PDF…; mai quando ne tiri fuori un pezzo, l'audio, il testo, le pagine). Su chiavette e dischi
+di rete Windows il Cestino non ce l'ha: lì l'originale resta, e la piastra dice perché.
 
 | La piastra mentre lavora | Fatto: quanto pesava, quanto pesa |
 | --- | --- |
@@ -82,6 +85,50 @@ non ce l'ha. La piastra lo dice prima di premere CONVERTI.
 | Prima e dopo, col divisore da trascinare | La finestrella del menu rapido |
 | --- | --- |
 | ![Confronto](risorse/schermate/confronto.png) | ![Rapido](risorse/schermate/rapido.png) |
+
+## Il lettore
+
+Doppio clic su un file (o *Apri con → DaP Convertitore*, o l'**occhio** accanto a un file nella piastra) e si
+apre il lettore: nero, senza cornice, leggero. Ogni tipo di file ha la sua pagina.
+
+| | |
+| --- | --- |
+| ![Il cinema](risorse/schermate/lettore-video.png) | ![Il giradischi](risorse/schermate/lettore-musica.png) |
+| ![Il tavolo luminoso](risorse/schermate/lettore-foto.png) | ![Il codice](risorse/schermate/lettore-codice.png) |
+
+- **Video · il cinema.** I comandi di vetro spariscono quando guardi, la luce del video si allarga intorno
+  (come le TV con l'ambilight, B la spegne). **Riprende da dove eri rimasto**, alla fine propone l'episodio dopo
+  della cartella, sottotitoli dentro il video o accanto (`Film.srt`, `Film.it.srt`), tracce audio, velocità,
+  un fotogramma alla volta, **S salva il fotogramma in PNG**, la finestrella sempre sopra. Quello che WebView2 non
+  suona da sé (AVI, WMV, MKV con dentro codec strani, AC3…) lo **traduce FFmpeg al volo** con la scheda video,
+  e si scorre lo stesso dove vuoi. HEVC e 4K vanno col decoder della scheda.
+- **Musica · il giradischi.** Il disco gira con la copertina come etichetta, il braccio avanza col brano, la
+  **forma d'onda** si scorre col mouse, sotto balla l'**analizzatore di spettro**; la scaletta della cartella, un
+  brano dopo l'altro. WMA, APE, ALAC e compagnia diventano FLAC in cache, senza perdere niente.
+- **Foto · il tavolo luminoso.** La rotella zooma dove c'è il mouse, si trascina, doppio clic per il 100%, la
+  mappa in basso quando sei dentro. ← → passano alla foto dopo (già pronta), **S presentazione**, R gira,
+  B sfondo scuro/scacchi/chiaro, Ctrl+C copia l'immagine, W la mette come sfondo del desktop. In *Proprietà* i
+  dati dello scatto (fotocamera, obiettivo, f/, tempo, ISO, posizione) e l'**istogramma**. HEIC, RAW, TIFF, PSD
+  passano dal motore di Windows.
+- **PDF · la scrivania.** I fogli con la loro ombra, le miniature a lato, il numero di pagina sul display a sette
+  segmenti; le pagine le disegna Windows alla risoluzione vera dello schermo, più nitide quando zoomi.
+- **Documenti.** Word si legge subito da sé (titoli, grassetti, tabelle, foto); con Office o LibreOffice c'è
+  l'**impaginato vero**. Le presentazioni impaginate, o diapositiva per diapositiva coi testi.
+- **Fogli** (Excel, CSV, ODS) come in un foglio di calcolo, con le linguette dei fogli e il filtro; **codice** e
+  testi coi colori e i numeri di riga anche da centomila righe, **Markdown** impaginato con l'indice, **JSON** ad
+  albero, **pagine web** senza far girare i loro script, **sottotitoli** battuta per battuta.
+- **Archivi** (ZIP, 7Z, RAR, ISO…) si guardano dentro senza estrarli, con **Estrai qui**; **caratteri** (TTF,
+  OTF, WOFF) col campionario e **Installa** solo per te; **modelli 3D** (GLB, GLTF, STL, OBJ, PLY, 3MF) che girano
+  su un piano; tutto il resto **byte per byte**, con la firma del file e l'impronta SHA-256.
+
+Sempre: **Pag ↑ / Pag ↓** il file prima e dopo, **F11** schermo intero, **I** proprietà, **Canc** nel Cestino,
+**Ctrl+E** lo apre nel convertitore, **?** tutti i tasti della pagina in cui sei. Trascina un file nella
+finestra e lo apre.
+
+**Al posto di Foto e Lettore multimediale.** Il lettore si mette in *Apri con* di Windows per tutti i tipi che
+conosce, senza prendersi niente da solo. Per aprire col doppio clic: *Impostazioni → App predefinite* nel
+convertitore porta dritto alla pagina di Windows, dove scegli tu tipo per tipo (o *Apri con → Scegli un'altra
+app → Sempre*).
 
 ## Lo slider del peso
 
@@ -161,7 +208,8 @@ Per documenti, fogli e presentazioni serve **[LibreOffice](https://it.libreoffic
 | Motore | `src/DaPConvertitore.Motore`: catalogo dei formati, piano del video, coda dei lavori, un motore per famiglia |
 | Video e audio | **FFmpeg 9.0** con NVENC/AMF/Quick Sync, x264, x265, SVT-AV1, libvpx, libaom, LAME, Opus |
 | Windows | WIC (HEIC, RAW, orientamento), Windows.Data.Pdf, Windows.Media.Ocr, `tar.exe`, contatori "GPU Engine", notifiche, barra delle applicazioni |
-| Tasto destro di Windows 11 | `menu/DaPMenu.cpp`: due comandi **IExplorerCommand** in una DLL nativa (compilata con **Zig**, niente Visual Studio), registrati da un pacchetto MSIX **sparse** (`menu/AppxManifest.xml`, solo manifest e icone) firmato col certificato di DaProd; le voci la DLL le legge da `menu.tsv`, che l'app scrive dal Catalogo |
+| Lettore | una finestra WPF per volta con la sua pagina (`ui/lettore.html`, una vista per tipo caricata solo quando serve); i file arrivano da `https://dap.file/`, che non esiste in rete: risponde l'app (`Risorse.cs`), a pezzi come vuole il tag `<video>`, e solo per i file aperti. Il video che WebView2 non suona lo traduce FFmpeg in MP4 a frammenti messi in fila nel **Media Source** della pagina; il 3D con **three.js** |
+| Tasto destro di Windows 11 | `menu/DaPMenu.cpp`: un comando **IExplorerCommand** col sottomenu, in una DLL nativa (compilata con **Zig**, niente Visual Studio), registrati da un pacchetto MSIX **sparse** (`menu/AppxManifest.xml`, solo manifest e icone) firmato col certificato di DaProd; le voci la DLL le legge da `menu.tsv`, che l'app scrive dal Catalogo |
 | Menu classico | registro in HKCU (`SystemFileAssociations\.ext\shell` + sottomenu `ExtendedSubCommandsKey`), protocollo `dap-convertitore:` per i bottoni delle notifiche, istanza unica con named pipe (Esplora file lancia un processo per file) |
 | Installer | **Velopack**: per utente, senza amministratore, aggiornamenti delta dalle release di GitHub |
 
@@ -186,16 +234,21 @@ sola, con le note prese dal CHANGELOG.
 li trasforma in tutti i formati. Controlla che il video col peso ci stia davvero, che AV1 e HEVC escano
 giusti, che la foto stia sotto il peso massimo, che un PDF di una pagina dia un file e non una cartella, che
 l'OCR legga, che gli archivi tengano i nomi con le accentate, che il CSV italiano dia i numeri giusti, e che
-annullare non lasci niente a metà.
+annullare non lasci niente a metà. Per il lettore: che ogni file trovi la sua pagina, che la forma d'onda segua
+la musica, che il video tradotto esca a frammenti, che Word e gli archivi si leggano senza programmi esterni.
 
 ### 📁 Dove sta cosa
 
 - `src/DaPConvertitore.Motore/` — `Catalogo.cs` (cosa si converte in cosa: lo leggono interfaccia e menu),
   `PianoVideo.cs` (il conto dello slider), `Video.cs`, `Audio.cs`, `Immagini.cs`, `Pdf.cs`, `Office.cs`,
-  `Testo.cs`, `Dati.cs`, `Sottotitoli.cs`, `Archivi.cs`, `Coda.cs`, `MenuContestuale.cs`, `Hardware.cs`, `Monitor.cs`.
-- `src/DaPConvertitore/` — l'app: `Programma.cs` (avvio, Velopack, istanza unica), `Finestra.cs`, `Ponte.cs`
-  (i messaggi con l'interfaccia), `Stampante.cs` (HTML → PDF), `Notifiche.cs`, `Aggiornamenti.cs`.
-- `ui/` — l'interfaccia. `test/` — le prove. `scripts/` — FFmpeg, compilazione, pacchetto, icona.
+  `Testo.cs`, `Dati.cs`, `Sottotitoli.cs`, `Archivi.cs`, `Coda.cs`, `MenuContestuale.cs`, `ApriCon.cs`,
+  `Hardware.cs`, `Monitor.cs`; `Lettore/` per il lettore (`Vista.cs` che pagina per che file, `Media.cs` tracce,
+  forma d'onda e flusso tradotto, `Carte.cs` PDF e Word, `Contenuti.cs` testi, tabelle, archivi, foto).
+- `src/DaPConvertitore/` — l'app: `Programma.cs` (avvio, Velopack, istanza unica), `Regia.cs` (chi apre cosa),
+  `Finestra.cs` e `Ponte.cs` (il convertitore), `FinestraLettore.cs`, `PonteLettore.cs` e `Risorse.cs` (il
+  lettore), `Stampante.cs` (HTML → PDF), `Notifiche.cs`, `Aggiornamenti.cs`.
+- `ui/` — l'interfaccia (`src/main.ts` la piastra, `src/lettore/` il lettore). `test/` — le prove.
+  `scripts/` — FFmpeg, compilazione, pacchetto, icona, foto dell'app vera (`schermo.mjs`).
 
 ---
 

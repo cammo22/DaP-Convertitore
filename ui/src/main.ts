@@ -138,6 +138,7 @@ function disegnaCoda() {
         h('div.meta', null, metaDi(f)),
         lav && lav.stato !== 'attesa' ? h(`div.mini-barra.${lav.stato}`, null, h('i', { style: { width: `${Math.round((lav.stato === 'fatto' ? 1 : Math.max(0, lav.frazione)) * 100)}%` } })) : null,
       ),
+      f.eDirectory ? null : h('button.guarda', { title: 'Guarda nel lettore', html: icone.occhio, onclick: (e: Event) => { e.stopPropagation(); clac(); void chiedi('guarda', { percorso: f.percorso }); } }),
       s.vista === 'scegli' ? h('button.togli', { title: 'Togli dalla coda', html: icone.chiudi, onclick: (e: Event) => { e.stopPropagation(); togli(id); } }) : null,
     );
     lista.append(scheda);
@@ -242,7 +243,7 @@ async function attivaMenu11(b?: HTMLButtonElement) {
   if (b) { b.disabled = true; b.lastChild!.textContent = 'Aspetto Windows…'; }
   const r = await chiedi<{ stato: StatoMenu11; errore: string | null }>('menu11', { azione: 'attiva' });
   s.stato.menu11 = r.stato;
-  if (document.querySelector('.cassetto')) apriImpostazioni();
+  if (document.querySelector('.velo.impostazioni')) apriImpostazioni();
   if (s.vista === 'scegli') disegnaScegli();
   if (r.errore) mostraAvviso(r.errore);
   else { dinDon(); proponiRiavvio('Fatto. Esplora file legge il menu solo quando parte: riavvialo e trovi «DaP Convertitore» nel tasto destro.'); }
@@ -250,7 +251,7 @@ async function attivaMenu11(b?: HTMLButtonElement) {
 
 /** Esplora file va riavviato perché veda il menu nuovo (o il classico): lo si chiede, non lo si fa di nascosto. */
 function proponiRiavvio(testo: string) {
-  document.querySelector('.velo.riavvio')?.remove();
+  document.querySelectorAll('.velo.riavvio').forEach((v) => v.remove());
   const velo = h('div.velo.riavvio', { onclick: (e: Event) => { if (e.target === velo) velo.remove(); } });
   velo.append(h('div.cassetto.piccolo', null,
     h('div.confronto-testa', null, h('b', null, 'RIAVVIA ESPLORA FILE'), h('span')),
@@ -552,13 +553,13 @@ function disegnaPiede() {
       dest = nomeUscita(s.file.get(e.ids[0])!, formato(e.formato)!);
     } else if (n > 1) dest = `${n} conversioni, ognuna accanto al suo originale`;
     // l'originale nel Cestino: si dice prima di premere, non dopo
-    const cestino = s.stato.impostazioni.cestino && elementi.some((e) => formato(e.formato)?.sostituisce);
+    const cestino = s.stato.impostazioni.cestinoDaSolo && elementi.some((e) => formato(e.formato)?.sostituisce);
     piede.replaceChildren(
       h('div.destinazione', null,
         n ? h('span.freccia', { html: icone.freccia }) : null,
         h('span.dest-nome', { title: dest }, n ? dest : 'Aggiungi qualcosa da convertire'),
         n === 1 ? h('span.dest-dove', null, 'nella stessa cartella') : null,
-        n && cestino ? h('span.dest-cestino', { title: 'Si cambia in Impostazioni' }, h('span', { html: icone.cestino }), n > 1 ? 'originali nel Cestino' : 'originale nel Cestino') : null),
+        n && cestino ? h('span.dest-cestino', { title: 'Si cambia in Impostazioni → L\'originale nel Cestino da solo' }, h('span', { html: icone.cestino }), n > 1 ? 'originali nel Cestino' : 'originale nel Cestino') : null),
       h('button.converti', { disabled: !n, onclick: () => void converti() }, h('i.led'), h('span', null, 'CONVERTI'), n > 1 ? h('small', null, String(n)) : null),
     );
   } else if (s.vista === 'lavoro') {
@@ -567,11 +568,14 @@ function disegnaPiede() {
       h('button.annulla', { onclick: () => { clac(true); void chiedi('annulla', {}); } }, h('span', { html: icone.ferma }), 'ANNULLA'),
     );
   } else {
-    piede.replaceChildren(
+    // più originali da buttare: un tasto solo per tutti (con la conferma al secondo clic)
+    const daButtare = s.giro.map((i) => s.lavori.get(i)!).filter((l) => l && l.stato === 'fatto' && !l.nelCestino && l.sorgenti.length === 1);
+    piede.replaceChildren(...[
       h('div.destinazione', null, h('span.dest-nome', null, 'Fatto. I file sono accanto agli originali.')),
+      daButtare.length > 1 ? tastoCestino('ORIGINALI NEL CESTINO', daButtare, 'secondario') : null,
       h('button.secondario', { onclick: () => { clac(); nuovoGiro(); } }, h('span', { html: icone.indietro }), 'CONVERTI ALTRO'),
       h('button.secondario', { onclick: () => chiedi('finestra', { azione: 'chiudi' }) }, 'CHIUDI'),
-    );
+    ].filter((x): x is HTMLElement => !!x));
   }
 }
 
@@ -758,11 +762,46 @@ function schedaRisultato(l: Lavoro) {
       h('div.ris-barre', null, h('i.prima'), h('i.dopo', { style: { width: `${Math.min(100, rapporto * 100)}%` } })),
     ),
     h('div.ris-azioni', null,
-      h('button.tasto-icona', { title: 'Apri', onclick: () => chiedi('apri', { percorso: l.uscita }), html: icone.apri }),
+      !l.nelCestino && l.sorgenti.length === 1 ? tastoCestino(null, [l], 'tasto-icona') : null,
+      h('button.tasto-icona', { title: 'Guarda nel lettore', onclick: () => chiedi('guarda', { percorso: l.uscita }), html: icone.occhio }),
+      h('button.tasto-icona', { title: 'Apri col programma di Windows', onclick: () => chiedi('apri', { percorso: l.uscita }), html: icone.apri }),
       h('button.tasto-icona', { title: 'Mostra nella cartella', onclick: () => chiedi('mostra', { percorso: l.uscita }), html: icone.cartella }),
       confrontabile ? h('button.tasto-icona', { title: 'Confronta prima e dopo', onclick: () => void confronta(l), html: icone.confronta }) : null,
     ),
   );
+}
+
+/**
+ * L'originale nel Cestino, a mano: il primo clic chiede «Sicuro?», il secondo lo fa. Si ripesca dal Cestino.
+ * Su chiavette e dischi di rete Windows il Cestino non ce l'ha: lì resta, e si dice perché.
+ */
+function tastoCestino(testo: string | null, lavori: Lavoro[], classe: 'tasto-icona' | 'secondario') {
+  let armato: number | undefined;
+  const b = h<HTMLButtonElement>(`button.${classe}.cestina`, { title: lavori.length > 1 ? 'Gli originali nel Cestino' : 'L\'originale nel Cestino (si ripesca da lì)' },
+    h('span', { html: icone.cestino }), testo ? h('span.t', null, testo) : null);
+  b.addEventListener('click', async () => {
+    if (!armato) {
+      clac();
+      b.classList.add('armato');
+      if (testo) (b.querySelector('.t') as HTMLElement).textContent = 'SICURO? CLICCA ANCORA';
+      else b.title = 'Clicca ancora per buttarlo nel Cestino';
+      armato = window.setTimeout(() => { armato = undefined; b.classList.remove('armato'); if (testo) (b.querySelector('.t') as HTMLElement).textContent = testo; }, 3500);
+      return;
+    }
+    clearTimeout(armato);
+    clac(true);
+    b.disabled = true;
+    const no: string[] = [];
+    for (const l of lavori) {
+      const r = await chiedi<{ ok: boolean; perche: string | null }>('cestino', { lavoro: l.id }).catch((e) => ({ ok: false, perche: (e as Error).message }));
+      if (r.ok) l.nelCestino = true;
+      else if (r.perche) no.push(r.perche);
+    }
+    if (no.length) mostraAvviso(`Rimasto dov'era: ${no[0]}`);
+    if (s.vista === 'fatto') { disegnaFatto(); disegnaPiede(); }
+    if (s.stato.modo === 'rapido') disegnaRapido();
+  });
+  return b;
 }
 
 // ——— confronto prima / dopo ———
@@ -830,9 +869,12 @@ function rigaMenu11(): HTMLElement | null {
 
 function apriImpostazioni() {
   clac();
-  document.querySelector('.cassetto')?.remove();
   const imp = s.stato.impostazioni;
-  const cassetto = h('div.velo', { onclick: (e: Event) => { if (e.target === cassetto) cassetto.remove(); } });
+  // se è già aperto si ridisegna dentro lo stesso velo: due veli uno sull'altro facevano lo schermo nero
+  const vecchio = document.querySelector('.velo.impostazioni') as HTMLElement | null;
+  const cassetto = vecchio ?? h('div.velo.impostazioni', { onclick: (e: Event) => { if (e.target === cassetto) cassetto.remove(); } });
+  const scorri = vecchio?.querySelector('.cassetto')?.scrollTop ?? 0;
+  cassetto.replaceChildren();
   const salva = (m: Partial<typeof imp>) => { Object.assign(imp, m); void chiedi('impostazioni', m); };
   const scritta = h('input.campo', { value: imp.scritta, maxlength: 40, placeholder: 'convertito' }) as HTMLInputElement;
   scritta.addEventListener('change', () => { salva({ scritta: scritta.value.trim() }); disegnaPiede(); });
@@ -845,8 +887,13 @@ function apriImpostazioni() {
   cassetto.append(h('div.cassetto', null,
     h('div.confronto-testa', null, h('b', null, 'IMPOSTAZIONI'), h('span'), h('button.btn-fin', { html: icone.chiudi, onclick: () => cassetto.remove() })),
     riga('La scritta nel nome', 'Foto.jpg diventa «Foto (convertito).webp». Puoi cambiarla.', scritta),
-    riga('L\'originale nel Cestino', 'Quando il convertito ne prende il posto (MOV → MP4, PNG → JPG…) l\'originale va nel Cestino: se ti serve lo ripeschi. Non succede quando ne tiri fuori un pezzo (l\'audio, il testo, le pagine) né su chiavette e dischi di rete.',
-      leva(imp.cestino, (v) => { salva({ cestino: v }); disegnaPiede(); })),
+    riga('L\'originale nel Cestino da solo', 'Spento: l\'originale resta, e lo butti tu col cestino accanto al risultato. Acceso: quando il convertito ne prende il posto (MOV → MP4, PNG → JPG…) l\'originale va nel Cestino da solo. Mai quando ne tiri fuori un pezzo (l\'audio, il testo, le pagine) né su chiavette e dischi di rete.',
+      leva(imp.cestinoDaSolo, (v) => { salva({ cestinoDaSolo: v }); disegnaPiede(); })),
+    h('div.imp-sezione', null, 'LETTORE'),
+    riga('Nel menu «Apri con»', 'Il lettore di DaP fra i programmi che aprono foto, video, musica, PDF, documenti, archivi, codice. Non si prende niente da solo.',
+      leva(imp.apriCon, (v) => salva({ apriCon: v }))),
+    riga('Aprire col doppio clic', 'Per farlo diventare il programma di tutti i giorni (al posto di Foto o Lettore multimediale): Windows lo fa scegliere a te, tipo per tipo.',
+      h('button.tasto', { onclick: () => { clac(); void chiedi('predefinite'); } }, 'App predefinite')),
     h('div.imp-sezione', null, 'TASTO DESTRO'),
     rigaMenu11(),
     s.stato.menu11?.windows11
@@ -874,7 +921,8 @@ function apriImpostazioni() {
         if (r.versione) b.onclick = () => chiedi('aggiorna', { installa: true });
       } }, 'Cerca aggiornamenti')),
   ));
-  document.body.append(cassetto);
+  if (!vecchio) document.body.append(cassetto);
+  else (cassetto.querySelector('.cassetto') as HTMLElement).scrollTop = scorri;
 }
 
 // ————————————————————————————————— modo rapido —————————————————————————————————
@@ -922,7 +970,8 @@ function disegnaRapido() {
             ok.some((x) => x.nelCestino) ? h('span.r-cestino', { html: icone.cestino, title: 'L\'originale è nel Cestino' }) : null)
         : h('div.r-fase.ko', null, h('span', { html: icone.attenzione }), giro[0].errore ?? 'Annullato'),
       h('div.r-azioni', null,
-        ultimo ? h('button.tasto.piccolo', { onclick: () => chiedi('apri', { percorso: ultimo.uscita }) }, 'Apri') : null,
+        ultimo ? h('button.tasto.piccolo', { onclick: () => chiedi('guarda', { percorso: ultimo.uscita }) }, 'Guarda') : null,
+        ultimo && ok.length === 1 && !ultimo.nelCestino && ultimo.sorgenti.length === 1 ? tastoCestino(null, [ultimo], 'tasto-icona') : null,
         ultimo ? h('button.tasto.piccolo', { onclick: () => chiedi('mostra', { percorso: ultimo.uscita }) }, 'Mostra nella cartella') : null,
         h('button.tasto.piccolo', { onclick: () => chiedi('finestra', { azione: 'espandi' }) }, 'Altro…')),
     );
@@ -955,7 +1004,9 @@ async function avvia() {
   ascolta('file', (f: InfoFile) => {
     if (!s.file.has(f.id)) s.ordine.push(f.id);
     s.file.set(f.id, f);
-    if (s.vista !== 'scegli' && s.stato.modo === 'finestra') return;
+    // arriva un file nuovo (dal lettore, dal tasto destro) mentre la piastra dice «FATTO»: si riparte con lui
+    if (s.vista === 'fatto' && s.stato.modo === 'finestra') { s.attiva = f.categoria; s.fileAttivo = f.id; nuovoGiro(); return; }
+    if (s.vista !== 'scegli' && s.stato.modo === 'finestra') { disegnaCoda(); return; }
     if (!s.attiva) s.attiva = f.categoria;
     disegnaTutto();
   });
@@ -980,6 +1031,7 @@ async function avvia() {
     }
     if (!s.giro.includes(l.id) && s.vista !== 'scegli') s.giro.push(l.id);
     if (s.vista === 'lavoro') aggiornaLavoro();
+    else if (s.vista === 'fatto' && s.giro.includes(l.id)) { disegnaFatto(); disegnaPiede(); }
   });
   ascolta('aggiornamento', (a: { versione: string }) => { s.aggiornamento = a.versione; if (s.stato.modo === 'finestra') disegnaTesta(); });
   ascolta('hardware', (hw) => {
@@ -1024,7 +1076,8 @@ async function avvia() {
     if (w?.postMessageWithAdditionalObjects && e.dataTransfer?.files.length) w.postMessageWithAdditionalObjects({ cmd: 'lasciati' }, e.dataTransfer.files);
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') document.querySelector('.velo')?.remove();
+    // Esc chiude quello sopra (il velo più in alto), non quello sotto
+    if (e.key === 'Escape') [...document.querySelectorAll('.velo')].pop()?.remove();
     if (e.key === 'Enter' && s.vista === 'scegli' && !document.querySelector('.velo') && !(e.target instanceof HTMLInputElement)) void converti();
   });
   void chiedi('pronto');

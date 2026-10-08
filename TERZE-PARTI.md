@@ -12,6 +12,7 @@ sua licenza.
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | leggere e scrivere Excel | Apache 2.0 | |
 | [Velopack](https://github.com/velopack/velopack) | installazione e aggiornamenti | MIT | |
 | [Microsoft WebView2](https://developer.microsoft.com/microsoft-edge/webview2/) | l'interfaccia | licenza Microsoft (redistribuibile) | |
+| [three.js](https://threejs.org) | i modelli 3D nel lettore | MIT | |
 | [Orbitron](https://fonts.google.com/specimen/Orbitron), [Rajdhani](https://fonts.google.com/specimen/Rajdhani) | caratteri | SIL OFL 1.1 | |
 | [DSEG7](https://github.com/keshikan/DSEG) | i numeri a sette segmenti | SIL OFL 1.1 | `ui\src\font\DSEG-LICENSE.txt` |
 | libc++ e runtime mingw-w64 (dentro `DaPConvertitore.Menu.dll`, compilata con [Zig](https://ziglang.org)) | il menu di Windows 11 | Apache 2.0 con eccezione LLVM · licenze permissive mingw-w64 | |

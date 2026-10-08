@@ -66,7 +66,10 @@ export interface Impostazioni {
   alMassimo: boolean;
   suoni: boolean;
   apriCartella: boolean;
-  cestino: boolean;
+  /** L'originale va nel Cestino da solo a fine conversione (di partenza no: c'è il tasto accanto al risultato). */
+  cestinoDaSolo: boolean;
+  /** Il lettore in «Apri con» di Windows. */
+  apriCon: boolean;
   menu11Chiesto: boolean;
   formati: Record<string, string>;
   scelte?: Record<string, unknown> | null;

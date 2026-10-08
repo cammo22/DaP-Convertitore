@@ -15,8 +15,13 @@ public sealed class Impostazioni
     public bool Suoni { get; set; } = true;
     /// <summary>Alla fine apre la cartella con il file selezionato.</summary>
     public bool ApriCartella { get; set; }
-    /// <summary>A conversione riuscita l'originale va nel Cestino (lo ha chiesto Cammo: di partenza è acceso).</summary>
-    public bool Cestino { get; set; } = true;
+    /// <summary>
+    /// A conversione riuscita l'originale va nel Cestino da solo. Di partenza è spento: l'originale si butta col tasto
+    /// accanto al risultato. Il nome è nuovo apposta: la 1.0.2 salvava "cestino" acceso, qui si riparte da spento.
+    /// </summary>
+    public bool CestinoDaSolo { get; set; }
+    /// <summary>"Apri con" di Windows: il lettore fra le app che aprono foto, video, musica, PDF…</summary>
+    public bool ApriCon { get; set; } = true;
     /// <summary>L'invito a mettere il convertitore nel menu di Windows 11 è già stato mostrato (e chiuso).</summary>
     public bool Menu11Chiesto { get; set; }
     /// <summary>L'ultimo formato scelto per ogni categoria ("video" → "video.mp4").</summary>
@@ -24,7 +29,15 @@ public sealed class Impostazioni
     /// <summary>Le ultime scelte dell'interfaccia (codec, qualità, motore…), tali e quali.</summary>
     public JsonObject? Scelte { get; set; }
 
+    /// <summary>Dove stava il lettore l'ultima volta: sinistra, alto, larghezza, altezza.</summary>
+    public double[]? Lettore { get; set; }
+    public bool LettoreGrande { get; set; }
+
     static string Percorso => Path.Combine(Strumenti.CartellaDati, "impostazioni.json");
+
+    static Impostazioni? comune;
+    /// <summary>Le stesse per tutte le finestre dell'app: chi salva non cancella quello che ha cambiato un'altra.</summary>
+    public static Impostazioni Comune => comune ??= Carica();
 
     public static Impostazioni Carica()
     {

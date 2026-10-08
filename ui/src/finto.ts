@@ -107,7 +107,7 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
           encoder: ['h264_nvenc', 'hevc_nvenc', 'av1_nvenc', 'libx264', 'libx265', 'libsvtav1'], acceleratore: 'RTX 4060 · NVENC' },
         formati,
         categorie: [{ id: 'video', nome: 'Video' }, { id: 'audio', nome: 'Audio' }, { id: 'immagine', nome: 'Immagini' }, { id: 'pdf', nome: 'PDF' }, { id: 'documento', nome: 'Documenti' }, { id: 'archivio', nome: 'Archivi' }],
-        impostazioni: { scritta: 'convertito', menu: true, alMassimo: false, suoni: true, apriCartella: false, cestino: true, menu11Chiesto: false, formati: {} },
+        impostazioni: { scritta: 'convertito', menu: true, alMassimo: false, suoni: true, apriCartella: false, cestinoDaSolo: false, apriCon: true, menu11Chiesto: false, formati: {} },
         modo,
         file: modo === 'rapido' ? [esempi[0]] : esempi,
         lavori: [],

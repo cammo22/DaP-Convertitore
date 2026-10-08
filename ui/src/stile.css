@@ -452,3 +452,20 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
   .quadro { grid-template-columns: 1fr; }
   .piastra { grid-template-columns: 1fr; }
 }
+
+/* ——— 1.1: un velo sopra l'altro non fa più buio (il secondo è trasparente) ——— */
+.velo ~ .velo { background: rgba(5, 4, 8, 0.3); backdrop-filter: none; }
+
+/* il lettore dalla coda: l'occhio accanto alla x */
+.scheda .guarda { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--testo3); opacity: 0; transition: opacity 0.15s; }
+.scheda .guarda svg { width: 15px; height: 15px; }
+.scheda:hover .guarda { opacity: 1; }
+.scheda .guarda:hover { background: rgba(53, 232, 255, 0.12); color: var(--cia); }
+
+/* l'originale nel Cestino, a mano: al primo clic diventa rosso e chiede conferma */
+.cestina { transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.tasto-icona.cestina:hover, .secondario.cestina:hover { color: var(--rosso); }
+.cestina.armato { color: #fff !important; background: linear-gradient(180deg, #ff6d86, #d8264a) !important; border-color: #9d1530 !important; animation: trema 0.35s; }
+.secondario.cestina span svg { width: 15px; height: 15px; }
+@keyframes trema { 20%, 60% { transform: translateX(-2px); } 40%, 80% { transform: translateX(2px); } }
+.r-azioni .tasto-icona { width: 30px; height: 28px; border-radius: 7px; }

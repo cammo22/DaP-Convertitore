@@ -23,6 +23,7 @@ export const icone = {
   chip: i('<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>'),
   aggiungi: i('<path d="M12 5v14M5 12h14"/>'),
   menu: i('<path d="M4 7h16M4 12h16M4 17h10"/>'),
+  occhio: i('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
 };
 
 export const iconaCategoria: Record<string, string> = {

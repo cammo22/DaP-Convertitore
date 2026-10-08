@@ -2,6 +2,38 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.1.0 — 8 ottobre 2026
+
+- **Il lettore**: DaP Convertitore adesso guarda anche, qualsiasi file. Doppio clic (o *Apri con → DaP
+  Convertitore*, o l'occhio accanto a un file nella piastra) e si apre una finestra nera e leggera con una pagina
+  fatta per quel tipo di file:
+  - **video** nel cinema: comandi che spariscono, la luce intorno, riprende da dove eri, l'episodio dopo,
+    sottotitoli (dentro o accanto), tracce audio, velocità, fotogramma per fotogramma, S salva il fotogramma in PNG.
+    AVI, WMV e i codec che WebView2 non conosce li traduce FFmpeg al volo con la scheda video, e si scorrono lo
+    stesso;
+  - **musica** sul giradischi: copertina sul disco, braccio che avanza, forma d'onda da scorrere, analizzatore di
+    spettro, scaletta della cartella, un brano dopo l'altro. WMA, APE, ALAC passano in FLAC;
+  - **foto** sul tavolo luminoso: zoom col mouse, trascina, doppio clic al 100%, frecce per la dopo, presentazione,
+    gira, copia, sfondo del desktop, dati dello scatto e istogramma. HEIC, RAW, TIFF, PSD compresi;
+  - **PDF** sulla scrivania, **Word** letto da sé (o impaginato con Office/LibreOffice), **presentazioni**, **fogli**
+    Excel/CSV, **codice** coi colori, **Markdown**, **JSON** ad albero, **pagine web**, **sottotitoli**, **archivi**
+    senza estrarli (con «Estrai qui»), **caratteri** con «Installa», **modelli 3D** (GLB, STL, OBJ…), e tutto il
+    resto byte per byte;
+  - tasti rapidi ovunque (premi **?**), Pag su/giù per il file prima e dopo, F11 schermo intero, Canc nel Cestino,
+    Ctrl+E nel convertitore.
+- Il lettore si mette in **«Apri con»** di Windows per tutti i tipi che conosce, senza prendersi niente da solo.
+  Per farlo diventare quello del doppio clic, al posto di Foto e Lettore multimediale: *Impostazioni → App
+  predefinite*, e scegli tu.
+- **L'originale non va più nel Cestino da solo**: accanto al risultato c'è il cestino (primo clic «sicuro?»,
+  secondo clic lo sposta), anche nella finestrella del menu rapido; con più file «ORIGINALI NEL CESTINO». Chi lo
+  vuole automatico lo riaccende in *Impostazioni → L'originale nel Cestino da solo*.
+- **Sistemato lo schermo nero delle impostazioni**: dopo «Attiva», «Togli» o «Riavvia» restava un velo scuro sotto
+  l'altro, e ci volevano più clic per tornare alla piastra. Ora il velo è uno, il secondo non scurisce, Esc chiude
+  quello sopra.
+- I colori per categoria (ciano le foto, magenta i video, verde l'audio…) adesso si vedono davvero: prima era
+  tutto oro per un errore nel modo di passarli.
+- Se arriva un file nuovo mentre la piastra dice «FATTO», riparte da sola con quello.
+
 ## 1.0.3 — 8 ottobre 2026
 
 - **Un comando solo nel tasto destro di Windows 11**, come fa VS Code: **DaP Convertitore ›**, e dentro

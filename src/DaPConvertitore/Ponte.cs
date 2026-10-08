@@ -19,7 +19,7 @@ public sealed class Ponte
     readonly WebView2 vista;
     readonly Strumenti strumenti = Strumenti.Trova();
     readonly Analisi analisi;
-    readonly Impostazioni imp = Impostazioni.Carica();
+    readonly Impostazioni imp = Impostazioni.Comune;
     readonly ConcurrentDictionary<string, VoceFile> file = new();
     readonly List<string> ordine = [];
     readonly SemaphoreSlim anteprime = new(3);
@@ -52,7 +52,7 @@ public sealed class Ponte
         analisi = new Analisi(strumenti);
         Processi.Priorita = imp.AlMassimo ? ProcessPriorityClass.Normal : ProcessPriorityClass.BelowNormal;
         rilevazione = Task.Run(() => Hardware.Rileva(strumenti));
-        Coda = new Coda(strumenti, () => hardware ?? rilevazione.GetAwaiter().GetResult(), () => new StampanteInAttesa(stampante.Task), imp.ScrittaPulita, () => imp.Cestino);
+        Coda = new Coda(strumenti, () => hardware ?? rilevazione.GetAwaiter().GetResult(), () => new StampanteInAttesa(stampante.Task), imp.ScrittaPulita, () => imp.CestinoDaSolo);
         Coda.Cambiato += l => finestra.Dispatcher.BeginInvoke(() => LavoroCambiato(l));
         timerRapide = new DispatcherTimer(TimeSpan.FromMilliseconds(450), DispatcherPriority.Normal, (_, _) => PartonoRapide(), finestra.Dispatcher) { IsEnabled = false };
         timerCarico = new DispatcherTimer(TimeSpan.FromMilliseconds(700), DispatcherPriority.Background, (_, _) => Carico(), finestra.Dispatcher) { IsEnabled = false };
@@ -73,7 +73,6 @@ public sealed class Ponte
     {
         timerCarico.Stop();
         monitor?.Dispose();
-        Aggiornamenti.AllaChiusura();
     }
 
     string? versioneNuova;
@@ -195,7 +194,7 @@ public sealed class Ponte
                 if (!pronta)
                     _ = Task.Run(async () =>
                     {
-                        versioneNuova = await Aggiornamenti.Prepara();
+                        versioneNuova = await Aggiornamenti.PreparaUnaVolta();
                         if (versioneNuova is not null) Manda("aggiornamento", new { versione = versioneNuova });
                     });
                 pronta = true;
@@ -297,12 +296,33 @@ public sealed class Ponte
                 if (a["alMassimo"] is { } am) { imp.AlMassimo = am.GetValue<bool>(); Processi.Priorita = imp.AlMassimo ? ProcessPriorityClass.Normal : ProcessPriorityClass.BelowNormal; }
                 if (a["suoni"] is { } su) imp.Suoni = su.GetValue<bool>();
                 if (a["apriCartella"] is { } ac) imp.ApriCartella = ac.GetValue<bool>();
-                if (a["cestino"] is { } ce) imp.Cestino = ce.GetValue<bool>();
+                if (a["cestinoDaSolo"] is { } ce) imp.CestinoDaSolo = ce.GetValue<bool>();
+                if (a["apriCon"] is { } ap)
+                {
+                    imp.ApriCon = ap.GetValue<bool>();
+                    if (imp.ApriCon) ApriCon.Registra(Environment.ProcessPath!); else ApriCon.Rimuovi();
+                }
                 if (a["formati"] is JsonObject fo) imp.Formati = fo.ToDictionary(kv => kv.Key, kv => (string?)kv.Value ?? "");
                 if (a["scelte"] is JsonObject sc) imp.Scelte = (JsonObject)sc.DeepClone();
                 imp.Salva();
                 return true;
             }
+            case "cestino":
+            {
+                // il tasto accanto al risultato: l'originale nel Cestino, solo quando lo chiedi
+                var perche = Coda.OriginaleNelCestino((string?)a["lavoro"] ?? "");
+                return new { ok = perche is null, perche };
+            }
+            case "guarda":
+            {
+                var p = (string?)a["percorso"];
+                if (p is not null && File.Exists(p)) Regia.ApriNelLettore(p);
+                return true;
+            }
+            case "predefinite":
+                // Impostazioni → App predefinite, già sulla pagina del convertitore
+                Process.Start(new ProcessStartInfo($"ms-settings:defaultapps?registeredAppUser={Uri.EscapeDataString(ApriCon.NomeApp)}") { UseShellExecute = true });
+                return true;
             case "esplora":
                 await Menu11.RiavviaEsplora();
                 return true;

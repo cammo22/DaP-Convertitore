@@ -1,10 +1,8 @@
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shell;
-using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 
 namespace DaP.Convertitore.App;
@@ -16,7 +14,6 @@ namespace DaP.Convertitore.App;
 /// </summary>
 public sealed class Finestra : Window
 {
-    public const string Host = "dap.locale";
     readonly WebView2 vista = new();
     public Ponte Ponte { get; }
     public string Modo { get; private set; }
@@ -46,7 +43,7 @@ public sealed class Finestra : Window
         // i file di chi ci ha lanciato entrano subito, prima di quelli che arrivano dagli altri processi
         Ponte.Gestisci(prima);
 
-        SourceInitialized += (_, _) => Windows11();
+        SourceInitialized += (_, _) => Ambiente.Windows11(Maniglia);
         Loaded += async (_, _) => await Avvia();
         Closing += async (_, e) =>
         {
@@ -64,25 +61,11 @@ public sealed class Finestra : Window
     {
         try
         {
-            var dati = Path.Combine(Strumenti.CartellaDati, "webview");
-            var env = await CoreWebView2Environment.CreateAsync(null, dati, new CoreWebView2EnvironmentOptions { Language = "it-IT" });
+            var env = await Ambiente.Prendi();
             await vista.EnsureCoreWebView2Async(env);
-            var w = vista.CoreWebView2;
-            w.Settings.IsNonClientRegionSupportEnabled = true;
-            w.Settings.AreDefaultContextMenusEnabled = false;
-            w.Settings.IsStatusBarEnabled = false;
-            w.Settings.IsZoomControlEnabled = false;
-            w.Settings.AreBrowserAcceleratorKeysEnabled = false;
-#if !DEBUG
-            w.Settings.AreDevToolsEnabled = false;
-#endif
-            w.SetVirtualHostNameToFolderMapping(Host, Path.Combine(AppContext.BaseDirectory, "ui"), CoreWebView2HostResourceAccessKind.DenyCors);
-            // niente navigazione fuori dall'interfaccia: i link esterni si aprono nel browser, e solo dal ponte
-            w.NavigationStarting += (_, e) => { if (!e.Uri.StartsWith($"https://{Host}/")) e.Cancel = true; };
-            w.NewWindowRequested += (_, e) => e.Handled = true;
+            Ambiente.Prepara(vista.CoreWebView2);
             Ponte.Collega(env);
-            var sviluppo = Environment.GetEnvironmentVariable("DAP_UI");
-            w.Navigate(string.IsNullOrEmpty(sviluppo) ? $"https://{Host}/index.html" : sviluppo);
+            vista.CoreWebView2.Navigate(Ambiente.Pagina("index.html"));
         }
         catch (Exception e)
         {
@@ -133,19 +116,6 @@ public sealed class Finestra : Window
         if (frazione is null) { t.ProgressState = TaskbarItemProgressState.None; return; }
         t.ProgressState = errore ? TaskbarItemProgressState.Error : frazione < 0 ? TaskbarItemProgressState.Indeterminate : TaskbarItemProgressState.Normal;
         t.ProgressValue = Math.Clamp(frazione.Value, 0, 1);
-    }
-
-    // ——— Windows 11: tema scuro, angoli tondi, bordo ———
-    [DllImport("dwmapi.dll")]
-    static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
-
-    void Windows11()
-    {
-        var hwnd = new WindowInteropHelper(this).Handle;
-        int si = 1, tondo = 2, bordo = 0x00322A2A; // COLORREF è BGR: #2A2A32
-        DwmSetWindowAttribute(hwnd, 20, ref si, sizeof(int));     // DWMWA_USE_IMMERSIVE_DARK_MODE
-        DwmSetWindowAttribute(hwnd, 33, ref tondo, sizeof(int));  // DWMWA_WINDOW_CORNER_PREFERENCE = ROUND
-        DwmSetWindowAttribute(hwnd, 34, ref bordo, sizeof(int));  // DWMWA_BORDER_COLOR
     }
 
     public IntPtr Maniglia => new WindowInteropHelper(this).Handle;

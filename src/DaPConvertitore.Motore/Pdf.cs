@@ -30,7 +30,7 @@ public static class Pdf
         _ => throw new ErroreConversione($"Non so fare {l.Formato.Etichetta} da un PDF."),
     };
 
-    static async Task<PdfWindows> Apri(string percorso)
+    internal static async Task<PdfWindows> Apri(string percorso)
     {
         try
         {

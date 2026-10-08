@@ -65,7 +65,8 @@ export function h<T extends HTMLElement = HTMLElement>(sel: string, attr: Record
     for (const [k, v] of Object.entries(attr)) {
       if (v == null || v === false) continue;
       if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
-      else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+      // le variabili CSS (--tinta…) vanno con setProperty: assegnate come proprietà si perdono
+      else if (k === 'style' && typeof v === 'object') for (const [p, x] of Object.entries(v)) { if (p.startsWith('--')) el.style.setProperty(p, String(x)); else (el.style as any)[p] = x; }
       else if (k === 'html') el.innerHTML = v;
       else if (k === 'dataset') Object.assign(el.dataset, v);
       else el.setAttribute(k, v === true ? '' : String(v));

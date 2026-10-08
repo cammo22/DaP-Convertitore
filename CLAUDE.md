@@ -11,7 +11,7 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
   `[IO.File]::ReadAllText/WriteAllText` e `UTF8Encoding`. Gli script `.ps1` si salvano **con il BOM**.
 - **Una versione = `<Version>` in `Directory.Build.props` + voce in `CHANGELOG.md`.** Unita su `main`, la CI
   (`.github/workflows/rilascio.yml`) prova, compila, impacchetta con Velopack e pubblica la release da sola.
-  Il numero sale di 0.0.1.
+  Il numero sale di 0.0.1 (di 0.1 per le cose grosse, come il lettore nella 1.1.0).
 - **Le prove si fanno girare**: `dotnet test test\DaPConvertitore.Prove` (converte davvero, in `test\.out`).
   Prima di pubblicare si apre l'app vera e si rifà il gesto: `scripts\compila.ps1`, poi l'exe in `bin\Debug`.
 - **Il `ui\dist` vecchio vince sul sorgente**: `scripts\compila.ps1` rifà sempre prima l'interfaccia.
@@ -47,4 +47,21 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
 - **I pesi sono a 1024** come in Esplora file; i preset sono MiB (il DVD è l'eccezione: 4,7 miliardi di byte).
 - **Per guardare dentro l'app vera**: avviala con `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9333`,
   poi `node scripts\dentro.mjs "espressione"`. `scripts\foto-finestra.ps1` la fotografa, `scripts\menu-vero.ps1`
-  legge il menu del tasto destro come lo costruisce Esplora file.
+  legge il menu del tasto destro come lo costruisce Esplora file. `node scripts\schermo.mjs uscita.png "js" lettore|index`
+  fotografa la pagina (CDP) dopo aver eseguito del JavaScript.
+- **Il lettore** (dalla 1.1.0): `--guarda file` apre `FinestraLettore` con `ui/lettore.html`; `Regia.cs` decide
+  (un processo solo: convertitore e lettore sono finestre dello stesso, l'app si chiude con l'ultima). Il doppio
+  clic riusa il lettore aperto, come Foto. I file la pagina li prende da `https://dap.file/` (`Risorse.cs`,
+  WebResourceRequested con gettoni, mai percorsi): niente server su localhost, che Chromium tratta come rete
+  locale. Il video che WebView2 non suona va da FFmpeg in MP4 a frammenti (`Flusso`) e la pagina li mette nel
+  Media Source con `timestampOffset` = punto di partenza (`-output_ts_offset` di FFmpeg nel MP4 a frammenti **non**
+  vale: provato). `--autoplay-policy=no-user-gesture-required` nell'ambiente WebView2, se no il video non parte
+  da solo. Il PDF si apre **in memoria** (aperto dal file, Windows lo blocca e non va nel Cestino).
+- **«Apri con» e non predefinito**: Windows non lascia che un'app si faccia predefinita da sola (UserChoice è
+  protetto). `ApriCon.cs` mette un ProgID per gruppo, `OpenWithProgids` e Capabilities + RegisteredApplications;
+  il tasto «App predefinite» apre `ms-settings:defaultapps?registeredAppUser=DaP Convertitore`. Per provarlo senza
+  toccare i menu: `DaPConvertitore.exe --apricon` / `--togli-apricon`.
+- **Le variabili CSS nello `style` di `h()`** vanno con `setProperty` (`util.ts`): fino alla 1.0.3 le tinte per
+  categoria (`--tinta`) non arrivavano e tutto era oro.
+- **Il Cestino a mano** (dalla 1.1.0): `Impostazioni.CestinoDaSolo`, spento di partenza (nome nuovo apposta: la
+  1.0.2 salvava `cestino` acceso). Il tasto accanto al risultato chiama `Coda.OriginaleNelCestino`.

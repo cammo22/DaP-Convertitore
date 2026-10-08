@@ -50,6 +50,22 @@ public sealed class Coda(Strumenti strumenti, Func<InfoHardware> hardware, Func<
         foreach (var l in Tutti) if (l.Stato is StatoLavoro.Attesa or StatoLavoro.Corre) l.Annullo.Cancel();
     }
 
+    /// <summary>Il tasto «originale nel Cestino» accanto a un risultato: null se ci è andato, se no il perché no.</summary>
+    public string? OriginaleNelCestino(string id)
+    {
+        Lavoro? l;
+        lock (lavori) l = lavori.FirstOrDefault(x => x.Id == id);
+        if (l is null) return "lavoro sparito";
+        if (l.Stato != StatoLavoro.Fatto || l.Sorgenti.Count != 1) return "solo a conversione riuscita, con un file solo";
+        if (l.NelCestino) return null;
+        var perche = Cestino.Sposta(l.Sorgente);
+        l.NelCestino = perche is null;
+        l.NotaCestino = perche;
+        Registro.Scrivi(perche is null ? $"[{l.Id}] originale nel Cestino (a mano)" : $"[{l.Id}] originale tenuto: {perche}");
+        Cambiato?.Invoke(l);
+        return perche;
+    }
+
     public void TogliFiniti()
     {
         lock (lavori) lavori.RemoveAll(l => l.Stato is StatoLavoro.Fatto or StatoLavoro.Errore or StatoLavoro.Annullato);

@@ -29,6 +29,11 @@ public static class Aggiornamenti
         catch (Exception e) { Registro.Errore("aggiornamenti", e); return null; }
     }
 
+    static Task<string?>? preparazione;
+
+    /// <summary>Una volta sola per tutta l'app, chiunque apra per primo (il convertitore o il lettore).</summary>
+    public static Task<string?> PreparaUnaVolta() => preparazione ??= Prepara();
+
     /// <summary>Controlla e scarica senza disturbare. Restituisce la versione pronta da installare.</summary>
     public static async Task<string?> Prepara()
     {
