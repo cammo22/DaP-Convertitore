@@ -265,6 +265,44 @@ public sealed class PonteLettore
                     case "massimizza": finestra.Massimizza(); break;
                 }
                 return true;
+            // ——— le piccole modifiche, sul file vero ———
+            case "ruotaFoto":
+            {
+                var p = P(a);
+                await Modifiche.RuotaFoto(p, a["gradi"]?.GetValue<int>() ?? 0, a["specchio"]?.GetValue<bool>() == true);
+                risorse.Ferma();
+                return true;
+            }
+            case "ruotaVideo":
+            {
+                var p = P(a);
+                risorse.Ferma();
+                await Modifiche.RuotaVideo(strumenti, p, a["gradi"]?.GetValue<int>() ?? 0);
+                schede.Remove(p);
+                return true;
+            }
+            case "taglia":
+            {
+                var p = P(a);
+                var nuovo = await Modifiche.TagliaVideo(strumenti, p, a["da"]!.GetValue<double>(), a["a"]!.GetValue<double>());
+                return new { percorso = nuovo, nome = Path.GetFileName(nuovo) };
+            }
+            case "ruotaPdf":
+            {
+                var p = P(a);
+                Carte.Dimentica(p);
+                await Task.Run(() => Modifiche.RuotaPdf(p, a["pagina"]?.GetValue<int>() ?? -1, a["gradi"]?.GetValue<int>() ?? 90));
+                Carte.Dimentica(p);
+                return true;
+            }
+            case "rapida":
+            {
+                // la conversione al volo parte nella finestrella in basso a destra, senza lasciare il lettore
+                var id = (string?)a["azione"] ?? "";
+                if (Catalogo.TrovaRapida(id) is null) throw new ErroreConversione("Questa conversione non c'è.");
+                Regia.Gestisci(new Richiesta(id, [P(a)], false));
+                return true;
+            }
             case "aggiorna":
                 await Aggiornamenti.Installa();
                 return true;
@@ -322,7 +360,18 @@ public sealed class PonteLettore
             // «Converti» solo per quello che diventa altro davvero (un font o un .bin si comprimono e basta)
             convertibile = Catalogo.CategoriaDi(p) is not Categoria.Altro && Catalogo.FormatiPer(p).Any(),
             tipoWindows = TipoWindows(p),
+            // le conversioni al volo di questo tipo di file («Fai subito»)
+            rapide = Catalogo.CategoriaDi(p) is Categoria.Altro ? [] : RapidePer(p),
+            // se la rotazione si può salvare nel file, o il perché no
+            nota = Vista.Tipo(p) switch { "immagine" => Modifiche.SalvaFoto(p), "video" => Modifiche.SalvaVideo(p), _ => null },
         };
+    }
+
+    static IEnumerable<object> RapidePer(string p)
+    {
+        var formati = Catalogo.FormatiPer(p).Select(f => f.Id).ToHashSet();
+        return Catalogo.Rapide.Where(r => r.Categoria == Catalogo.CategoriaDi(p) && formati.Contains(r.Formato) && !r.Id.EndsWith("-unisci") && !r.Id.StartsWith("img-pdf"))
+            .Select(r => (object)new { r.Id, r.Etichetta }).ToList();
     }
 
     /// <summary>I file da scorrere con le frecce: quelli scelti insieme, o la cartella. Arrivano dopo, non fanno aspettare.</summary>

@@ -2,6 +2,28 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.3.0 — 9 ottobre 2026
+
+- **Girare e salvare nel file.** Nel lettore **R** gira a destra, **Maiusc R** a sinistra, **M** specchia (foto); si
+  vede subito e compare «non ancora salvata» con **Salva nel file** (Ctrl S) e **Annulla**. Il file si riscrive solo
+  se premi Salva:
+  - **foto JPG e TIFF**: cambia solo l'orientamento scritto nel file, senza ricodificare (stessi pixel, stesso peso);
+  - **foto PNG e BMP**: i pixel si girano davvero, senza perdite;
+  - **video MP4 e MOV**: la rotazione si scrive dentro il file copiando i flussi, quindi niente ricodifica e pochi
+    secondi anche per un film grosso; il video ricaricato è già in piedi anche negli altri programmi;
+  - **PDF**: giri la pagina (R) o tutte (Ctrl R) e il PDF si salva girato, dopo una conferma;
+  - dove il formato non tiene la rotazione (GIF, WEBP, AVIF, HEIC, AVI…) il lettore lo dice e la rotazione resta
+    solo da guardare; per salvarla si converte (Ctrl E).
+- **Tagliare un video senza perdere niente**: **Z** segna l'inizio, **X** la fine (si vede il pezzo sulla linea del
+  tempo), **Salva il pezzo** lo mette accanto come «(tagliato)». Si copiano i flussi, quindi parte dal fotogramma
+  chiave più vicino. L'originale non si tocca.
+- **Fai subito (U)**: in alto nel lettore il fulmine apre le conversioni rapide del tipo di file (MP4, Metà peso,
+  JPG, Più piccola, Solo il testo…): partono nella finestrella in basso a destra senza lasciare il lettore.
+- **La barra in alto è bianca** anche col tema scuro, nel convertitore e nel lettore; il resto resta scuro. La barra
+  del lettore adesso è una riga sua: la foto e il video non ci finiscono più sotto, e a schermo intero sparisce.
+- Nel video «Riprendi da dove eri» passa da R a **Invio** (R adesso gira). **Maiusc + lettera** ora funziona per
+  davvero nei tasti rapidi (prima «Maiusc R» scattava come «R»).
+
 ## 1.2.0 — 8 ottobre 2026
 
 - **Icone vere, una per ogni tipo di file.** Non è più la stessa icona dell'app per tutto: video, musica, foto, PDF,

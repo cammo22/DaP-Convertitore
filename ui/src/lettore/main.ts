@@ -8,7 +8,7 @@ import '@fontsource/rajdhani/700.css';
 import './lettore.css';
 import { ascolta, chiedi, dentroApp } from '../ponte';
 import { h, peso } from '../util';
-import { ambiente, coloreTipo, conferma, schermoIntero, dataItaliana, ic, nomeTipo, type Contesto, type Scheda, type Tasto, type Tipo, type Vista } from './comune';
+import { ambiente, coloreTipo, conferma, menuSu, schermoIntero, dataItaliana, ic, nomeTipo, type Contesto, type Scheda, type Tasto, type Tipo, type Vista } from './comune';
 
 const radice = document.getElementById('lettore')!;
 const barra = h('header.l-barra');
@@ -54,6 +54,8 @@ function disegnaBarra() {
     s.fratelli.length > 1 ? h('span.l-pos', { title: 'Pag su / Pag giù per scorrere' }, `${s.indice + 1} / ${s.fratelli.length}`) : null,
     s.aggiornamento ? h('button.l-chip-agg', { title: 'Installa la versione nuova e riapre', onclick: () => void chiedi('aggiorna') }, h('i'), `Nuova ${s.aggiornamento}`) : null,
     h('div.l-azioni', null,
+      ...(s.vista?.azioni ?? []).map((a) => h('button.l-icona', { title: a.titolo, html: a.icona, onclick: a.fai })),
+      f.rapide.length ? h('button.l-icona.fai-subito', { title: 'Fai subito: le conversioni rapide (U)', html: ic.fulmine, onclick: (e: Event) => faiSubito(e.currentTarget as HTMLElement) }) : null,
       f.convertibile ? h('button.l-converti', { title: 'Converti (Ctrl+E)', onclick: () => void chiedi('converti') }, h('span', { html: ic.converti }), 'Converti') : null,
       h('button.l-icona', { title: 'Apri con… (un altro programma)', html: ic.apriCon, onclick: () => void chiedi('apriCon') }),
       h('button.l-icona', { title: 'Mostra nella cartella', html: ic.cartella, onclick: () => void chiedi('mostra') }),
@@ -150,6 +152,7 @@ async function mostra(f: Scheda, verso = 0) {
     info: () => { const m = document.getElementById('l-meta'); if (m) m.textContent = metaBarra(); },
     vai,
     fratelli: () => s.fratelli.length,
+    ricarica: () => void ricarica(),
     elenco: () => ({ file: s.fratelli, indice: s.indice }),
     vaiA: (i: number) => void vai(i - s.indice),
     viva: () => giro === s.giro,
@@ -200,6 +203,17 @@ async function caricaFratelli() {
   document.dispatchEvent(new Event('dap-fratelli'));
 }
 
+/** Il file è cambiato (girato, tagliato): si rilegge da capo, con un indirizzo nuovo perché niente resti in memoria. */
+async function ricarica() {
+  const f = s.scheda;
+  if (!f) return;
+  try {
+    const nuovo = await chiedi<Scheda>('vai', { percorso: f.percorso });
+    nuovo.url += `?v=${Date.now()}`;
+    await mostra(nuovo);
+  } catch (e) { hud((e as Error).message); }
+}
+
 // ————————————————————————— proprietà, tasti, cestino —————————————————————————
 
 async function proprieta() {
@@ -246,7 +260,18 @@ async function cestino() {
   } catch (e) { hud((e as Error).message, ic.cestino); }
 }
 
+/** «Fai subito»: le conversioni al volo del tipo di file, senza lasciare il lettore (partono nella finestrella). */
+function faiSubito(ancora?: HTMLElement) {
+  const f = s.scheda;
+  if (!f?.rapide.length) return;
+  menuSu(ancora ?? (document.querySelector('.fai-subito') as HTMLElement), f.rapide.map((r) => ({
+    testo: r.etichetta,
+    fai: () => { void chiedi('rapida', { azione: r.id }).then(() => hud(`${r.etichetta}…`, ic.fulmine)).catch((e) => hud((e as Error).message)); },
+  })));
+}
+
 const globali: Tasto[] = [
+  { k: ['u'], etichetta: 'U', cosa: 'Fai subito (conversioni rapide)', fai: () => faiSubito() },
   { k: ['pagedown'], etichetta: 'Pag ↓', cosa: 'File dopo', fai: () => vai(1) },
   { k: ['pageup'], etichetta: 'Pag ↑', cosa: 'File prima', fai: () => vai(-1) },
   { k: ['f11'], etichetta: 'F11', cosa: 'Schermo intero', fai: () => schermoIntero() },
@@ -275,8 +300,8 @@ function foglietto() {
 
 function chiave(e: KeyboardEvent) {
   let k = e.key.length === 1 ? e.key.toLowerCase() : e.key.toLowerCase();
-  if (e.shiftKey && e.key.length > 1) k = 'shift+' + k;
-  if (e.shiftKey && e.ctrlKey && e.key.length === 1) k = 'shift+' + k;
+  // Maiusc conta per i tasti speciali e per le lettere (Maiusc R); per i simboli (? + :) il segno già lo dice
+  if (e.shiftKey && (e.key.length > 1 || /^[a-z]$/i.test(e.key))) k = 'shift+' + k;
   if (e.altKey) k = 'alt+' + k;
   if (e.ctrlKey || e.metaKey) k = 'ctrl+' + k;
   return k;

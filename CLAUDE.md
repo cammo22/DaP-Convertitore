@@ -63,5 +63,14 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
   toccare i menu: `DaPConvertitore.exe --apricon` / `--togli-apricon`.
 - **Le variabili CSS nello `style` di `h()`** vanno con `setProperty` (`util.ts`): fino alla 1.0.3 le tinte per
   categoria (`--tinta`) non arrivavano e tutto era oro.
+- **Modifiche sul file vero** (`Lettore/Modifiche.cs`, dalla 1.3.0): JPG/TIFF girano riscrivendo il JPEG con
+  l'encoder «di trascrizione» di WIC (`CreateForTranscodingAsync` + `System.Photo.Orientation`; le proprietà del file
+  via `SavePropertiesAsync` sono di **sola lettura**), PNG/BMP girano i pixel, MP4/MOV con `-display_rotation:v:0`
+  (stesso verso di FFprobe: gradi antiorari) e `-c copy`, PDF con `PdfPage.Rotate`. Si scrive sempre una bozza `.~`
+  accanto e poi si sposta sull'originale (`Sposta` ritenta con GC: le routine di lettura di Windows lasciano la
+  maniglia aperta, e il file si legge in memoria per non tenerla). L'orientamento EXIF si compone con
+  `ComponiExif` (tabella «prima si specchia, poi si gira in senso orario»), provato.
+- **La barra bianca**: `.testa` (convertitore) e `.l-barra` (lettore) hanno uno sfondo chiaro apposta, il resto è
+  scuro. Non è la barra di Windows (la finestra è senza cornice): è disegnata dalla pagina.
 - **Il Cestino a mano** (dalla 1.1.0): `Impostazioni.CestinoDaSolo`, spento di partenza (nome nuovo apposta: la
   1.0.2 salvava `cestino` acceso). Il tasto accanto al risultato chiama `Coda.OriginaleNelCestino`.

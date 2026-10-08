@@ -3,7 +3,7 @@
 // vedi; zoomando si ridisegnano più nitide.
 import { chiedi } from '../ponte';
 import { h, clamp } from '../util';
-import { attesa, errore, ic, memoria, type Contesto, type Tasto, type Vista } from './comune';
+import { attesa, conferma, errore, ic, memoria, type Contesto, type Tasto, type Vista } from './comune';
 
 export interface DatiPdf { radice: string; pagine: { w: number; h: number }[] }
 
@@ -13,10 +13,11 @@ export async function monta(c: Contesto): Promise<Vista> {
   try { d = await chiedi<DatiPdf>('pdf'); }
   catch (e) { c.palco.replaceChildren(errore((e as Error).message)); return { tasti: [], smonta() {} }; }
   if (!c.viva()) return { tasti: [], smonta() {} };
-  return scrivania(c, d);
+  return scrivania(c, d, undefined, true);
 }
 
-export function scrivania(c: Contesto, d: DatiPdf, prima?: HTMLElement): Vista {
+/** `modificabile`: il file è il PDF vero (si possono girare le pagine e salvare); il PDF impaginato da Word no. */
+export function scrivania(c: Contesto, d: DatiPdf, prima?: HTMLElement, modificabile = false): Vista {
   const chiave = `pdf:${c.scheda.percorso}`;
   const salvato = memoria.leggi<{ z: number; p: number }>(chiave);
   let zoom = salvato?.z ?? 0; // 0 = larghezza adatta
@@ -34,6 +35,10 @@ export function scrivania(c: Contesto, d: DatiPdf, prima?: HTMLElement): Vista {
     h('span.p-zoom'),
     h('button.l-icona', { title: 'Più vicino (+)', html: ic.zoomPiu, onclick: () => zooma(1) }),
     h('button.l-icona', { title: 'Larghezza della finestra (W)', html: ic.adatta, onclick: () => { zoom = 0; disponi(); } }),
+    modificabile ? h('span.p-sep') : null,
+    modificabile ? h('button.l-icona', { title: 'Gira la pagina a sinistra e salva (Maiusc R)', html: ic.ruotaSx, onclick: () => void ruotaPagina(-90, false) }) : null,
+    modificabile ? h('button.l-icona', { title: 'Gira la pagina a destra e salva (R)', html: ic.ruotaDx, onclick: () => void ruotaPagina(90, false) }) : null,
+    modificabile ? h('button.l-tasto.piccolo', { title: 'Gira tutte le pagine e salva (Ctrl R)', onclick: () => void ruotaPagina(90, true) }, 'Gira tutte') : null,
     prima ?? null);
   c.palco.replaceChildren(h('div.p-scrivania', null, sopra, banco));
   if (memoria.leggi<boolean>('pdf-lato') !== false && d.pagine.length > 1) banco.classList.add('con-lato');
@@ -148,6 +153,23 @@ export function scrivania(c: Contesto, d: DatiPdf, prima?: HTMLElement): Vista {
   }
   colonna.addEventListener('wheel', (e) => { if (e.ctrlKey) { e.preventDefault(); zooma(e.deltaY < 0 ? 1 : -1); } }, { passive: false });
 
+  /** Gira una pagina (o tutte) nel PDF vero: si chiede prima, perché si riscrive il file. */
+  async function ruotaPagina(gradi: number, tutte: boolean) {
+    if (!modificabile) return;
+    const p = paginaVista();
+    const verso = gradi > 0 ? 'a destra' : 'a sinistra';
+    const cosa = tutte ? 'tutte le pagine' : `la pagina ${p + 1}`;
+    if (!await conferma('Girare il PDF?', `Giro ${cosa} ${verso} e salvo nel file. Si può rigirare quando vuoi.`, 'Gira e salva')) return;
+    c.stato('Salvo il PDF girato…');
+    try {
+      await chiedi('ruotaPdf', { pagina: tutte ? -1 : p, gradi: ((gradi % 360) + 360) % 360 });
+      memoria.scrivi(chiave, { z: zoom, p });
+      c.stato(null);
+      c.ricarica();
+      c.hud('PDF girato e salvato', ic.salva);
+    } catch (e) { c.stato(null); c.hud((e as Error).message, ic.ruotaDx); }
+  }
+
   const ro = new ResizeObserver(() => { if (zoom === 0) disponi(); });
   ro.observe(colonna);
   disponi();
@@ -163,6 +185,11 @@ export function scrivania(c: Contesto, d: DatiPdf, prima?: HTMLElement): Vista {
     { k: ['w', '0'], etichetta: 'W', cosa: 'Larga quanto la finestra', fai: () => { zoom = 0; disponi(); } },
     { k: ['t'], etichetta: 'T', cosa: 'Miniature', fai: giraLato },
     { k: ['n'], etichetta: 'N', cosa: 'Il file dopo', fai: () => c.vai(1) },
+    ...(modificabile ? [
+      { k: ['r'], etichetta: 'R', cosa: 'Gira la pagina a destra e salva', fai: () => void ruotaPagina(90, false) },
+      { k: ['shift+r'], etichetta: 'Maiusc R', cosa: 'Gira la pagina a sinistra e salva', fai: () => void ruotaPagina(-90, false) },
+      { k: ['ctrl+r'], etichetta: 'Ctrl R', cosa: 'Gira tutte le pagine a destra e salva', fai: () => void ruotaPagina(90, true) },
+    ] : []),
   ];
 
   return {

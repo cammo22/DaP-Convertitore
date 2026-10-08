@@ -2,7 +2,7 @@
 // di vetro in basso che spariscono quando guardi. Riprende da dove eri rimasto, passa all'episodio dopo.
 import { chiedi } from '../ponte';
 import { h, clamp, durata as tempo } from '../util';
-import { attesa, ic, memoria, menuSu, schermoIntero, type Contesto, type Tasto, type Vista } from './comune';
+import { attesa, giri, ic, memoria, menuSu, pillola, schermoIntero, type Contesto, type Tasto, type Vista } from './comune';
 import { Fila, copiabile, nativo, type InfoMedia } from './media';
 
 export async function monta(c: Contesto): Promise<Vista> {
@@ -26,7 +26,8 @@ export async function monta(c: Contesto): Promise<Vista> {
   const pallino = h('i.v-pallino');
   const bolla = h('span.v-bolla');
   const tacche = h('div.v-tacche', null, ...info.capitoli.filter((x) => x.inizio > 0).map((x) => h('i', { style: { left: `${(x.inizio / info.durata) * 100}%` }, title: x.titolo })));
-  const linea = h('div.v-linea', null, h('div.v-binario', null, pronto, fatto, tacche), pallino, bolla);
+  const pezzo = h('i.v-taglio');
+  const linea = h('div.v-linea', null, h('div.v-binario', null, pronto, pezzo, fatto, tacche), pallino, bolla);
   const ora = h('span.v-ora', null, '0:00');
   const tot = h('span.v-tot', null, tempo(info.durata));
   const bPlay = h('button.v-b.grande', { title: 'Play / pausa (Spazio)', html: ic.play, onclick: () => giraPlay() });
@@ -79,7 +80,7 @@ export async function monta(c: Contesto): Promise<Vista> {
   const ripresa = riprendiDa();
   let schedaRipresa: HTMLElement | null = null;
   if (ripresa) {
-    schedaRipresa = h('button.v-riprendi', { onclick: () => { cerca(ripresa); schedaRipresa?.remove(); } }, h('span', { html: ic.play }), `Riprendi da ${tempo(ripresa)}`, h('kbd', null, 'R'));
+    schedaRipresa = h('button.v-riprendi', { onclick: () => { cerca(ripresa); schedaRipresa?.remove(); } }, h('span', { html: ic.play }), `Riprendi da ${tempo(ripresa)}`, h('kbd', null, 'Invio'));
     sala.append(schedaRipresa);
     setTimeout(() => schedaRipresa?.classList.add('via'), 9000);
   }
@@ -134,6 +135,78 @@ export async function monta(c: Contesto): Promise<Vista> {
   }
   function menuVelocita(b: HTMLElement) {
     menuSu(b, velocita.map((v) => ({ testo: v === 1 ? 'Normale' : `${v.toLocaleString('it-IT')}×`, attiva: video.playbackRate === v, fai: () => cambiaVelocita(v) })), true);
+  }
+
+  // ——— girare il video e tagliarne un pezzo: si vede subito, si scrive nel file solo con «Salva» ———
+  const mod = pillola(sala);
+  let rot = 0;
+  let da: number | null = null, a: number | null = null;
+  const aggiornaRuota = () => {
+    const r = cinema.getBoundingClientRect();
+    const storto = rot % 180 !== 0;
+    // girato di 90° il video usa lo spazio al contrario: si scambiano larghezza e altezza prima di girarlo
+    video.style.width = storto ? `${r.height}px` : '';
+    video.style.height = storto ? `${r.width}px` : '';
+    // al centro del cinema anche quando è più grande della griglia: si fissa al 50% e si gira da lì
+    video.style.position = rot ? 'absolute' : '';
+    video.style.left = rot ? '50%' : '';
+    video.style.top = rot ? '50%' : '';
+    video.style.transform = rot ? `translate(-50%, -50%) rotate(${rot}deg)` : '';
+    luce.style.opacity = rot ? '0' : '';
+  };
+  new ResizeObserver(aggiornaRuota).observe(cinema);
+  function ruota(d: number) { rot = (rot + d + 360) % 360; aggiornaRuota(); modifica(); c.hud(rot ? `Girato di ${rot}°` : 'Dritto', ic.ruotaDx); }
+  function segna(quale: 'da' | 'a') {
+    const t = video.currentTime;
+    if (quale === 'da') { da = t; if (a !== null && a <= t) a = null; } else { a = t; if (da !== null && da >= t) da = null; }
+    modifica();
+    c.hud(quale === 'da' ? `Il pezzo comincia a ${tempo(t)}` : `Il pezzo finisce a ${tempo(t)}`, ic.forbici);
+  }
+  function annulla() { rot = 0; da = a = null; aggiornaRuota(); modifica(); }
+  function modifica() {
+    const d0 = info.durata || video.duration || 1;
+    pezzo.style.display = da !== null || a !== null ? 'block' : 'none';
+    pezzo.style.left = `${((da ?? 0) / d0) * 100}%`;
+    pezzo.style.width = `${(((a ?? d0) - (da ?? 0)) / d0) * 100}%`;
+    const parti: string[] = [];
+    const tasti: { t: string; fai: () => void; oro?: boolean }[] = [];
+    if (rot) {
+      parti.push(`girato di ${rot}°`);
+      if (!f.nota) tasti.push({ t: 'Salva la rotazione', oro: true, fai: () => void salvaRotazione() });
+    }
+    if (da !== null && a !== null) {
+      parti.push(`pezzo da ${tempo(da)} a ${tempo(a)} (${tempo(a - da)})`);
+      tasti.push({ t: 'Salva il pezzo', oro: !rot || !!f.nota, fai: () => void salvaPezzo() });
+    } else if (da !== null || a !== null) parti.push(da !== null ? `pezzo da ${tempo(da)}: segna la fine con X` : `pezzo fino a ${tempo(a!)}: segna l'inizio con Z`);
+    if (!parti.length) { mod.nascondi(); return; }
+    if (rot && f.nota) parti.push(`solo da guardare: ${f.nota}`);
+    mod.mostra(parti.join(' · '), ...tasti, { t: 'Annulla', fai: annulla });
+  }
+  async function salvaRotazione() {
+    if (!rot || f.nota) return;
+    const gradi = giri(rot);
+    video.pause();
+    fila?.ferma();
+    video.removeAttribute('src');
+    video.load();
+    c.stato('Scrivo la rotazione nel video (senza ricodificare)…');
+    try {
+      await chiedi('ruotaVideo', { gradi });
+      c.stato(null);
+      c.ricarica();
+      c.hud('Rotazione salvata nel file', ic.salva);
+    } catch (e) { c.stato(null); c.hud((e as Error).message, ic.ruotaDx); c.ricarica(); }
+  }
+  async function salvaPezzo() {
+    if (da === null || a === null) return;
+    c.stato('Taglio il pezzo (senza ricodificare)…');
+    try {
+      const r = await chiedi<{ nome: string }>('taglia', { da, a });
+      c.stato(null);
+      c.hud(`Salvato: ${r.nome}`, ic.forbici);
+      da = a = null;
+      modifica();
+    } catch (e) { c.stato(null); c.hud((e as Error).message, ic.forbici); }
   }
 
   // ——— sottotitoli: dentro il video (testo) o accanto (.srt, .vtt, .ass) ———
@@ -293,13 +366,23 @@ export async function monta(c: Contesto): Promise<Vista> {
     { k: ['s'], etichetta: 'S', cosa: 'Salva il fotogramma in PNG', fai: () => void fotogramma() },
     { k: ['p'], etichetta: 'P', cosa: 'Finestrella sempre sopra', fai: () => void pip() },
     { k: ['b'], etichetta: 'B', cosa: 'La luce intorno al video', fai: () => { luceAccesa = !luceAccesa; memoria.scrivi('luce', luceAccesa); luce.classList.toggle('spenta', !luceAccesa); c.hud(luceAccesa ? 'Luce accesa' : 'Luce spenta', ic.sole); } },
-    { k: ['r'], etichetta: 'R', cosa: 'Riprendi da dove eri', fai: () => { if (ripresa) { cerca(ripresa); schedaRipresa?.remove(); } } },
+    { k: ['enter'], etichetta: 'Invio', cosa: 'Riprendi da dove eri', fai: () => { if (ripresa) { cerca(ripresa); schedaRipresa?.remove(); } } },
     { k: ['n'], etichetta: 'N', cosa: 'Il video dopo', fai: () => c.vai(1) },
+    { k: ['r'], etichetta: 'R', cosa: 'Gira a destra', fai: () => ruota(90) },
+    { k: ['shift+r'], etichetta: 'Maiusc R', cosa: 'Gira a sinistra', fai: () => ruota(-90) },
+    { k: ['ctrl+s'], etichetta: 'Ctrl S', cosa: 'Salva la rotazione nel video', fai: () => void salvaRotazione() },
+    { k: ['z'], etichetta: 'Z', cosa: "Segna l'inizio del pezzo da tagliare", fai: () => segna('da') },
+    { k: ['x'], etichetta: 'X', cosa: 'Segna la fine del pezzo (poi «Salva il pezzo»)', fai: () => segna('a') },
   ];
 
   return {
     tasti,
     barraSopra: true,
+    azioni: [
+      { titolo: 'Gira a sinistra (Maiusc R)', icona: ic.ruotaSx, fai: () => ruota(-90) },
+      { titolo: 'Gira a destra (R)', icona: ic.ruotaDx, fai: () => ruota(90) },
+      { titolo: "Taglia un pezzo: Z segna l'inizio, X la fine", icona: ic.forbici, fai: () => segna(da === null ? 'da' : 'a') },
+    ],
     info: () => {
       const v = info.video;
       const parti = [v ? `${v.larghezza}×${v.altezza}` : null, v ? `${v.codec.toUpperCase()}${v.hdr ? ' HDR' : ''}` : null, tempo(info.durata)];

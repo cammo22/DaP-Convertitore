@@ -121,6 +121,13 @@ apre il lettore: nero, senza cornice, leggero. Ogni tipo di file ha la sua pagin
   OTF, WOFF) col campionario e **Installa** solo per te; **modelli 3D** (GLB, GLTF, STL, OBJ, PLY, 3MF) che girano
   su un piano; tutto il resto **byte per byte**, con la firma del file e l'impronta SHA-256.
 
+**Piccole modifiche sul file vero, senza ricodificare.** **R** gira (**Maiusc R** a sinistra, **M** specchia le
+foto), e **Salva nel file** (Ctrl S) riscrive il file: nelle JPG cambia solo l'orientamento, nei video MP4 e MOV
+la rotazione dentro il file (copiando i flussi, pochi secondi anche per 20 GB), nei PNG i pixel, nei PDF la pagina.
+Nei video **Z** e **X** segnano inizio e fine di un pezzo e **Salva il pezzo** lo mette accanto, senza perdite.
+Il fulmine (**U**, «Fai subito») apre le conversioni rapide del file senza lasciare il lettore. Dove il formato non
+tiene la rotazione (GIF, WEBP, HEIC, AVI…) il lettore lo dice.
+
 Sempre: **Pag ↑ / Pag ↓** il file prima e dopo, **F11** schermo intero, **I** proprietà, **Canc** nel Cestino,
 **Ctrl+E** lo apre nel convertitore, **?** tutti i tasti della pagina in cui sei. Trascina un file nella
 finestra e lo apre.

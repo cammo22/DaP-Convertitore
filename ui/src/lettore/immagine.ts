@@ -3,7 +3,7 @@
 // l'istogramma. S fa partire la presentazione.
 import { chiedi } from '../ponte';
 import { h, clamp } from '../util';
-import { attesa, conferma, errore, ic, memoria, schermoIntero, type Contesto, type Tasto, type Vista } from './comune';
+import { attesa, conferma, errore, giri, ic, memoria, pillola, schermoIntero, type Contesto, type Tasto, type Vista } from './comune';
 
 const native = /\.(jpe?g|jpe|jfif|png|apng|webp|gif|bmp|dib|ico|svg|avif)$/i;
 const giaViste = new Map<string, HTMLImageElement>();
@@ -41,7 +41,8 @@ export async function monta(c: Contesto): Promise<Vista> {
   const W = img.naturalWidth || 800, H = img.naturalHeight || 600;
 
   // ——— zoom e spostamento ———
-  const v = { z: 1, x: 0, y: 0, r: 0 };
+  const v = { z: 1, x: 0, y: 0, r: 0, f: false };
+  const mod = pillola(tavolo);
   const lato = () => (v.r % 180 === 0 ? [W, H] : [H, W]);
   function adatta() {
     const [w, hh] = lato();
@@ -54,7 +55,7 @@ export async function monta(c: Contesto): Promise<Vista> {
     img.classList.toggle('anima', anima);
     img.style.width = `${W}px`;
     img.style.height = `${H}px`;
-    img.style.transform = `translate(-50%, -50%) translate(${v.x}px, ${v.y}px) scale(${v.z}) rotate(${v.r}deg)`;
+    img.style.transform = `translate(-50%, -50%) translate(${v.x}px, ${v.y}px) scale(${v.z}) rotate(${v.r}deg) scaleX(${v.f ? -1 : 1})`;
     img.classList.toggle('pixel', v.z >= 3);
     tavolo.classList.toggle('zoomata', v.z > zAdatta * 1.01);
     zoomEl.textContent = `${Math.round(v.z * 100)}%`;
@@ -73,6 +74,7 @@ export async function monta(c: Contesto): Promise<Vista> {
       (mappa.firstElementChild as HTMLElement).style.transform = `rotate(${v.r}deg)`;
     }
     c.info();
+    modifica();
   }
   function limita() {
     const p = tavolo.getBoundingClientRect();
@@ -169,6 +171,38 @@ export async function monta(c: Contesto): Promise<Vista> {
     v.z = zAdatta; v.x = 0; v.y = 0;
     applica(true);
   }
+  /** Specchia da sinistra a destra: dopo una rotazione il verso della rotazione si inverte. */
+  function specchia() {
+    v.f = !v.f;
+    v.r = (360 - v.r) % 360;
+    zAdatta = adatta();
+    v.z = zAdatta; v.x = 0; v.y = 0;
+    applica(true);
+  }
+  function annulla() { v.r = 0; v.f = false; zAdatta = adatta(); v.z = zAdatta; v.x = 0; v.y = 0; applica(true); }
+
+  /** La pillola «girata, non ancora salvata»: salvare riscrive il file vero (JPG e TIFF cambiano solo l'orientamento). */
+  function modifica() {
+    const gira = v.r !== 0 || v.f;
+    if (!gira) { mod.nascondi(); return; }
+    const cosa = [v.f ? 'specchiata' : null, v.r ? `girata di ${v.r}°` : null].filter(Boolean).join(' e ');
+    if (f.nota) { mod.mostra(`Solo da guardare: ${f.nota}`, { t: 'Annulla', fai: annulla }); return; }
+    mod.mostra(`Foto ${cosa} · non ancora salvata`, { t: 'Salva nel file', oro: true, fai: () => void salva() }, { t: 'Annulla', fai: annulla });
+  }
+  let salvando = false;
+  async function salva() {
+    if (salvando || (v.r === 0 && !v.f) || f.nota) return;
+    salvando = true;
+    c.stato('Salvo la rotazione nel file…');
+    try {
+      await chiedi('ruotaFoto', { gradi: giri(v.r), specchio: v.f });
+      giaViste.delete(f.percorso);
+      c.stato(null);
+      c.ricarica();
+      c.hud('Salvata nel file', ic.salva);
+    } catch (e) { c.stato(null); c.hud((e as Error).message, ic.ruotaDx); }
+    finally { salvando = false; }
+  }
 
   const tasti: Tasto[] = [
     { k: ['arrowright', ' '], etichetta: '→', cosa: 'Foto dopo', fai: () => c.vai(1) },
@@ -177,8 +211,10 @@ export async function monta(c: Contesto): Promise<Vista> {
     { k: ['-', 'ctrl+-'], etichetta: '−', cosa: 'Più lontano', fai: () => zoomA(v.z / 1.4, undefined, undefined, true) },
     { k: ['0'], etichetta: '0', cosa: 'Tutta nello schermo', fai: () => inQuadro(true) },
     { k: ['1'], etichetta: '1', cosa: 'Al 100% (un pixel = un pixel)', fai: () => zoomA(1, undefined, undefined, true) },
-    { k: ['r'], etichetta: 'R', cosa: 'Gira a destra (solo per guardarla)', fai: () => ruota(90) },
+    { k: ['r'], etichetta: 'R', cosa: 'Gira a destra', fai: () => ruota(90) },
     { k: ['shift+r'], etichetta: 'Maiusc R', cosa: 'Gira a sinistra', fai: () => ruota(-90) },
+    { k: ['m'], etichetta: 'M', cosa: 'Specchia (sinistra-destra)', fai: specchia },
+    { k: ['ctrl+s'], etichetta: 'Ctrl S', cosa: 'Salva la rotazione nel file', fai: () => void salva() },
     { k: ['f'], etichetta: 'F', cosa: 'Schermo intero', fai: schermoIntero },
     { k: ['s', 'f5'], etichetta: 'S', cosa: 'Presentazione', fai: presentazione },
     { k: ['b'], etichetta: 'B', cosa: 'Sfondo: scuro, scacchi, chiaro', fai: cambiaFondo },
@@ -192,6 +228,11 @@ export async function monta(c: Contesto): Promise<Vista> {
     tasti,
     barraSopra: true,
     frecceLaterali: true,
+    azioni: [
+      { titolo: 'Gira a sinistra (Maiusc R)', icona: ic.ruotaSx, fai: () => ruota(-90) },
+      { titolo: 'Gira a destra (R)', icona: ic.ruotaDx, fai: () => ruota(90) },
+      { titolo: 'Specchia (M)', icona: ic.specchio, fai: specchia },
+    ],
     info: () => `${W}×${H}${W * H > 1.5e6 ? ` · ${(W * H / 1e6).toLocaleString('it-IT', { maximumFractionDigits: 1 })} MP` : ''} · ${Math.round(v.z * 100)}%`,
     scheda: async () => {
       const exif = await chiedi<{ nome: string; valore: string }[]>('exif').catch(() => []);

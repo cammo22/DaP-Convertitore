@@ -469,3 +469,18 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .secondario.cestina span svg { width: 15px; height: 15px; }
 @keyframes trema { 20%, 60% { transform: translateX(-2px); } 40%, 80% { transform: translateX(2px); } }
 .r-azioni .tasto-icona { width: 30px; height: 28px; border-radius: 7px; }
+
+/* ——— la barra in alto è bianca anche col tema scuro (il resto resta scuro) ——— */
+.testa { background: linear-gradient(180deg, #ffffff, #ecebf3); border-bottom: 1px solid #c9c6d6; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35); }
+.testa .nome b { background: linear-gradient(180deg, #e8a915, #a86a00); -webkit-background-clip: text; background-clip: text; }
+.testa .nome span { color: #b0149a; text-shadow: none; }
+.testa .logo svg { filter: none; }
+.testa .chip { background: #f4f2fa; border-color: #d4d0e2; color: #4a4659; }
+.testa .chip.gpu { color: #1f1c28; }
+.testa .chip.agg { color: #8a5a00; border-color: rgba(168, 106, 0, 0.5); background: #fff4d2; }
+.testa .chip.agg:hover { background: #ffeaa6; }
+.testa .led { box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.25); }
+.testa .led.verde { box-shadow: 0 0 6px var(--verde); }
+.testa .btn-fin { color: #4a4659; }
+.testa .btn-fin:hover { background: rgba(0, 0, 0, 0.08); color: #14121a; }
+.testa .btn-fin.chiudi:hover { background: #c42b4a; color: #fff; }

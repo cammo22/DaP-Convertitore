@@ -15,6 +15,10 @@ export interface Scheda {
   categoria: string;
   convertibile: boolean;
   tipoWindows: string;
+  /** Le conversioni al volo di questo tipo di file. */
+  rapide: { id: string; etichetta: string }[];
+  /** Se la rotazione non si può salvare nel file: il perché (null = si può). */
+  nota: string | null;
 }
 
 export type Tipo =
@@ -37,6 +41,8 @@ export interface Vista {
   barraSopra?: boolean;
   /** Le frecce ai lati per il file prima e dopo (le foto le usano; il video no: le frecce scorrono il tempo). */
   frecceLaterali?: boolean;
+  /** Le piccole modifiche della vista (gira, specchia…): diventano bottoni nella barra in alto. */
+  azioni?: { titolo: string; icona: string; fai: () => void }[];
   /** Il pezzetto che la vista mette nella barra in alto (pagina 3/24, 1920×1080…). */
   info?: () => string;
   /** Le righe in più nel pannello delle proprietà (i dati della foto, le tracce del video…). */
@@ -61,6 +67,8 @@ export interface Contesto {
   vaiA(indice: number): void;
   /** La vista è ancora quella (il file non è cambiato nel frattempo). */
   viva(): boolean;
+  /** Rilegge il file da capo (dopo averlo modificato). */
+  ricarica(): void;
 }
 
 export const coloreTipo: Record<Tipo, string> = {
@@ -153,7 +161,7 @@ export const memoria = {
 /** L'icona piccola: stessa mano delle icone del convertitore. */
 const i = (corpo: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${corpo}</svg>`;
 
-export const ic = {
+export const ic: Record<string, string> = {
   play: i('<path d="M7 4.5l12.5 7.5L7 19.5z" fill="currentColor"/>'),
   pausa: i('<rect x="6.5" y="5" width="3.6" height="14" rx="1" fill="currentColor"/><rect x="13.9" y="5" width="3.6" height="14" rx="1" fill="currentColor"/>'),
   indietro10: i('<path d="M4 12a8 8 0 1 0 2.3-5.6"/><path d="M4 4v4h4"/><text x="12" y="15.2" font-size="7" font-family="Rajdhani" font-weight="700" fill="currentColor" stroke="none" text-anchor="middle">10</text>'),
@@ -210,3 +218,32 @@ export function schermoIntero() {
   if (document.fullscreenElement) void document.exitFullscreen();
   else void document.documentElement.requestFullscreen().catch(() => { /* la pagina non può */ });
 }
+
+/**
+ * La pillola delle modifiche non ancora salvate («Girato di 90° · Salva nel file · Annulla»): sta in alto al
+ * centro, non sparisce da sola, e dice cosa sta per succedere al file vero.
+ */
+export function pillola(parent: HTMLElement) {
+  const el = h('div.l-pillola');
+  parent.append(el);
+  return {
+    el,
+    mostra(testo: string, ...tasti: { t: string; fai: () => void; oro?: boolean }[]) {
+      el.replaceChildren(h('span', null, testo), ...tasti.map((x) => h(`button.l-tasto.piccolo${x.oro ? '.oro' : ''}`, { onclick: x.fai }, x.t)));
+      el.classList.add('su');
+    },
+    nascondi() { el.classList.remove('su'); },
+  };
+}
+
+/** Quanto ruotare: i gradi in orario come li capisce il motore (0, 90, 180, 270). */
+export const giri = (r: number) => ((Math.round(r) % 360) + 360) % 360;
+
+Object.assign(ic, {
+  fulmine: i('<path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="currentColor" stroke="none"/>'),
+  ruotaDx: i('<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/>'),
+  ruotaSx: i('<path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v5h5"/>'),
+  specchio: i('<path d="M12 3v18" stroke-dasharray="2 2.4"/><path d="M9 7L3 17h6z"/><path d="M15 7l6 10h-6z" fill="currentColor" fill-opacity="0.35"/>'),
+  forbici: i('<circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><path d="M8 7.6L20 17M8 16.4L20 7"/>'),
+  salva: i('<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/>'),
+});
