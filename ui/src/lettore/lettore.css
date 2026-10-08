@@ -192,7 +192,8 @@ kbd { display: inline-grid; place-items: center; min-width: 24px; height: 23px; 
 /* ———————————————————— il cinema ———————————————————— */
 .v-sala { position: absolute; inset: 0; background: #000; overflow: hidden; }
 .v-cinema { position: absolute; inset: 0; display: grid; place-items: center; }
-.v-video { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; outline: none; }
+/* assoluto e non in griglia: un video verticale (9:16) in una cella «auto» prendeva la sua altezza intrinseca e usciva dalla finestra */
+.v-video { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: contain; outline: none; }
 .v-luce { position: absolute; z-index: 0; width: 100%; height: 100%; filter: blur(70px) saturate(1.6); transform: scale(1.15); opacity: 0.55; transition: opacity 1s; }
 .v-luce.spenta { opacity: 0; }
 .v-video::cue { font-family: var(--lettura); font-weight: 600; font-size: 0.95em; background: rgba(0, 0, 0, 0.55); text-shadow: 0 2px 4px #000; }

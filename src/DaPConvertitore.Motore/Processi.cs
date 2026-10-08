@@ -28,7 +28,8 @@ public static class Processi
         string? cartella = null,
         bool tieniUscita = true,
         Func<Process, Task>? quandoAnnulli = null,
-        IReadOnlyDictionary<string, string>? ambiente = null)
+        IReadOnlyDictionary<string, string>? ambiente = null,
+        bool silenzioso = false)
     {
         var psi = new ProcessStartInfo(programma)
         {
@@ -43,7 +44,7 @@ public static class Processi
         };
         foreach (var a in argomenti) psi.ArgumentList.Add(a);
         if (ambiente is not null) foreach (var (k, v) in ambiente) psi.Environment[k] = v;
-        Registro.Scrivi($"> {Path.GetFileName(programma)} {string.Join(' ', psi.ArgumentList.Select(Virgolette))}");
+        if (!silenzioso) Registro.Scrivi($"> {Path.GetFileName(programma)} {string.Join(' ', psi.ArgumentList.Select(Virgolette))}");
 
         using var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
         var uscita = new StringBuilder();
@@ -71,7 +72,7 @@ public static class Processi
         string testoUscita;
         lock (uscita) testoUscita = uscita.ToString();
         var r = new EsitoProcesso(p.ExitCode, testoUscita, errori.Testo());
-        if (r.Codice != 0) Registro.Scrivi($"  codice {r.Codice}: {r.Errori}");
+        if (r.Codice != 0 && !silenzioso) Registro.Scrivi($"  codice {r.Codice}: {r.Errori}");
         return r;
     }
 

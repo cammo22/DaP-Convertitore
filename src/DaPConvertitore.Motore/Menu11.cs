@@ -123,8 +123,9 @@ public static class Menu11
     }
 
     /// <summary>
-    /// La DLL gira dentro un dllhost (il "surrogato" COM) che la tiene aperta: prima di aggiornare o disinstallare si
-    /// ferma, se no la cartella dell'app non si può sostituire. Si fermano solo i dllhost che hanno dentro la nostra DLL.
+    /// Le nostre DLL (il menu e le miniature) girano dentro un dllhost (il "surrogato" COM) che le tiene aperte: prima di
+    /// aggiornare o disinstallare si ferma, se no la cartella dell'app non si può sostituire. Si fermano solo i dllhost
+    /// che hanno dentro una nostra DLL.
     /// </summary>
     public static void FermaSurrogato()
     {
@@ -132,7 +133,8 @@ public static class Menu11
         {
             try
             {
-                if (p.Modules.Cast<ProcessModule>().Any(m => string.Equals(m.ModuleName, Dll, StringComparison.OrdinalIgnoreCase)))
+                if (p.Modules.Cast<ProcessModule>().Any(m => string.Equals(m.ModuleName, Dll, StringComparison.OrdinalIgnoreCase)
+                                                             || string.Equals(m.ModuleName, ApriCon.DllMiniature, StringComparison.OrdinalIgnoreCase)))
                 {
                     p.Kill();
                     p.WaitForExit(2000);
@@ -182,6 +184,8 @@ public static class Menu11
             try { p.Kill(); p.WaitForExit(5000); } catch { }
             finally { p.Dispose(); }
         }
+        // con Esplora file fermo si possono buttare le miniature e le icone già disegnate: ripartono nuove
+        ApriCon.SvuotaCache();
         // di solito Windows lo riaccende da solo; se dopo un attimo non c'è, lo si accende
         for (var i = 0; i < 20 && Process.GetProcessesByName("explorer").Length == 0; i++) await Task.Delay(200);
         if (Process.GetProcessesByName("explorer").Length == 0)

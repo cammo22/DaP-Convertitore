@@ -125,6 +125,15 @@ Sempre: **Pag ↑ / Pag ↓** il file prima e dopo, **F11** schermo intero, **I*
 **Ctrl+E** lo apre nel convertitore, **?** tutti i tasti della pagina in cui sei. Trascina un file nella
 finestra e lo apre.
 
+**Icone e anteprime in Esplora file.** Ogni tipo ha la sua icona (magenta i video, verde la musica, ciano le foto,
+rossa il PDF, oro i modelli 3D…) e nelle viste a icone grandi si vede il contenuto vero: la **foto**, il
+**fotogramma del video** con la pellicola, il tasto play e la durata, la **forma d'onda** della musica (come i vocali
+di WhatsApp, con la durata), il **modello 3D** su uno sfondo da studio, la prima pagina del **PDF** e dei documenti,
+il testo e il codice colorato, le tabelle, i caratteri («Aa» nel carattere stesso), il contenuto dei file ZIP. Dove
+Windows ne ha già una buona (Word con Office, per dire) resta la sua. Le anteprime vengono disegnate dall'exe
+(`--miniatura`), lanciato da una piccola DLL (`menu\DaPMiniature.cpp`) registrata come «provider di miniature»; per
+guardarne una a occhio: `DaPConvertitore.exe --miniatura-png file 256 uscita.png`.
+
 **Al posto di Foto e Lettore multimediale.** Il lettore si mette in *Apri con* di Windows per tutti i tipi che
 conosce, senza prendersi niente da solo. Per aprire col doppio clic: *Impostazioni → App predefinite* nel
 convertitore porta dritto alla pagina di Windows, dove scegli tu tipo per tipo (o *Apri con → Scegli un'altra

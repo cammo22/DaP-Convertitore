@@ -2,6 +2,28 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.2.0 — 8 ottobre 2026
+
+- **Icone vere, una per ogni tipo di file.** Non è più la stessa icona dell'app per tutto: video, musica, foto, PDF,
+  Word, presentazioni, tabelle, testo, codice, sottotitoli, archivi, caratteri e modelli 3D hanno ognuno la sua
+  (un foglio viola notte col disegnino nella tinta del tipo), nitida da 16 a 256 pixel.
+- **Anteprime vere in Esplora file** (viste a icone medie, grandi ed extra grandi):
+  - **video**: il fotogramma vero al 10%, con la pellicola sopra e sotto, il tasto play e la durata; i video in
+    verticale (9:16) e quelli girati dal telefono restano in verticale;
+  - **musica**: la **forma d'onda reale** del brano, barrette come i vocali di WhatsApp, col tasto play e la durata;
+  - **foto**: la foto, girata come l'ha scattata il telefono (anche HEIC, RAW, PSD, TGA, AVIF…);
+  - **modelli 3D** (GLB, GLTF, STL, OBJ con i colori del .mtl, PLY, 3MF): il modello disegnato a tre quarti su uno
+    sfondo da studio con l'anello magenta sotto;
+  - **PDF**, **Word/Excel/PowerPoint e LibreOffice** (l'anteprima che c'è dentro il file, se no una pagina disegnata col
+    testo vero), **testo e codice** colorato, **CSV** a tabella, **caratteri** con «Aa» nel carattere stesso,
+    **ZIP** con l'elenco di quello che c'è dentro. Dove Windows o Office ne hanno già una, resta la loro.
+  - Si registrano insieme a «Apri con» (stessa leva nelle impostazioni). «Riavvia Esplora file» butta le anteprime
+    e le icone vecchie, così ripartono nuove.
+- **Il lettore e i video 9:16**: un video in verticale usciva dalla finestra e si vedeva tagliato (il video
+  prendeva l'altezza che avrebbe a tutta larghezza invece di quella della finestra). Ora ci sta tutto, intero, anche
+  quello girato col telefono e quello che passa da FFmpeg.
+- Nuovi gruppi in «Apri con»: presentazioni, codice e sottotitoli hanno il loro nome e la loro icona.
+
 ## 1.1.0 — 8 ottobre 2026
 
 - **Il lettore**: DaP Convertitore adesso guarda anche, qualsiasi file. Doppio clic (o *Apri con → DaP

@@ -1,0 +1,4 @@
+LIBRARY DaPConvertitore.Miniature
+EXPORTS
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE

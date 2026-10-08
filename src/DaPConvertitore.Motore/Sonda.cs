@@ -30,10 +30,11 @@ public sealed record InfoMedia(
 
 public static class Sonda
 {
-    public static async Task<InfoMedia> Leggi(Strumenti s, string percorso, CancellationToken ct = default)
+    /// <param name="silenzioso">Non scrive nel registro: lo usano le miniature, che partono a migliaia.</param>
+    public static async Task<InfoMedia> Leggi(Strumenti s, string percorso, CancellationToken ct = default, bool silenzioso = false)
     {
         var r = await Processi.Esegui(s.Ffprobe,
-            ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", "-i", percorso], ct);
+            ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", "-i", percorso], ct, silenzioso: silenzioso);
         if (r.Codice != 0 || string.IsNullOrWhiteSpace(r.Uscita))
             throw new ErroreConversione("Questo file non si riesce a leggere: forse è rovinato o non è un file multimediale.", r.Errori);
         return Interpreta(r.Uscita);

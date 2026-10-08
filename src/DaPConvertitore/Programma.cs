@@ -49,6 +49,10 @@ public static class Programma
     [STAThread]
     public static void Main(string[] args)
     {
+        // le miniature di Esplora file: la DLL ci lancia per ogni file, si disegna e si esce (niente finestre, niente istanza unica)
+        if (Miniature.Miniatura.Richiesta(args)) { Environment.Exit(Miniature.Miniatura.Esegui(args)); return; }
+        ApriCon.FaiIcona = (cartella, gruppo) => Miniature.Icone.Scrivi(cartella, gruppo, typeof(Programma).Assembly.GetName().Version?.ToString(3) ?? "0");
+
         // Velopack per primo: installazione, aggiornamento e disinstallazione passano da qui e finiscono subito
         VelopackApp.Build()
             .SetAppUserModelId(MenuContestuale.Aumid)

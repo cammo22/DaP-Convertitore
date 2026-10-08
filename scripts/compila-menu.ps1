@@ -18,6 +18,13 @@ New-Item -ItemType Directory -Force $out | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "compilazione della DLL del menu" }
 Remove-Item (Join-Path $out "DaPMenu.lib") -ErrorAction SilentlyContinue
 
+# le miniature di Esplora file (IThumbnailProvider): una DLL piccola che lancia l'exe con --miniatura
+& $zig c++ -target x86_64-windows-gnu -shared -O2 -fno-exceptions -fno-rtti -s `
+  -o (Join-Path $out "DaPConvertitore.Miniature.dll") (Join-Path $radice "menu\DaPMiniature.cpp") (Join-Path $radice "menu\DaPMiniature.def") `
+  -lole32 -lshell32 -lshlwapi -luuid -luser32 -lgdi32 -ladvapi32
+if ($LASTEXITCODE -ne 0) { throw "compilazione della DLL delle miniature" }
+Remove-Item (Join-Path $out "DaPMiniature.lib") -ErrorAction SilentlyContinue
+
 [xml]$props = Get-Content (Join-Path $radice "Directory.Build.props") -Encoding UTF8
 $v = ($props.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1) + ".0"
 $layout = Join-Path $out "pacchetto"

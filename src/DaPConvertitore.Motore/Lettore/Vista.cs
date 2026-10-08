@@ -86,13 +86,22 @@ public static class Vista
         "audio" => "Audio",
         "immagine" => "Immagine",
         "pdf" => "Pdf",
-        "documento" or "presentazione" => "Documento",
+        "documento" => "Documento",
+        "presentazione" => "Presentazione",
         "tabella" => "Tabella",
         "archivio" => "Archivio",
         "font" => "Font",
         "modello" => "Modello",
+        "codice" or "markdown" or "web" or "json" => "Codice",
+        "sottotitoli" => "Sottotitoli",
         _ => "Testo",
     };
+
+    /// <summary>
+    /// Le miniature che mostrano sempre le nostre, anche dove Windows ne ha già una (il fotogramma coi suoi comandi,
+    /// la forma d'onda, il modello 3D): video, musica e modelli. Per il resto le nostre vanno solo dove Windows non ne ha.
+    /// </summary>
+    public static bool MiniaturaSempre(string est) => Tipo("x" + est) is "video" or "audio" or "modello" or "immagine";
 
     /// <summary>
     /// I file accanto, dello stesso genere (foto con foto, musica con musica), in ordine di nome come in Esplora
