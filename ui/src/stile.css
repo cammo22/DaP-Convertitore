@@ -44,6 +44,8 @@ code { font: 600 12px 'Cascadia Mono', Consolas, monospace; color: var(--oro); b
 #app {
   height: 100%;
   display: grid;
+  /* colonna minmax(0, 1fr): senza, un nome di file lunghissimo e senza spazi allargava tutta la pagina oltre la finestra */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: 46px minmax(0, 1fr) 74px;
   background:
     radial-gradient(1100px 520px at 70% -12%, rgba(138, 44, 255, 0.22) 0%, transparent 62%),
@@ -488,3 +490,6 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 /* ——— 1.4.0: svuotare la coda in un colpo (Ctrl+Canc) ——— */
 .titolo-sezione .svuota { font: 700 11px var(--ui); letter-spacing: 0.06em; color: var(--testo3); padding: 2px 8px; margin-left: 6px; border-radius: 6px; }
 .titolo-sezione .svuota:hover { background: rgba(255, 77, 109, 0.15); color: var(--rosso); }
+
+/* i due modi della foto (peso finale / qualità) */
+.modi.due { grid-template-columns: repeat(2, 1fr); }

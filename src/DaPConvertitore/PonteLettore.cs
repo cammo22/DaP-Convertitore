@@ -25,6 +25,7 @@ public sealed class PonteLettore
     string attuale;
     bool pronta;
     readonly Dictionary<string, SchedaMedia> schede = new(StringComparer.OrdinalIgnoreCase);
+    readonly Dictionary<string, IReadOnlyList<string>> trascinamenti = [];
 
     static readonly JsonSerializerOptions json = new(JsonSerializerDefaults.Web);
 
@@ -83,6 +84,10 @@ public sealed class PonteLettore
             if (id is not null) Rispondi(id.Value, false, null, ex.Message);
         }
     }
+
+    /// <summary>Le voci di un archivio scelte nella pagina (percorsi dentro l'archivio).</summary>
+    static List<string> Voci(JsonObject a) =>
+        (a["voci"] as JsonArray ?? []).Select(x => (string?)x).Where(x => !string.IsNullOrEmpty(x)).Cast<string>().ToList();
 
     string P(JsonObject a) => (string?)a["percorso"] is { } p && File.Exists(p) ? p : attuale;
 
@@ -273,6 +278,15 @@ public sealed class PonteLettore
                 risorse.Ferma();
                 return true;
             }
+            case "salvaRitocco":
+            {
+                // la foto ritoccata dalla pagina (JPG, PNG o WEBP già codificata): prende il posto del file, o esce accanto
+                var p = P(a);
+                var dati = Convert.FromBase64String((string?)a["dati"] ?? "");
+                risorse.Ferma();
+                var dove = await Task.Run(() => Ritocco.Salva(p, dati));
+                return new { percorso = dove, accanto = !string.Equals(dove, p, StringComparison.OrdinalIgnoreCase), nome = Path.GetFileName(dove) };
+            }
             case "ruotaVideo":
             {
                 var p = P(a);
@@ -310,10 +324,31 @@ public sealed class PonteLettore
                 risorse.Ferma();
                 return new { nota };
             }
+            case "preparaTrascinamento":
+            {
+                // i file veri da portare fuori: si estraggono subito, il trascinamento di Windows parte quando il mouse esce
+                var voci = Voci(a);
+                var percorsi = await Trascinamento.Prepara(strumenti, P(a), voci);
+                var id = Guid.NewGuid().ToString("N");
+                lock (trascinamenti) { trascinamenti.Clear(); trascinamenti[id] = percorsi; }
+                return new { id, n = percorsi.Count };
+            }
+            case "trascinaFuori":
+            {
+                // il mouse è uscito dalla finestra con il tasto premuto: parte il trascinamento di Windows coi file veri
+                IReadOnlyList<string>? percorsi;
+                lock (trascinamenti) trascinamenti.TryGetValue((string?)a["id"] ?? "", out percorsi);
+                if (percorsi is null) throw new ErroreConversione("I file da trascinare non sono pronti.");
+                var dati = new DataObject();
+                dati.SetFileDropList([.. percorsi]);
+                // il ciclo di Windows resta qui finché non si lascia il tasto: la pagina aspetta la risposta
+                var effetto = DragDrop.DoDragDrop(vista, dati, DragDropEffects.Copy);
+                return new { effetto = effetto.ToString() };
+            }
             case "estraiVoci":
             {
                 // solo le voci scelte (cartelle o file) escono, in una cartella accanto all'archivio; poi si apre
-                var voci = (a["voci"] as JsonArray ?? []).Select(x => (string?)x).Where(x => !string.IsNullOrEmpty(x)).Cast<string>().ToList();
+                var voci = Voci(a);
                 var dest = await Scrittura.EstraiVoci(strumenti, P(a), voci);
                 Programma.Mostra(dest);
                 return new { cartella = dest };

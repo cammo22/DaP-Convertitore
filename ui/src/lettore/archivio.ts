@@ -1,12 +1,10 @@
 // La scatola: cosa c'è dentro un archivio senza estrarlo. Un albero di cartelle con i pesi. Si scelgono cartelle e file
-// (clic, Ctrl per più) e si trascinano sulla zona in alto: escono subito in una cartella accanto all'archivio.
+// (clic, Ctrl per più) e si trascinano: sulla zona in alto escono in una cartella accanto all'archivio; fuori dalla
+// finestra (Esplora file, il desktop, un'altra app) escono dove li lasci, come file veri.
 import { chiedi } from '../ponte';
 import { h, peso } from '../util';
 import { iconaCategoria, coloreCategoria } from '../icone';
 import { attesa, errore, ic, type Contesto, type Vista } from './comune';
-
-/** Il tipo con cui si trascinano le voci scelte: solo dentro il lettore, non si confonde con i file veri. */
-const MIME = 'application/x-dap-voci';
 
 interface Voce { percorso: string; peso: number; cartella: boolean; data: string | null }
 interface Nodo { nome: string; percorso: string; peso: number; file: number; figli: Map<string, Nodo>; cartella: boolean; data: string | null }
@@ -69,20 +67,75 @@ export async function monta(c: Contesto): Promise<Vista> {
     if (!righe.has(p)) righe.set(p, new Set());
     righe.get(p)!.add(el);
     if (scelte.has(p)) el.classList.add('scelta');
-    el.draggable = true;
-    el.addEventListener('dragstart', (e) => {
-      if (!scelte.has(p)) { scelte.clear(); scelte.add(p); aggiornaScelte(); }
-      e.dataTransfer!.setData(MIME, JSON.stringify([...scelte]));
-      e.dataTransfer!.effectAllowed = 'copy';
-    });
+    el.addEventListener('pointerdown', (e) => { if (e.button === 0) iniziaTrascinamento(p, el, e); });
   };
+
+  // ——— il trascinamento: lo guida il mouse, non il «drag and drop» della pagina (quello non sa portare file fuori) ———
+  // Dopo qualche pixel i file si estraggono in una cartella temporanea. Se il mouse lascia sopra la zona in alto, si
+  // estrae accanto all'archivio; se esce dalla finestra con il tasto premuto, parte il trascinamento di Windows coi file
+  // veri (Esplora file, il desktop, un'altra app).
+  let appenaTrascinato = false;
+  function iniziaTrascinamento(p: string, el: HTMLElement, giu: PointerEvent) {
+    const x0 = giu.clientX, y0 = giu.clientY;
+    let attivo = false, fuori = false;
+    let voci: string[] = [];
+    let fantasma: HTMLElement | null = null;
+    let pronto: Promise<{ id: string }> | null = null;
+
+    const sopraLaZona = (m: PointerEvent) => { const r = zona.getBoundingClientRect(); return m.clientX >= r.left && m.clientX <= r.right && m.clientY >= r.top && m.clientY <= r.bottom; };
+    const finisci = () => {
+      el.removeEventListener('pointermove', muovi);
+      el.removeEventListener('pointerup', lascia);
+      el.removeEventListener('pointercancel', finisci);
+      try { el.releasePointerCapture(giu.pointerId); } catch { /* già rilasciato */ }
+      fantasma?.remove();
+      zona.classList.remove('sopra', 'trascina');
+      if (attivo) { appenaTrascinato = true; setTimeout(() => (appenaTrascinato = false), 0); }
+    };
+    async function portaFuori() {
+      c.stato('Preparo i file da portare fuori…');
+      try {
+        const { id } = await pronto!;
+        c.stato(null);
+        await chiedi('trascinaFuori', { id });
+      } catch (e) { c.stato(null); c.hud((e as Error).message, ic.estrai); }
+      finally { finisci(); }
+    }
+    function muovi(m: PointerEvent) {
+      if (!attivo) {
+        if (Math.hypot(m.clientX - x0, m.clientY - y0) < 6) return;
+        attivo = true;
+        try { el.setPointerCapture(giu.pointerId); } catch { /* senza cattura funziona lo stesso dentro la finestra */ }
+        if (!scelte.has(p)) { scelte.clear(); scelte.add(p); aggiornaScelte(); }
+        voci = [...scelte];
+        fantasma = h('div.z-fantasma', null, h('span', { html: ic.estrai }), voci.length === 1 ? '1 voce' : `${voci.length} voci`);
+        document.body.append(fantasma);
+        zona.classList.add('trascina');
+        pronto = chiedi<{ id: string }>('preparaTrascinamento', { voci });
+        pronto.catch(() => { /* lo dice portaFuori, se serve */ });
+      }
+      fantasma!.style.transform = `translate(${m.clientX + 14}px, ${m.clientY + 12}px)`;
+      zona.classList.toggle('sopra', sopraLaZona(m));
+      const dentro = m.clientX > 1 && m.clientY > 1 && m.clientX < window.innerWidth - 1 && m.clientY < window.innerHeight - 1;
+      if (!dentro && !fuori && (m.buttons & 1)) { fuori = true; void portaFuori(); }
+    }
+    function lascia(m: PointerEvent) {
+      if (!attivo) { finisci(); return; }
+      const suZona = !fuori && sopraLaZona(m);
+      finisci();
+      if (suZona && voci.length) void estrai(voci);
+    }
+    el.addEventListener('pointermove', muovi);
+    el.addEventListener('pointerup', lascia);
+    el.addEventListener('pointercancel', finisci);
+  }
 
   const filtro = h<HTMLInputElement>('input.t-cerca', { placeholder: 'Cerca dentro…' });
   const albero = h('div.z-albero');
   const riga = (n: Nodo, livello: number, max: number): HTMLElement => {
     const cat = n.cartella ? 'cartella' : categoria(n.nome);
     const figli = h('div.z-figli');
-    const bottone = h('button.z-riga', { style: { '--liv': String(livello), '--tinta': coloreCategoria[cat] }, title: 'Clic per scegliere · Ctrl per più · trascina sulla zona per estrarre' },
+    const bottone = h('button.z-riga', { style: { '--liv': String(livello), '--tinta': coloreCategoria[cat] }, title: 'Clic per scegliere · Ctrl per più · trascina fuori dalla finestra o sulla zona in alto per estrarre' },
       n.cartella ? h('i.j-freccia', { title: 'Apri / chiudi' }) : h('i.z-vuoto'),
       h('span.z-icona', { html: iconaCategoria[cat] }),
       h('span.z-nome', { title: n.nome }, n.nome),
@@ -101,6 +154,7 @@ export async function monta(c: Contesto): Promise<Vista> {
     if (n.cartella && livello < 1) riempi();
     fila(n.percorso, bottone);
     bottone.addEventListener('click', (e) => {
+      if (appenaTrascinato) return;
       // la freccia apre, il resto della riga sceglie
       if (n.cartella && (e.target as HTMLElement).closest('.j-freccia')) { riempi(); r.classList.toggle('aperta'); return; }
       selezionaRiga(n.percorso, e);
@@ -114,10 +168,10 @@ export async function monta(c: Contesto): Promise<Vista> {
   // la ricerca guarda tutti i nomi, e mostra i percorsi trovati (si scelgono e si trascinano anche da lì)
   const trovati = h('div.z-trovati');
   const rigaFile = (v: Voce) => {
-    const el = h('button.z-riga.piatta', { style: { '--tinta': coloreCategoria[categoria(v.percorso)] }, title: 'Clic per scegliere · trascina sulla zona per estrarre' },
+    const el = h('button.z-riga.piatta', { style: { '--tinta': coloreCategoria[categoria(v.percorso)] }, title: 'Clic per scegliere · trascina fuori dalla finestra o sulla zona in alto per estrarre' },
       h('span.z-icona', { html: iconaCategoria[categoria(v.percorso)] }), h('span.z-nome', { title: v.percorso }, v.percorso), h('span.z-peso', null, peso(v.peso)));
     fila(v.percorso, el);
-    el.addEventListener('click', (e) => selezionaRiga(v.percorso, e));
+    el.addEventListener('click', (e) => { if (!appenaTrascinato) selezionaRiga(v.percorso, e); });
     return el;
   };
   filtro.addEventListener('input', () => {
@@ -133,23 +187,7 @@ export async function monta(c: Contesto): Promise<Vista> {
   trovati.hidden = true;
 
   // ——— l'estrazione: la scelta, o tutto se non si è scelto niente ———
-  const zona = h('div.z-zona', null, h('span', { html: ic.scarica }), h('span.z-zona-testo', null, 'Trascina qui cartelle e file per estrarli subito'));
-  zona.addEventListener('dragover', (e) => {
-    if (!Array.from(e.dataTransfer?.types ?? []).includes(MIME)) return;
-    e.preventDefault();
-    e.dataTransfer!.dropEffect = 'copy';
-    zona.classList.add('sopra');
-  });
-  zona.addEventListener('dragleave', () => zona.classList.remove('sopra'));
-  zona.addEventListener('drop', (e) => {
-    if (!Array.from(e.dataTransfer?.types ?? []).includes(MIME)) return;
-    // la zona prende solo le voci dell'archivio: i file veri che trascini nel lettore li gestisce la pagina
-    e.preventDefault();
-    e.stopPropagation();
-    zona.classList.remove('sopra');
-    const dentro = JSON.parse(e.dataTransfer!.getData(MIME) || '[]') as string[];
-    if (dentro.length) void estrai(dentro);
-  });
+  const zona = h('div.z-zona', null, h('span', { html: ic.scarica }), h('span.z-zona-testo', null, `Trascina cartelle e file qui per estrarli accanto all'archivio, o fuori dalla finestra (Esplora file, desktop) per portarli dove vuoi`));
 
   async function estrai(voci: string[]) {
     c.stato(voci.length === 1 ? 'Estraggo la scelta…' : `Estraggo le ${voci.length} scelte…`);

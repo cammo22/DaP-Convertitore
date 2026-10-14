@@ -165,7 +165,10 @@ export interface OpzioniVideo {
   gifFps: number;
 }
 export interface OpzioniAudio { kbps: number; normalizza: boolean; mono: boolean; bit: number }
-export interface OpzioniImmagine { qualita: number; lato: number; pesoMaxByte: number }
+export interface OpzioniImmagine { modo: 'peso' | 'qualita'; qualita: number; lato: number; pesoMaxByte: number }
+
+/** Quello che il motore risponde a «stimaImmagine»: quanto peserà la foto, a che qualità e scala ci si arriva. */
+export interface StimaImmagine { peso: number; qualita: number; scala: number; min: number; max: number; larghezza: number; altezza: number; esatta: boolean }
 export interface OpzioniPdf { dpi: number }
 export interface Opzioni { video: OpzioniVideo; audio: OpzioniAudio; immagine: OpzioniImmagine; pdf: OpzioniPdf }
 

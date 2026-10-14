@@ -2,6 +2,35 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.5.0 — 14 ottobre 2026
+
+- **Ritoccare le foto nel lettore.** **D** (o la matita in alto) apre la barra del ritocco: penna, evidenziatore,
+  freccia, riquadro, ovale e **testo** (si clicca dove scrivere, Invio lo fissa; col contorno si legge su qualsiasi
+  foto), otto colori più uno a scelta, lo spessore, annulla e rifai (**Ctrl Z**, **Ctrl Y**). Due tasti chiari:
+  - **Salva le modifiche** (Ctrl S): scrive i segni sulla foto e **sostituisce il file originale**, dopo una conferma.
+    Nelle JPG i dati dello scatto (data, fotocamera, posizione) restano. HEIC, BMP, GIF e gli altri formati che non si
+    riscrivono salvano **accanto**, in PNG, e l'originale non si tocca;
+  - **Copia** (Ctrl C): mette la foto ritoccata **negli appunti, senza salvare** niente.
+  Finché i segni non sono salvati compare «Foto ritoccata · non ancora salvata», e il lettore chiede prima di cambiare
+  foto o di chiudere. Girare e ritoccare insieme non si può (i segni stanno sulla foto dritta): il lettore lo dice.
+- **Archivi: si trascina fuori davvero.** Nel lettore scegli cartelle e file dentro lo ZIP (o 7Z, RAR…) e li trascini
+  **fuori dalla finestra**, nella cartella di Esplora file, sul desktop o in un'altra app: escono come file veri, dove
+  li lasci (una cartella porta con sé tutto quello che c'è dentro). Mentre trascini si estrae in una cartella temporanea;
+  sulla zona in alto escono accanto all'archivio, come prima. Provato col mouse vero, dal lettore a Esplora file.
+- **Lo slider del peso è tornato anche per le foto** (JPG, WEBP, AVIF, JXL, HEIC): come nel video c'è **PESO
+  FINALE** (dici quanto deve pesare e la qualità viene da sé) e **QUALITÀ** (scegli la qualità e leggi quanto peserà),
+  col display a sette segmenti, la lancetta e i preset (metà, un quarto, 100 KB, 300 KB, 1 MB…). Il peso non è
+  un'indovinata: il motore codifica davvero la foto, e il file che esce pesa quanto detto (provato). Se per stare nel
+  peso va rimpicciolita, lo dice. Il peso di partenza è quello della qualità solita.
+- **La finestra non si allarga più oltre lo schermo.** Un file dal nome lunghissimo e senza spazi (come quelli scaricati
+  da certi siti) allargava tutta la pagina oltre la finestra: sparivano i tasti a destra e **CONVERTI**, e si vedevano
+  solo mettendo lo schermo intero. Ora il nome si accorcia coi puntini. Vale anche per il lettore.
+- **Refactoring.** La piastra (main.ts, 1100 righe) è divisa in pezzi in ui/src/app/: stato, scheletro, controlli,
+  i pannelli di video e foto, lavoro, risultati, impostazioni, modo rapido. Lo slider del peso è un controllo solo
+  per video e foto. Nel motore la ricerca del peso (Immagini.Cerca) è una sola per la conversione e per la stima, le
+  conversioni di FFmpeg per le foto stanno in una funzione sola e la «alfa diritta» delle foto in un posto solo.
+  Prove nuove: stima del peso, ritocco, trascinamento.
+
 ## 1.4.0 — 14 ottobre 2026
 
 - **Svuotare la coda in un colpo**: il tasto *svuota* accanto a SORGENTE, oppure **Ctrl+Canc**. **Canc** toglie

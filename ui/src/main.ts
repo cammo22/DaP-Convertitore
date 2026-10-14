@@ -1,5 +1,6 @@
 // DaP Convertitore — la piastra di conversione. Vecchio stile, moderno dentro:
 // a sinistra la cassetta d'origine (i file), a destra cosa diventano, sotto il tasto grosso.
+// I pezzi stanno in app/: stato, scheletro, controlli, pannelli (video, immagine, altri), lavoro, risultati, impostazioni, rapido.
 import '@fontsource/orbitron/700.css';
 import '@fontsource/orbitron/900.css';
 import '@fontsource/rajdhani/500.css';
@@ -7,63 +8,20 @@ import '@fontsource/rajdhani/600.css';
 import '@fontsource/rajdhani/700.css';
 import './stile.css';
 import { ascolta, avviaFinto, chiedi, dentroApp } from './ponte';
-import type { Carico, Categoria, Formato, InfoFile, Lavoro, Opzioni, Piano, Stato, StatoMenu11 } from './ponte';
-import { h, peso, pesoDisplay, durata, orologio, numero, risoluzione, clamp, MB, GB } from './util';
+import type { Carico, Formato, InfoFile, Lavoro, Opzioni, Stato } from './ponte';
+import { h, peso, durata, risoluzione } from './util';
 import { icone, iconaCategoria, coloreCategoria } from './icone';
-import { Bobine, Lancetta } from './grafica';
-import { accendiSuoni, bu, clac, dinDon } from './suoni';
-
-// ————————————————————————————————— stato —————————————————————————————————
-
-const opzioniDiPartenza = (): Opzioni => ({
-  video: { modo: 'peso', pesoByte: 0, qualita: 70, codec: 'h264', lato: 0, motore: 'auto', senzaAudio: false, audioKbps: 0, fps: 0, gifLarghezza: 480, gifFps: 15 },
-  audio: { kbps: 0, normalizza: false, mono: false, bit: 16 },
-  immagine: { qualita: 88, lato: 0, pesoMaxByte: 0 },
-  pdf: { dpi: 200 },
-});
-
-const s = {
-  stato: null as unknown as Stato,
-  file: new Map<string, InfoFile>(),
-  ordine: [] as string[],
-  attiva: null as Categoria | null,
-  fileAttivo: null as string | null,
-  scelta: {} as Record<string, string>,
-  opzioni: opzioniDiPartenza(),
-  pesoPerFile: new Map<string, number>(),
-  lavori: new Map<string, Lavoro>(),
-  vista: 'scegli' as 'scegli' | 'lavoro' | 'fatto',
-  piano: null as Piano | null,
-  carico: { cpu: 0, encoder: 0, decoder: 0, grafica: 0 } as Carico,
-  giro: [] as string[],
-  impostazioniAperte: false,
-  aggiornamento: null as string | null,
-};
-
-const nomeCat = (c: string) => s.stato.categorie.find((x) => x.id === c)?.nome ?? c;
-const formato = (id: string) => s.stato.formati.find((f) => f.id === id);
-const fileDi = (c: Categoria) => s.ordine.map((i) => s.file.get(i)!).filter((f) => f && f.categoria === c);
-const categoriePresenti = () => {
-  const ordine = s.stato.categorie.map((c) => c.id as string);
-  const cc = [...new Set(s.ordine.map((i) => s.file.get(i)?.categoria).filter(Boolean))] as Categoria[];
-  return cc.sort((a, b) => ordine.indexOf(a) - ordine.indexOf(b));
-};
-const sceltaPer = (c: Categoria): Formato | undefined => {
-  const disponibili = s.stato.formati.filter((f) => f.categoria === c && fileDi(c).some((x) => x.formati.includes(f.id)));
-  const id = s.scelta[c] ?? s.stato.impostazioni.formati[c];
-  return disponibili.find((f) => f.id === id && !f.manca) ?? disponibili.find((f) => !f.manca) ?? disponibili[0];
-};
-const eVideoVero = (f?: Formato) => !!f && f.categoria === 'video' && ['.mp4', '.mkv', '.webm', '.mov'].includes(f.estensione);
-
-// ————————————————————————————————— scheletro —————————————————————————————————
-
-const app = document.getElementById('app')!;
-const testa = h('header.testa');
-const coda = h('aside.coda');
-const banco = h('section.banco');
-const piede = h('footer.piede');
-const corpo = h('main.corpo', null, coda, banco);
-app.append(testa, corpo, piede);
+import { clac, accendiSuoni } from './suoni';
+import { s, ui, nomeCat, formato, fileDi, categoriePresenti, sceltaPer, eVideoVero } from './app/stato';
+import { app, testa, coda, banco, piede, corpo, logoSvg, mostraAvviso } from './app/scheletro';
+import { regolazioni } from './app/pannelli';
+import { aggiornaPiano, pesoObiettivo } from './app/pannelli/video';
+import { conQualita, pesoVolutoFoto, QUALITA_PER_PESO } from './app/pannelli/immagine';
+import { disegnaLavoro, aggiornaLavoro, statoGiro, strumenti } from './app/lavoro';
+import { disegnaFatto, tastoCestino } from './app/risultati';
+import { disegnaRapido } from './app/rapido';
+import { apriImpostazioni } from './app/impostazioni';
+import { invitoMenu11 } from './app/menu11';
 
 // ————————————————————————————————— testa —————————————————————————————————
 
@@ -92,14 +50,6 @@ function disegnaTesta() {
     ),
   );
 }
-
-const logoSvg = `<svg viewBox="0 0 64 64"><defs>
-<linearGradient id="lo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbe0"/><stop offset=".45" stop-color="#ffd54a"/><stop offset="1" stop-color="#b87a14"/></linearGradient>
-<linearGradient id="lm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7bf6"/><stop offset="1" stop-color="#8a2cff"/></linearGradient></defs>
-<circle cx="32" cy="32" r="28" fill="#150e24" stroke="url(#lo)" stroke-width="4"/>
-<path d="M20 26a13 13 0 0 1 23-6" fill="none" stroke="url(#lm)" stroke-width="4" stroke-linecap="round"/><path d="M45 13v8h-8" fill="none" stroke="url(#lm)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M44 38a13 13 0 0 1-23 6" fill="none" stroke="url(#lo)" stroke-width="4" stroke-linecap="round"/><path d="M19 51v-8h8" fill="none" stroke="url(#lo)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>`;
 
 // ————————————————————————————————— coda (sinistra) —————————————————————————————————
 
@@ -183,8 +133,6 @@ function sistemaAttiva() {
 
 // ————————————————————————————————— banco: scegli —————————————————————————————————
 
-let lancettaQualita: Lancetta | null = null;
-
 function disegnaScegli() {
   sistemaAttiva();
   if (!s.attiva) {
@@ -235,317 +183,8 @@ function disegnaScegli() {
   if (eVideoVero(scelto) && s.opzioni.video.modo !== 'copia') aggiornaPiano();
 }
 
-// ——— il menu di Windows 11 ———
-
-/** L'invito, una volta: su Windows 11 la voce va nel tasto destro nuovo, ma serve un permesso di Windows. */
-function invitoMenu11(): HTMLElement | null {
-  const m = s.stato.menu11;
-  if (!m?.supportato || m.registrato || m.chiesto) return null;
-  return h('div.invito', null,
-    h('div.invito-figura', { html: logoSvg }),
-    h('div.invito-testo', null,
-      h('b', null, 'Mettimi nel tasto destro di Windows 11'),
-      h('p', null, 'Adesso sto sotto «Mostra altre opzioni». Con un clic vado nel menu principale, con le conversioni al volo. ',
-        'Windows chiede il permesso ', h('b', null, 'una volta sola'), ': serve a fidarsi del certificato di DaProd.')),
-    h('div.invito-tasti', null,
-      h('button.tasto.su', { onclick: (e: Event) => void attivaMenu11(e.currentTarget as HTMLButtonElement) }, h('i.led.verde'), 'Attiva'),
-      h('button.tasto', { onclick: () => { clac(); s.stato.menu11.chiesto = true; void chiedi('menu11', { azione: 'non-ora' }); disegnaScegli(); } }, 'Non ora')));
-}
-
-async function attivaMenu11(b?: HTMLButtonElement) {
-  clac(true);
-  if (b) { b.disabled = true; b.lastChild!.textContent = 'Aspetto Windows…'; }
-  const r = await chiedi<{ stato: StatoMenu11; errore: string | null }>('menu11', { azione: 'attiva' });
-  s.stato.menu11 = r.stato;
-  if (document.querySelector('.velo.impostazioni')) apriImpostazioni();
-  if (s.vista === 'scegli') disegnaScegli();
-  if (r.errore) mostraAvviso(r.errore);
-  else { dinDon(); proponiRiavvio('Fatto. Esplora file legge il menu solo quando parte: riavvialo e trovi «DaP Convertitore» nel tasto destro.'); }
-}
-
-/** Esplora file va riavviato perché veda il menu nuovo (o il classico): lo si chiede, non lo si fa di nascosto. */
-function proponiRiavvio(testo: string) {
-  document.querySelectorAll('.velo.riavvio').forEach((v) => v.remove());
-  const velo = h('div.velo.riavvio', { onclick: (e: Event) => { if (e.target === velo) velo.remove(); } });
-  velo.append(h('div.cassetto.piccolo', null,
-    h('div.confronto-testa', null, h('b', null, 'RIAVVIA ESPLORA FILE'), h('span')),
-    h('p.spiega', null, testo),
-    h('p.spiega.piccolo', null, 'La barra delle applicazioni sparisce un secondo e le cartelle aperte si chiudono. I file non si toccano.'),
-    h('div.invito-tasti', null,
-      h('button.tasto.su', { onclick: async () => { clac(true); velo.remove(); await chiedi('esplora'); } }, h('i.led.verde'), 'Riavvia adesso'),
-      h('button.tasto', { onclick: () => { clac(); velo.remove(); } }, 'Più tardi'))));
-  document.body.append(velo);
-}
-
 function rigaMotore(cosa: string, chi: string) {
   return h('div.riga-motore', null, h('span', null, cosa), h('b', null, chi));
-}
-
-function mostraAvviso(testo: string) {
-  bu();
-  const a = h('div.avviso', null, h('span', { html: icone.attenzione }), testo,
-    testo.includes('LibreOffice') ? h('button.link', { onclick: () => chiedi('link', { url: 'https://it.libreoffice.org/download/download/' }) }, 'Scarica LibreOffice') : null);
-  banco.append(a);
-  setTimeout(() => a.remove(), 5000);
-}
-
-// ——— le regolazioni, per categoria ———
-
-function gruppo(titolo: string, ...figli: (Node | null)[]) {
-  return h('div.gruppo', null, h('div.gruppo-titolo', null, titolo), ...figli.filter(Boolean) as Node[]);
-}
-
-function bottoni<T extends string | number>(valori: { v: T; testo: string; nota?: string; spento?: boolean }[], attuale: T, cambia: (v: T) => void) {
-  return h('div.bottoni', null, ...valori.map((x) => h(`button.tasto${x.v === attuale ? '.su' : ''}`, {
-    disabled: x.spento, title: x.nota,
-    onclick: () => { clac(); cambia(x.v); disegnaScegli(); disegnaPiede(); },
-  }, x.testo, x.nota ? h('small', null, x.nota) : null)));
-}
-
-function interruttore(testo: string, acceso: boolean, cambia: (v: boolean) => void, nota?: string) {
-  return h(`button.interruttore${acceso ? '.su' : ''}`, { onclick: () => { clac(); cambia(!acceso); disegnaScegli(); } }, h('i.levetta'), h('span', null, testo, nota ? h('small', null, nota) : null));
-}
-
-function cursore(min: number, max: number, valore: number, cambia: (v: number) => void, etichette?: [string, string], passo = 1) {
-  const input = h('input.cursore', { type: 'range', min, max, step: passo, value: valore }) as HTMLInputElement;
-  input.style.setProperty('--p', `${((valore - min) / (max - min)) * 100}%`);
-  input.addEventListener('input', () => {
-    input.style.setProperty('--p', `${((+input.value - min) / (max - min)) * 100}%`);
-    cambia(+input.value);
-  });
-  return h('div.cursore-box', null, input, etichette ? h('div.cursore-etichette', null, h('span', null, etichette[0]), h('span', null, etichette[1])) : null);
-}
-
-function regolazioni(c: Categoria, f?: Formato): Node {
-  if (!f) return h('div');
-  const o = s.opzioni;
-  if (eVideoVero(f)) return regolazioniVideo(f);
-  if (f.id === 'video.gif') {
-    return h('div.regolazioni', null,
-      gruppo('LARGHEZZA', bottoni([320, 480, 640, 800].map((v) => ({ v, testo: `${v} px` })), o.video.gifLarghezza, (v) => (o.video.gifLarghezza = v))),
-      gruppo('FOTOGRAMMI AL SECONDO', bottoni([10, 15, 20, 25].map((v) => ({ v, testo: String(v) })), o.video.gifFps, (v) => (o.video.gifFps = v))),
-      h('p.spiega', null, 'La tavolozza dei 256 colori si calcola sul video vero, fotogramma per fotogramma.'));
-  }
-  if (c === 'audio' || f.id === 'video.mp3' || f.id === 'video.wav') {
-    const senzaPerdite = ['.flac', '.wav', '.aiff'].includes(f.estensione);
-    const kbps = { '.mp3': [128, 192, 256, 320], '.m4a': [128, 192, 256, 320], '.opus': [64, 96, 128, 160, 192], '.ogg': [128, 192, 256, 320], '.wma': [128, 192, 256] }[f.estensione] ?? [];
-    const partenza = { '.mp3': 256, '.m4a': 256, '.opus': 160, '.ogg': 192, '.wma': 192 }[f.estensione] ?? 0;
-    return h('div.regolazioni', null,
-      senzaPerdite
-        ? gruppo('PROFONDITÀ', bottoni([{ v: 16, testo: '16 bit', nota: 'CD' }, { v: 24, testo: '24 bit', nota: 'studio' }], o.audio.bit, (v) => (o.audio.bit = v)))
-        : gruppo('QUALITÀ', bottoni(kbps.map((v) => ({ v, testo: `${v}`, nota: 'kbit/s' })), o.audio.kbps || partenza, (v) => (o.audio.kbps = v))),
-      gruppo('RITOCCHI',
-        h('div.fila', null,
-          interruttore('Volume uniforme', o.audio.normalizza, (v) => (o.audio.normalizza = v), '-14 LUFS, come Spotify'),
-          interruttore('Mono', o.audio.mono, (v) => (o.audio.mono = v)))));
-  }
-  if (c === 'immagine' && !['img.pdf', 'img.txt', 'img.mp4', 'img.webm'].includes(f.id)) {
-    const conQualita = ['.jpg', '.webp', '.avif', '.jxl', '.heic'].includes(f.estensione);
-    return h('div.regolazioni', null,
-      conQualita ? gruppo(`QUALITÀ · ${o.immagine.qualita}`, cursore(30, 100, o.immagine.qualita, (v) => { o.immagine.qualita = v; (document.querySelector('.regolazioni .gruppo-titolo') as HTMLElement).textContent = `QUALITÀ · ${v}`; }, ['più leggera', 'perfetta'])) : null,
-      gruppo('LATO LUNGO', bottoni([0, 3840, 2560, 1920, 1280, 800].map((v) => ({ v, testo: v ? `${v}` : 'Originale', nota: v ? 'px' : undefined })), o.immagine.lato, (v) => (o.immagine.lato = v))),
-      conQualita ? gruppo('PESO MASSIMO', bottoni([0, 300 * 1024, 1 * MB, 2 * MB, 5 * MB].map((v) => ({ v, testo: v ? peso(v, 0) : 'Libero' })), o.immagine.pesoMaxByte, (v) => (o.immagine.pesoMaxByte = v))) : null,
-      h('p.spiega', null, 'La foto si gira da sola come la vede il telefono. La posizione GPS e i dati nascosti non passano; la data del file sì.'));
-  }
-  if (f.id === 'pdf.jpg' || f.id === 'pdf.png') {
-    return h('div.regolazioni', null,
-      gruppo('DEFINIZIONE', bottoni([{ v: 100, testo: '100', nota: 'schermo' }, { v: 150, testo: '150', nota: 'leggera' }, { v: 200, testo: '200', nota: 'buona' }, { v: 300, testo: '300', nota: 'stampa' }], o.pdf.dpi, (v) => (o.pdf.dpi = v))),
-      h('p.spiega', null, 'Una immagine per pagina, in una cartella accanto al PDF. Se la pagina è una sola, esce un file solo.'));
-  }
-  const spiegazioni: Record<string, string> = {
-    'pdf.txt': 'Il testo si legge dal PDF. Se è una scansione, lo legge l\'OCR di Windows, nella lingua del PC.',
-    'img.txt': 'L\'OCR di Windows legge quello che c\'è scritto nella foto.',
-    'pdf.unisci': 'Tutti i PDF scelti, uno dopo l\'altro, in un PDF solo. L\'ordine è quello della coda.',
-    'img.pdf': 'Tutte le foto scelte in un PDF solo, una per pagina A4, girate come la foto.',
-    'arch.estrai': 'In una cartella accanto, col nome dell\'archivio. Se dentro c\'è già una cartella sola, non la metto dentro un\'altra.',
-  };
-  const chi = c === 'documento' || c === 'foglio' || c === 'presentazione' || f.id === 'pdf.docx'
-    ? (s.stato.office.word ? 'Ci pensa Microsoft Office, senza aprire finestre.' : 'Ci pensa LibreOffice, senza aprire finestre.')
-    : c === 'archivio' || c === 'cartella' ? 'Ci pensa il tar di Windows (lo stesso motore di Esplora file).' : '';
-  return h('div.regolazioni', null, h('p.spiega', null, spiegazioni[f.id] ?? (chi || 'Nessuna regolazione: si converte e basta.')));
-}
-
-// ——— il video: peso, qualità, codec, motore ———
-
-const presetPeso = [
-  { v: 10 * MB, testo: '10 MB', nota: 'Discord' },
-  { v: 25 * MB, testo: '25 MB', nota: 'Email' },
-  { v: 100 * MB, testo: '100 MB', nota: 'WhatsApp' },
-  { v: 500 * MB, testo: '500 MB', nota: 'Telegram' },
-  { v: 2 * GB, testo: '2 GB', nota: 'WeTransfer' },
-  { v: 4 * GB - 1, testo: '4 GB', nota: 'Chiavetta FAT32' },
-  // il DVD da «4,7 GB» conta a 1000: sono 4,37 GB come li conta Windows
-  { v: 4.7e9, testo: '4,37 GB', nota: 'DVD' },
-  { v: 25e9, testo: '23,3 GB', nota: 'Blu-ray' },
-];
-
-function pesoObiettivo(id: string | null) {
-  if (!id) return 0;
-  const f = s.file.get(id)!;
-  return s.pesoPerFile.get(id) ?? Math.round(f.peso / 2);
-}
-
-function regolazioniVideo(f: Formato) {
-  const o = s.opzioni.video;
-  const fa = s.fileAttivo ? s.file.get(s.fileAttivo) : undefined;
-  const p = s.piano;
-  const quanti = s.attiva ? fileDi(s.attiva).length : 1;
-  const modo = o.modo === 'auto' ? 'peso' : o.modo;
-
-  const modi = h('div.modi', null,
-    ...([
-      { v: 'peso', testo: 'PESO FINALE', nota: 'deve starci' },
-      { v: 'qualita', testo: 'QUALITÀ', nota: 'il peso viene da sé' },
-      { v: 'copia', testo: 'VELOCE', nota: 'cambia solo la scatola', spento: p ? !p.puoCopiare : false },
-    ] as const).map((x) => h(`button.modo${modo === x.v ? '.su' : ''}`, {
-      disabled: 'spento' in x && x.spento, title: 'spento' in x && x.spento ? 'Questo video non si può copiare così com\'è in questo formato' : x.nota,
-      onclick: () => { clac(); o.modo = x.v; s.piano = null; disegnaScegli(); disegnaPiede(); },
-    }, h('i.led'), x.testo, h('small', null, x.nota))));
-
-  const quadro = h('div.quadro');
-  if (modo === 'copia') {
-    quadro.append(h('div.copia', null, h('span.fulmine', { html: icone.fulmine }), h('div', null, h('b', null, 'Niente ricodifica.'), ' Il video e l\'audio passano tali e quali in un contenitore nuovo: ci mette pochi secondi e la qualità resta identica.')));
-  } else {
-    // display a sette segmenti + strumento a lancetta
-    const valore = modo === 'peso' ? pesoObiettivo(fa?.id ?? null) : p?.pesoStimato ?? 0;
-    const dsp = pesoDisplay(valore || 0);
-    const display = h('div.display', null,
-      h('div.display-etichetta', null, modo === 'peso' ? (quanti > 1 ? 'PESO FINALE · questo video' : 'PESO FINALE') : 'PESO STIMATO'),
-      h('div.sette', null, h('span.spenti', null, '88888'), h('span.accesi', { id: 'dsp-numero' }, modo === 'qualita' ? `~${dsp.numero}` : dsp.numero)),
-      h('div.display-unita', { id: 'dsp-unita' }, dsp.unita),
-      h('div.display-sotto', { id: 'dsp-sotto' }, fa ? confrontoPeso(valore, fa.peso) : ''),
-    );
-    const vu = h('canvas.vu-qualita') as HTMLCanvasElement;
-    const strumento = h('div.strumento', null, vu, h('div.giudizio', { id: 'giudizio' }, p?.giudizio ?? '…'));
-    quadro.append(display, strumento);
-    requestAnimationFrame(() => {
-      lancettaQualita = new Lancetta(vu, { etichetta: 'QUALITÀ', rossoDa: 0, rossoA: 0.25,
-        tacche: [{ v: 0.02, testo: 'BUTTARE' }, { v: 0.3, testo: 'BASSA' }, { v: 0.55, testo: 'BUONA' }, { v: 0.8, testo: 'OTTIMA' }, { v: 0.98, testo: 'ORIG.' }] });
-      if (p) lancettaQualita.valore(p.punteggio);
-    });
-  }
-
-  const comandi = h('div.comandi');
-  if (modo === 'peso' && fa) {
-    const min = p?.pesoMin ?? Math.max(1e6, fa.peso / 200);
-    const max = p?.pesoMax ?? fa.peso;
-    const valore = clamp(pesoObiettivo(fa.id), min, max);
-    // scala logaritmica: fra 10 MB e 10 GB lo slider deve servire tutto
-    const aPos = (b: number) => Math.log(b / min) / Math.log(max / min);
-    const daPos = (x: number) => min * Math.pow(max / min, x);
-    const fader = h('input.fader', { type: 'range', min: 0, max: 1000, value: Math.round(aPos(valore) * 1000) }) as HTMLInputElement;
-    const segna = () => fader.style.setProperty('--p', `${(+fader.value / 10).toFixed(1)}%`);
-    segna();
-    fader.addEventListener('input', () => {
-      segna();
-      const b = Math.round(daPos(+fader.value / 1000));
-      s.pesoPerFile.set(fa.id, b);
-      const d = pesoDisplay(b);
-      document.getElementById('dsp-numero')!.textContent = d.numero;
-      document.getElementById('dsp-unita')!.textContent = d.unita;
-      document.getElementById('dsp-sotto')!.textContent = confrontoPeso(b, fa.peso);
-      document.querySelectorAll('.preset .tasto.su').forEach((e) => e.classList.remove('su'));
-      aggiornaPiano(true);
-    });
-    fader.addEventListener('change', () => clac());
-    const scala = h('div.fader-scala', null, h('span', null, peso(min, 0)), h('span', null, 'originale ' + peso(max, 1)));
-    const chips = presetPeso.filter((x) => x.v >= min && x.v < max * 0.98);
-    comandi.append(
-      h('div.fader-box', null, fader, scala),
-      h('div.bottoni.preset', null,
-        ...[{ v: Math.round(fa.peso / 2), testo: 'Metà', nota: '½' }, { v: Math.round(fa.peso / 4), testo: 'Un quarto', nota: '¼' }, ...chips]
-          .filter((x) => x.v >= min)
-          .map((x) => h(`button.tasto.piccolo${Math.abs(valore - x.v) < x.v * 0.01 ? '.su' : ''}`, { onclick: () => { clac(); s.pesoPerFile.set(fa.id, x.v); s.piano = null; disegnaScegli(); } }, x.testo, h('small', null, x.nota)))),
-    );
-  } else if (modo === 'qualita') {
-    comandi.append(cursore(0, 100, o.qualita, (v) => { o.qualita = v; aggiornaPiano(true); }, ['più leggero', 'perfetto']));
-  }
-
-  const ammessi = p?.codecAmmessi ?? (f.estensione === '.webm' ? ['av1', 'vp9'] : f.estensione === '.mov' ? ['h264', 'hevc', 'prores'] : ['h264', 'hevc', 'av1']);
-  const codecAttuale = ammessi.includes(o.codec) ? o.codec : ammessi[0];
-  const nomiCodec: Record<string, [string, string]> = { h264: ['H.264', 'va ovunque'], hevc: ['H.265', 'metà peso'], av1: ['AV1', 'il più efficiente'], vp9: ['VP9', 'web'], prores: ['ProRes', 'montaggio'] };
-  const hw = s.stato.hardware;
-  const haNvidia = !!hw?.encoder.some((e) => e.endsWith('_nvenc'));
-  const haAmd = !!hw?.encoder.some((e) => e.endsWith('_amf'));
-  const haIntel = !!hw?.encoder.some((e) => e.endsWith('_qsv'));
-  const latoOrig = fa?.dettagli?.larghezza ? Math.min(fa.dettagli.larghezza, fa.dettagli.altezza ?? 0) : 2160;
-
-  const dettagliTecnici = modo !== 'copia'
-    ? gruppo('REGOLAZIONI',
-        h('div.fila-regolazioni', null,
-          h('div.sotto-gruppo', null, h('label', null, 'CODEC'), bottoni(ammessi.map((c) => ({ v: c, testo: nomiCodec[c][0], nota: nomiCodec[c][1] })), codecAttuale, (v) => { o.codec = v; s.piano = null; })),
-          h('div.sotto-gruppo', null, h('label', null, 'RISOLUZIONE'), bottoni([0, 2160, 1440, 1080, 720, 480].filter((v) => v === 0 || v <= latoOrig).map((v) => ({ v, testo: v ? (v === 2160 ? '4K' : `${v}p`) : 'Auto' })), o.lato, (v) => { o.lato = v; s.piano = null; })),
-          h('div.sotto-gruppo', null, h('label', null, 'MOTORE'), bottoni([
-            { v: 'auto', testo: 'Auto' },
-            ...(haNvidia ? [{ v: 'nvidia', testo: 'NVIDIA' }] : []),
-            ...(haAmd ? [{ v: 'amd', testo: 'AMD' }] : []),
-            ...(haIntel ? [{ v: 'intel', testo: 'Intel' }] : []),
-            { v: 'cpu', testo: 'CPU', nota: 'più lenta' },
-          ], o.motore, (v) => { o.motore = v; s.piano = null; })),
-          h('div.sotto-gruppo', null, h('label', null, 'AUDIO'), bottoni([{ v: 'si', testo: 'Tienilo' }, { v: 'no', testo: 'Toglilo' }], o.senzaAudio ? 'no' : 'si', (v) => { o.senzaAudio = v === 'no'; s.piano = null; })),
-        ))
-    : null;
-
-  const note = h('div.note', { id: 'note-piano' });
-  riempiNote(note);
-
-  return h('div.regolazioni.video', null, modi, h('div.pannello-peso', null, quadro, comandi), dettagliTecnici, note);
-}
-
-function confrontoPeso(b: number, orig: number) {
-  if (!orig) return '';
-  const r = (b / orig - 1) * 100;
-  return `originale ${peso(orig)} · ${r <= 0 ? '−' : '+'}${numero(Math.abs(r))}%`;
-}
-
-function riempiNote(el: HTMLElement) {
-  const p = s.piano;
-  if (!p) { el.replaceChildren(); return; }
-  const encoder = p.encoder.endsWith('_nvenc') ? `NVENC ${p.codec.toUpperCase()}` : p.encoder.endsWith('_amf') ? 'AMD AMF' : p.encoder.endsWith('_qsv') ? 'Intel Quick Sync' : p.encoder === 'copy' ? 'copia' : `CPU · ${p.encoder}`;
-  const righe: (string | Node)[] = [
-    h('span.nota-tec', null, h('i', { html: p.hardware ? icone.fulmine : icone.chip }), `${encoder} · ${p.larghezza}×${p.altezza}${p.modo === 'peso' ? ` · ${numero(p.bitrateVideo / 1e6, 1)} Mbit/s` : ''}${p.audioKbps ? ` · audio ${p.audioKbps} kbit/s` : ''}`),
-    ...p.note.map((n) => h('span.nota', null, n)),
-  ];
-  el.replaceChildren(...righe);
-}
-
-let pianoInVolo = false;
-let pianoDiNuovo = false;
-async function aggiornaPiano(soloNumeri = false) {
-  const att = s.attiva;
-  if (!att || !s.fileAttivo) return;
-  const f = sceltaPer(att);
-  if (!eVideoVero(f)) return;
-  if (pianoInVolo) { pianoDiNuovo = true; return; }
-  pianoInVolo = true;
-  try {
-    const o = structuredClone(s.opzioni);
-    o.video.pesoByte = pesoObiettivo(s.fileAttivo);
-    const p = await chiedi<Piano>('piano', { id: s.fileAttivo, formato: f!.id, opzioni: o });
-    const primo = !s.piano;
-    s.piano = p;
-    if (primo && !soloNumeri) { disegnaScegli(); return; }
-    lancettaQualita?.valore(p.punteggio);
-    const g = document.getElementById('giudizio');
-    if (g) { g.textContent = p.giudizio; g.dataset.livello = p.punteggio >= 0.72 ? 'alto' : p.punteggio >= 0.38 ? 'medio' : 'basso'; }
-    if (s.opzioni.video.modo === 'qualita') {
-      const d = pesoDisplay(p.pesoStimato);
-      const n = document.getElementById('dsp-numero');
-      if (n) n.textContent = `~${d.numero}`;
-      const u = document.getElementById('dsp-unita');
-      if (u) u.textContent = d.unita;
-      const fa = s.file.get(s.fileAttivo!);
-      const sotto = document.getElementById('dsp-sotto');
-      if (sotto && fa) sotto.textContent = confrontoPeso(p.pesoStimato, fa.peso);
-    }
-    const note = document.getElementById('note-piano');
-    if (note) riempiNote(note);
-  } catch (e) {
-    console.warn(e);
-  } finally {
-    pianoInVolo = false;
-    if (pianoDiNuovo) { pianoDiNuovo = false; void aggiornaPiano(true); }
-  }
 }
 
 // ————————————————————————————————— piede —————————————————————————————————
@@ -593,12 +232,6 @@ function disegnaPiede() {
   }
 }
 
-function statoGiro() {
-  const l = s.giro.map((i) => s.lavori.get(i)!).filter(Boolean);
-  const fatti = l.filter((x) => x.stato === 'fatto').length;
-  return `${fatti} di ${l.length} fatti`;
-}
-
 function elementiDaConvertire() {
   const el: { ids: string[]; formato: string; opzioni: Opzioni }[] = [];
   for (const c of categoriePresenti()) {
@@ -611,6 +244,10 @@ function elementiDaConvertire() {
       const o = structuredClone(s.opzioni);
       if (o.video.modo === 'auto') o.video.modo = 'peso';
       o.video.pesoByte = pesoObiettivo(id);
+      // la foto: se si è scelto il peso, il motore cerca la qualità più alta che ci sta (stessa ricerca della stima)
+      const peso = c === 'immagine' && conQualita(f) && o.immagine.modo === 'peso' ? pesoVolutoFoto(id) : 0;
+      o.immagine.pesoMaxByte = peso;
+      if (peso) o.immagine.qualita = QUALITA_PER_PESO;
       el.push({ ids: [id], formato: f.id, opzioni: o });
     }
   }
@@ -640,359 +277,6 @@ function nuovoGiro() {
   disegnaTutto();
 }
 
-// ————————————————————————————————— banco: lavoro —————————————————————————————————
-
-let bobine: Bobine | null = null;
-const strumenti: { cpu?: Lancetta; enc?: Lancetta; dec?: Lancetta } = {};
-
-function disegnaLavoro() {
-  const canvas = h('canvas.bobine') as HTMLCanvasElement;
-  const cpu = h('canvas.vu') as HTMLCanvasElement;
-  const enc = h('canvas.vu') as HTMLCanvasElement;
-  const dec = h('canvas.vu') as HTMLCanvasElement;
-  banco.replaceChildren(
-    h('div.titolo-sezione', null, h('span', null, 'IN LAVORAZIONE'), h('span.conta#conta-giro', null, statoGiro())),
-    h('div.piastra', null,
-      canvas,
-      h('div.finestrella', null,
-        h('div.riga-sette', null,
-          dsp('AVANZAMENTO', 'avz', '000', '%'),
-          dsp('MANCA', 'eta', '--:--:--', ''),
-          dsp('VELOCITÀ', 'vel', '--.-', '×'),
-          dsp('FOTOGRAMMI/S', 'fps', '---', ''),
-        ),
-        h('div.fase', null, h('i.led.lampeggia'), h('span#fase', null, 'Preparo…')),
-        h('div.barra-grande', null, h('i#barra')),
-      ),
-    ),
-    h('div.strumenti', null, h('div', null, cpu), h('div', null, enc), h('div', null, dec)),
-    h('div.lista-lavori#lista-lavori'),
-  );
-  requestAnimationFrame(() => {
-    bobine = new Bobine(canvas, coloreCategoria[s.attiva ?? 'video']);
-    const tacche = [0, 25, 50, 75, 100].map((v) => ({ v: v / 100, testo: String(v) }));
-    strumenti.cpu = new Lancetta(cpu, { etichetta: 'CPU', tacche, rossoDa: 0.85, rossoA: 1, picco: true });
-    strumenti.enc = new Lancetta(enc, { etichetta: 'ENCODER', tacche, rossoDa: 0.85, rossoA: 1, picco: true, sotto: s.stato.hardware?.acceleratore?.split('·')[0]?.trim() ?? 'GPU' });
-    strumenti.dec = new Lancetta(dec, { etichetta: 'DECODER', tacche, rossoDa: 0.85, rossoA: 1, picco: true });
-    aggiornaLavoro();
-  });
-}
-
-function dsp(etichetta: string, id: string, spento: string, unita: string) {
-  return h('div.dsp', null,
-    h('div.dsp-etichetta', null, etichetta),
-    h('div.sette.piccolo', null, h('span.spenti', null, spento.replace(/[0-9-]/g, '8').replace(/[^8:.]/g, '8')), h(`span.accesi#dsp-${id}`, null, spento)),
-    unita ? h('span.dsp-unita', null, unita) : null);
-}
-
-function aggiornaLavoro() {
-  const giro = s.giro.map((i) => s.lavori.get(i)!).filter(Boolean);
-  if (!giro.length) return;
-  const corrente = giro.find((l) => l.stato === 'corre') ?? giro.find((l) => l.stato === 'attesa') ?? giro[giro.length - 1];
-  // il display parla del lavoro in corso (velocità, tempo che manca); il totale sta in «2 di 3 fatti»
-  const indeterminato = corrente.frazione < 0;
-  const fraz = corrente.stato === 'fatto' ? 1 : Math.max(0, corrente.frazione);
-  const set = (id: string, t: string) => { const e = document.getElementById(id); if (e) e.textContent = t; };
-  set('dsp-avz', String(Math.floor(fraz * 100)).padStart(3, ' '));
-  set('dsp-eta', orologio(corrente.eta));
-  set('dsp-vel', corrente.velocita ? corrente.velocita.toFixed(1).padStart(4, ' ') : '--.-');
-  set('dsp-fps', corrente.fps ? String(Math.round(corrente.fps)).padStart(3, ' ') : '---');
-  set('fase', corrente.stato === 'attesa' ? 'In coda…' : corrente.fase ?? 'Lavoro…');
-  set('conta-giro', statoGiro());
-  set('piede-stato', statoGiro());
-  const barra = document.getElementById('barra');
-  if (barra) { barra.style.width = `${(indeterminato ? 100 : fraz * 100).toFixed(1)}%`; barra.classList.toggle('indeterminata', indeterminato); }
-  bobine?.imposta(indeterminato ? 0.5 : fraz, corrente.velocita, corrente.stato === 'corre');
-
-  const lista = document.getElementById('lista-lavori');
-  if (lista) {
-    lista.replaceChildren(...giro.map((l) => {
-      const f = l.fileId ? s.file.get(l.fileId) : undefined;
-      const nome = l.sorgenti.length > 1 ? `${l.sorgenti.length} file` : f?.nome ?? l.sorgenti[0].split('\\').pop();
-      return h(`div.riga-lavoro.${l.stato}`, null,
-        h('span.rl-nome', null, nome ?? ''),
-        h('span.rl-freccia', { html: icone.freccia }),
-        h('span.rl-formato', null, l.etichetta),
-        h('div.mini-barra', null, h('i', { style: { width: `${Math.round((l.stato === 'fatto' ? 1 : Math.max(0, l.frazione)) * 100)}%` } })),
-        h('span.rl-stato', null, ({ attesa: 'in coda', corre: `${Math.floor(Math.max(0, l.frazione) * 100)}%`, fatto: 'fatto', errore: 'errore', annullato: 'annullato' } as const)[l.stato]),
-      );
-    }));
-  }
-  disegnaCoda();
-  if (giro.every((l) => l.stato === 'fatto' || l.stato === 'errore' || l.stato === 'annullato')) {
-    bobine?.imposta(1, 0, false, true);
-    setTimeout(() => { if (s.vista === 'lavoro') { s.vista = 'fatto'; disegnaTutto(); } }, 700);
-    if (giro.some((l) => l.stato === 'fatto')) dinDon(); else bu();
-  }
-}
-
-// ————————————————————————————————— banco: fatto —————————————————————————————————
-
-function disegnaFatto() {
-  const giro = s.giro.map((i) => s.lavori.get(i)!).filter(Boolean);
-  const ok = giro.filter((l) => l.stato === 'fatto');
-  const prima = ok.reduce((a, l) => a + l.pesoPrima, 0);
-  const dopo = ok.reduce((a, l) => a + (l.pesoDopo ?? 0), 0);
-  const secondi = Math.max(...giro.map((l) => l.secondi), 0);
-  const risparmio = prima - dopo;
-  banco.replaceChildren(
-    h('div.timbro', null,
-      h('div.timbro-scritta', null, ok.length === giro.length ? 'FATTO' : ok.length ? 'QUASI' : 'NIENTE'),
-      h('div.timbro-sotto', null,
-        `${ok.length} ${ok.length === 1 ? 'file' : 'file'} · ${peso(prima)} → ${peso(dopo)}`,
-        risparmio > 0 ? h('b', null, ` · risparmiati ${peso(risparmio)}`) : null,
-        secondi > 0 ? ` · in ${durata(secondi)}` : null)),
-    h('div.risultati', null, ...giro.map(schedaRisultato)),
-  );
-}
-
-function schedaRisultato(l: Lavoro) {
-  const f = l.fileId ? s.file.get(l.fileId) : undefined;
-  const nomeUscitaFile = l.uscita?.split('\\').pop() ?? '';
-  if (l.stato !== 'fatto') {
-    const dettaglio = h('pre.dettaglio', { hidden: true }, l.dettaglio ?? '');
-    return h(`div.risultato.${l.stato}`, null,
-      h('div.ris-icona', { html: l.stato === 'annullato' ? icone.ferma : icone.attenzione }),
-      h('div.ris-testo', null,
-        h('div.ris-nome', null, f?.nome ?? l.sorgenti[0]),
-        h('div.ris-errore', null, l.stato === 'annullato' ? 'Annullato: non è rimasto niente a metà.' : l.errore ?? 'Errore'),
-        l.dettaglio ? h('button.link', { onclick: () => { dettaglio.hidden = !dettaglio.hidden; } }, 'Dettagli tecnici') : null,
-        l.errore?.includes('LibreOffice') ? h('button.link', { onclick: () => chiedi('link', { url: 'https://it.libreoffice.org/download/download/' }) }, 'Scarica LibreOffice') : null,
-        dettaglio),
-    );
-  }
-  const rapporto = l.pesoPrima > 0 && l.pesoDopo != null ? l.pesoDopo / l.pesoPrima : 1;
-  // senza l'originale (andato nel Cestino) il confronto non ha da cosa leggere
-  const confrontabile = !l.nelCestino && f && (f.categoria === 'video' || f.categoria === 'immagine') && l.sorgenti.length === 1 && !['video.mp3', 'video.wav', 'video.srt', 'img.pdf', 'img.txt'].includes(l.formato);
-  return h('div.risultato.fatto', null,
-    h('div.ris-figura', null, f?.anteprima ? h('img', { src: f.anteprima }) : h('span', { html: iconaCategoria[f?.categoria ?? 'altro'] }), h('i.ok', { html: icone.ok })),
-    h('div.ris-testo', null,
-      h('div.ris-nome', { title: l.uscita ?? '' }, nomeUscitaFile),
-      h('div.ris-pesi', null,
-        h('span', null, peso(l.pesoPrima)), h('span.ris-freccia', { html: icone.freccia }), h('b', null, peso(l.pesoDopo)),
-        l.pesoDopo != null && l.pesoPrima > 0 ? h(`span.ris-delta${rapporto <= 1 ? '.giu' : '.su'}`, null, `${rapporto <= 1 ? '−' : '+'}${numero(Math.abs(1 - rapporto) * 100)}%`) : null,
-        l.nelCestino ? h('span.ris-cestino', { title: 'Se ti serve, lo ripeschi dal Cestino' }, h('span', { html: icone.cestino }), 'originale nel Cestino') : null,
-        !l.nelCestino && l.notaCestino ? h('span.ris-cestino.tenuto', { title: l.notaCestino }, 'originale tenuto: ' + l.notaCestino) : null),
-      h('div.ris-barre', null, h('i.prima'), h('i.dopo', { style: { width: `${Math.min(100, rapporto * 100)}%` } })),
-    ),
-    h('div.ris-azioni', null,
-      !l.nelCestino && l.sorgenti.length === 1 ? tastoCestino(null, [l], 'tasto-icona') : null,
-      h('button.tasto-icona', { title: 'Guarda nel lettore', onclick: () => chiedi('guarda', { percorso: l.uscita }), html: icone.occhio }),
-      h('button.tasto-icona', { title: 'Apri col programma di Windows', onclick: () => chiedi('apri', { percorso: l.uscita }), html: icone.apri }),
-      h('button.tasto-icona', { title: 'Mostra nella cartella', onclick: () => chiedi('mostra', { percorso: l.uscita }), html: icone.cartella }),
-      confrontabile ? h('button.tasto-icona', { title: 'Confronta prima e dopo', onclick: () => void confronta(l), html: icone.confronta }) : null,
-    ),
-  );
-}
-
-/**
- * L'originale nel Cestino, a mano: il primo clic chiede «Sicuro?», il secondo lo fa. Si ripesca dal Cestino.
- * Su chiavette e dischi di rete Windows il Cestino non ce l'ha: lì resta, e si dice perché.
- */
-function tastoCestino(testo: string | null, lavori: Lavoro[], classe: 'tasto-icona' | 'secondario') {
-  let armato: number | undefined;
-  const b = h<HTMLButtonElement>(`button.${classe}.cestina`, { title: lavori.length > 1 ? 'Gli originali nel Cestino' : 'L\'originale nel Cestino (si ripesca da lì)' },
-    h('span', { html: icone.cestino }), testo ? h('span.t', null, testo) : null);
-  b.addEventListener('click', async () => {
-    if (!armato) {
-      clac();
-      b.classList.add('armato');
-      if (testo) (b.querySelector('.t') as HTMLElement).textContent = 'SICURO? CLICCA ANCORA';
-      else b.title = 'Clicca ancora per buttarlo nel Cestino';
-      armato = window.setTimeout(() => { armato = undefined; b.classList.remove('armato'); if (testo) (b.querySelector('.t') as HTMLElement).textContent = testo; }, 3500);
-      return;
-    }
-    clearTimeout(armato);
-    clac(true);
-    b.disabled = true;
-    const no: string[] = [];
-    for (const l of lavori) {
-      const r = await chiedi<{ ok: boolean; perche: string | null }>('cestino', { lavoro: l.id }).catch((e) => ({ ok: false, perche: (e as Error).message }));
-      if (r.ok) l.nelCestino = true;
-      else if (r.perche) no.push(r.perche);
-    }
-    if (no.length) mostraAvviso(`Rimasto dov'era: ${no[0]}`);
-    if (s.vista === 'fatto') { disegnaFatto(); disegnaPiede(); }
-    if (s.stato.modo === 'rapido') disegnaRapido();
-  });
-  return b;
-}
-
-// ——— confronto prima / dopo ———
-
-async function confronta(l: Lavoro, posizione = 0.35) {
-  clac();
-  const velo = h('div.velo', { onclick: (e: Event) => { if (e.target === velo) velo.remove(); } });
-  const scatola = h('div.confronto');
-  velo.append(scatola);
-  document.body.append(velo);
-  scatola.append(h('div.attendi', null, h('i.led.lampeggia'), 'Prendo lo stesso fotogramma dai due file…'));
-  try {
-    const r = await chiedi<{ prima: string; dopo: string; tempo?: number }>('confronta', { lavoro: l.id, posizione });
-    const divisore = h('div.divisore', null, h('span.maniglia', { html: icone.confronta }));
-    const dopo = h('img.dopo', { src: r.dopo });
-    const prima = h<HTMLImageElement>('img.prima', { src: r.prima });
-    // il riquadro prende le proporzioni dell'immagine: niente bande nere ai lati di una foto 4:3
-    prima.addEventListener('load', () => {
-      const rapporto = prima.naturalWidth / prima.naturalHeight;
-      const largo = scatola.clientWidth - 24, alto = window.innerHeight - 140;
-      quadro.style.width = `${Math.min(largo, alto * rapporto)}px`;
-      quadro.style.aspectRatio = `${prima.naturalWidth} / ${prima.naturalHeight}`;
-      requestAnimationFrame(() => { const b = quadro.getBoundingClientRect(); muovi(b.left + b.width / 2); });
-    });
-    const quadro = h('div.quadro-confronto', null, prima, dopo, divisore,
-      h('span.cartellino.sx', null, `ORIGINALE · ${peso(l.pesoPrima)}`), h('span.cartellino.dx', null, `CONVERTITO · ${peso(l.pesoDopo)}`));
-    const muovi = (x: number) => {
-      const b = quadro.getBoundingClientRect();
-      const p = clamp((x - b.left) / b.width, 0, 1);
-      dopo.style.clipPath = `inset(0 0 0 ${p * 100}%)`;
-      divisore.style.left = `${p * 100}%`;
-    };
-    let tieni = false;
-    quadro.addEventListener('pointerdown', (e) => { tieni = true; quadro.setPointerCapture(e.pointerId); muovi(e.clientX); });
-    quadro.addEventListener('pointermove', (e) => { if (tieni) muovi(e.clientX); });
-    quadro.addEventListener('pointerup', () => (tieni = false));
-    const video = l.formato.startsWith('video');
-    scatola.replaceChildren(
-      h('div.confronto-testa', null, h('b', null, 'PRIMA · DOPO'), h('span', null, 'trascina la linea'),
-        video ? h('div.bottoni', null, ...[0.1, 0.35, 0.6, 0.85].map((p) => h(`button.tasto.piccolo${p === posizione ? '.su' : ''}`, { onclick: () => { velo.remove(); void confronta(l, p); } }, `${Math.round(p * 100)}%`))) : null,
-        h('button.btn-fin', { html: icone.chiudi, onclick: () => velo.remove() })),
-      quadro);
-    requestAnimationFrame(() => { const b = quadro.getBoundingClientRect(); muovi(b.left + b.width / 2); });
-  } catch (e) {
-    scatola.replaceChildren(h('div.attendi', null, 'Il confronto non è riuscito: ', String((e as Error).message)), h('button.secondario', { onclick: () => velo.remove() }, 'CHIUDI'));
-  }
-}
-
-// ————————————————————————————————— impostazioni —————————————————————————————————
-
-/** La riga del menu di Windows 11: attiva (col permesso di Windows, una volta) o togli. */
-function rigaMenu11(): HTMLElement | null {
-  const m = s.stato.menu11;
-  if (!m?.supportato) return null;
-  const testo = m.registrato
-    ? 'Attivo: «DaP Convertitore ›» sta nel tasto destro principale, con «Apri nel convertitore…» in cima e sotto le conversioni al volo. Se non lo vedi, riavvia Esplora file qui sotto. Sulle versioni più nuove di Windows 11 può stare dentro «Estensioni app»: da Impostazioni → Personalizzazione → Menu contestuale lo porti in cima.'
-    : m.fidato
-      ? 'Il permesso c\'è già: un clic e la voce va nel tasto destro principale.'
-      : 'La voce nel tasto destro principale, senza «Mostra altre opzioni». Windows chiede il permesso una volta sola: serve a fidarsi del certificato di DaProd.';
-  const tasto = m.registrato
-    ? h('button.tasto', { onclick: async () => { clac(); const r = await chiedi<{ stato: StatoMenu11 }>('menu11', { azione: 'togli' }); s.stato.menu11 = r.stato; apriImpostazioni(); } }, 'Togli')
-    : h('button.tasto.su', { onclick: (e: Event) => void attivaMenu11(e.currentTarget as HTMLButtonElement) }, h('i.led.verde'), 'Attiva');
-  return h('div.imp-riga', null, h('div', null, h('b', null, 'Nel tasto destro di Windows 11', m.registrato ? h('span.spunta', { html: icone.ok }) : null), h('p', null, testo)), tasto);
-}
-
-function apriImpostazioni() {
-  clac();
-  const imp = s.stato.impostazioni;
-  // se è già aperto si ridisegna dentro lo stesso velo: due veli uno sull'altro facevano lo schermo nero
-  const vecchio = document.querySelector('.velo.impostazioni') as HTMLElement | null;
-  const cassetto = vecchio ?? h('div.velo.impostazioni', { onclick: (e: Event) => { if (e.target === cassetto) cassetto.remove(); } });
-  const scorri = vecchio?.querySelector('.cassetto')?.scrollTop ?? 0;
-  cassetto.replaceChildren();
-  const salva = (m: Partial<typeof imp>) => { Object.assign(imp, m); void chiedi('impostazioni', m); };
-  const scritta = h('input.campo', { value: imp.scritta, maxlength: 40, placeholder: 'convertito' }) as HTMLInputElement;
-  scritta.addEventListener('change', () => { salva({ scritta: scritta.value.trim() }); disegnaPiede(); });
-  const riga = (titolo: string, spiega: string, controllo: Node) => h('div.imp-riga', null, h('div', null, h('b', null, titolo), h('p', null, spiega)), controllo);
-  const leva = (acceso: boolean, cambia: (v: boolean) => void) => {
-    const b = h(`button.interruttore.solo${acceso ? '.su' : ''}`, null, h('i.levetta'));
-    b.addEventListener('click', () => { clac(); acceso = !acceso; b.classList.toggle('su', acceso); cambia(acceso); });
-    return b;
-  };
-  cassetto.append(h('div.cassetto', null,
-    h('div.confronto-testa', null, h('b', null, 'IMPOSTAZIONI'), h('span'), h('button.btn-fin', { html: icone.chiudi, onclick: () => cassetto.remove() })),
-    riga('La scritta nel nome', 'Foto.jpg diventa «Foto (convertito).webp». Puoi cambiarla.', scritta),
-    riga('L\'originale nel Cestino da solo', 'Spento: l\'originale resta, e lo butti tu col cestino accanto al risultato. Acceso: quando il convertito ne prende il posto (MOV → MP4, PNG → JPG…) l\'originale va nel Cestino da solo. Mai quando ne tiri fuori un pezzo (l\'audio, il testo, le pagine) né su chiavette e dischi di rete.',
-      leva(imp.cestinoDaSolo, (v) => { salva({ cestinoDaSolo: v }); disegnaPiede(); })),
-    h('div.imp-sezione', null, 'LETTORE'),
-    riga('Nel menu «Apri con»', 'Il lettore di DaP fra i programmi che aprono foto, video, musica, PDF, documenti, archivi, codice. Non si prende niente da solo. Porta anche le icone di ogni tipo e le anteprime vere in Esplora file (la foto, il fotogramma del video, il modello 3D, la forma dell\'onda).',
-      leva(imp.apriCon, (v) => salva({ apriCon: v }))),
-    riga('Aprire col doppio clic', 'Per farlo diventare il programma di tutti i giorni (al posto di Foto o Lettore multimediale): Windows lo fa scegliere a te, tipo per tipo.',
-      h('button.tasto', { onclick: () => { clac(); void chiedi('predefinite'); } }, 'App predefinite')),
-    h('div.imp-sezione', null, 'TASTO DESTRO'),
-    rigaMenu11(),
-    s.stato.menu11?.windows11
-      ? riga('Menu classico ovunque', 'Il tasto destro apre subito il menu di Windows 10, con tutte le voci a un clic e senza «Mostra altre opzioni». Spegnilo per tornare al menu di Windows 11.',
-          leva(s.stato.menu11.classico, async (v) => {
-            s.stato.menu11 = await chiedi<StatoMenu11>('classico', { attivo: v });
-            proponiRiavvio(v ? 'Il menu classico arriva quando riparte Esplora file.' : 'Il menu di Windows 11 torna quando riparte Esplora file.');
-          }))
-      : null,
-    riga('Nel menu classico', 'La voce DaP Convertitore anche nel menu di prima: «Mostra altre opzioni» o Maiusc + tasto destro, e «Invia a».', leva(imp.menu, (v) => { salva({ menu: v }); void chiedi('menu', { attivo: v }); })),
-    riga('Riavvia Esplora file', 'Esplora file legge le voci del tasto destro solo quando parte: se una voce non compare, di solito basta questo. Butta anche le anteprime e le icone vecchie, così ripartono nuove.',
-      h('button.tasto', { onclick: () => { clac(); proponiRiavvio('Esplora file si spegne e si riaccende subito.'); } }, 'Riavvia')),
-    h('div.imp-sezione', null, 'ALTRO'),
-    riga('Spingi al massimo', 'FFmpeg a priorità normale: un po\' più veloce, ma mentre converte il PC si sente.', leva(imp.alMassimo, (v) => salva({ alMassimo: v }))),
-    riga('Suoni', 'Il clac dei tasti e il din-don alla fine.', leva(imp.suoni, (v) => { salva({ suoni: v }); accendiSuoni(v); })),
-    riga('Apri la cartella alla fine', 'Quando ha finito, apre Esplora file col file convertito già selezionato.', leva(imp.apriCartella, (v) => salva({ apriCartella: v }))),
-    h('div.imp-piede', null,
-      h('span', null, `DaP Convertitore ${s.stato.versione} · DaProd`),
-      h('button.link', { onclick: () => chiedi('registro') }, 'Apri il registro'),
-      h('button.link#cerca-agg', { onclick: async (e: Event) => {
-        const b = e.currentTarget as HTMLButtonElement;
-        b.textContent = 'Cerco…';
-        const r = await chiedi<{ versione: string | null }>('aggiorna', { controlla: true }).catch(() => ({ versione: null }));
-        b.textContent = r.versione ? `Installa la ${r.versione}` : 'Sei all\'ultima versione';
-        if (r.versione) b.onclick = () => chiedi('aggiorna', { installa: true });
-      } }, 'Cerca aggiornamenti')),
-  ));
-  if (!vecchio) document.body.append(cassetto);
-  else (cassetto.querySelector('.cassetto') as HTMLElement).scrollTop = scorri;
-}
-
-// ————————————————————————————————— modo rapido —————————————————————————————————
-// Dal sottomenu del tasto destro: niente scelte, una finestrella in basso a destra con le bobine.
-
-let bobineRapide: Bobine | null = null;
-let chiusuraRapida: number | undefined;
-
-function disegnaRapido() {
-  const giro = s.giro.map((i) => s.lavori.get(i)!).filter(Boolean);
-  const l = giro.find((x) => x.stato === 'corre') ?? giro.find((x) => x.stato === 'attesa') ?? giro[giro.length - 1];
-  if (!document.querySelector('.rapido-corpo')) {
-    const canvas = h('canvas.bobine-mini') as HTMLCanvasElement;
-    app.replaceChildren(testa, h('div.rapido-corpo', null, canvas, h('div.rapido-testo#rapido-testo')));
-    requestAnimationFrame(() => { bobineRapide = new Bobine(canvas, '#ff3df2'); disegnaRapido(); });
-    app.addEventListener('pointerenter', () => { if (chiusuraRapida) { clearTimeout(chiusuraRapida); chiusuraRapida = undefined; } });
-    return;
-  }
-  const t = document.getElementById('rapido-testo')!;
-  if (!l) { t.replaceChildren(h('div.r-nome', null, 'Preparo…')); return; }
-  const f = l.fileId ? s.file.get(l.fileId) : undefined;
-  const finiti = giro.every((x) => x.stato === 'fatto' || x.stato === 'errore' || x.stato === 'annullato');
-  const nome = giro.length > 1 ? `${giro.filter((x) => x.stato === 'fatto').length} di ${giro.length} · ${f?.nome ?? ''}` : f?.nome ?? l.sorgenti[0].split('\\').pop() ?? '';
-  if (!finiti) {
-    const fr = Math.max(0, l.frazione);
-    bobineRapide?.imposta(l.frazione < 0 ? 0.5 : fr, l.velocita, l.stato === 'corre');
-    t.replaceChildren(
-      h('div.r-nome', { title: nome }, nome),
-      h('div.r-fase', null, h('span.chip-formato', null, l.etichetta), l.stato === 'attesa' ? 'In coda…' : l.fase ?? 'Lavoro…'),
-      h('div.barra-grande.piccola', null, h(`i${l.frazione < 0 ? '.indeterminata' : ''}`, { style: { width: `${l.frazione < 0 ? 100 : fr * 100}%` } })),
-      h('div.r-sotto', null,
-        h('span.sette-mini', null, `${Math.floor(fr * 100)}%`),
-        l.eta != null ? h('span', null, `manca ${durata(l.eta)}`) : null,
-        l.velocita ? h('span', null, `×${l.velocita.toFixed(1)}`) : null,
-        h('button.link', { onclick: () => { clac(true); void chiedi('annulla', {}); } }, 'Annulla')),
-    );
-  } else {
-    const ok = giro.filter((x) => x.stato === 'fatto');
-    bobineRapide?.imposta(1, 0, false, ok.length > 0);
-    const ultimo = ok[ok.length - 1];
-    t.replaceChildren(
-      h('div.r-nome', null, ok.length ? (ultimo.uscita?.split('\\').pop() ?? '') : nome),
-      ok.length
-        ? h('div.r-fase.ok', null, h('span', { html: icone.ok }), ok.length > 1 ? `${ok.length} file fatti` : 'Fatto', ` · ${peso(ok.reduce((a, x) => a + x.pesoPrima, 0))} → ${peso(ok.reduce((a, x) => a + (x.pesoDopo ?? 0), 0))}`,
-            ok.some((x) => x.nelCestino) ? h('span.r-cestino', { html: icone.cestino, title: 'L\'originale è nel Cestino' }) : null)
-        : h('div.r-fase.ko', null, h('span', { html: icone.attenzione }), giro[0].errore ?? 'Annullato'),
-      h('div.r-azioni', null,
-        ultimo ? h('button.tasto.piccolo', { onclick: () => chiedi('guarda', { percorso: ultimo.uscita }) }, 'Guarda') : null,
-        ultimo && ok.length === 1 && !ultimo.nelCestino && ultimo.sorgenti.length === 1 ? tastoCestino(null, [ultimo], 'tasto-icona') : null,
-        ultimo ? h('button.tasto.piccolo', { onclick: () => chiedi('mostra', { percorso: ultimo.uscita }) }, 'Mostra nella cartella') : null,
-        h('button.tasto.piccolo', { onclick: () => chiedi('finestra', { azione: 'espandi' }) }, 'Altro…')),
-    );
-    if (!chiusuraRapida && ok.length === giro.length) chiusuraRapida = window.setTimeout(() => chiedi('finestra', { azione: 'chiudi' }), 9000);
-  }
-}
-
 // ————————————————————————————————— tutto insieme —————————————————————————————————
 
 function disegnaTutto() {
@@ -1014,6 +298,7 @@ function opzioniSalvate() {
 }
 
 async function avvia() {
+  Object.assign(ui, { tutto: disegnaTutto, scegli: disegnaScegli, piede: disegnaPiede, coda: disegnaCoda, fatto: disegnaFatto, rapido: disegnaRapido, impostazioni: apriImpostazioni, nuovoGiro });
   await avviaFinto();
   ascolta('file', (f: InfoFile) => {
     if (!s.file.has(f.id)) s.ordine.push(f.id);

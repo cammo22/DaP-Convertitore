@@ -76,5 +76,24 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
   cartella (`foto/`) porta con sé anche quello che c'è dentro (provato in `ProveScrittura`).
 - **La barra bianca**: `.testa` (convertitore) e `.l-barra` (lettore) hanno uno sfondo chiaro apposta, il resto è
   scuro. Non è la barra di Windows (la finestra è senza cornice): è disegnata dalla pagina.
+- **Ritocco delle foto** (dalla 1.5.0): `ui/src/lettore/ritocco.ts` disegna su due fogli canvas (`base` = segni fissati,
+  `viva` = segno in corso) grandi quanto la foto, dentro un wrapper che prende lo stesso `transform` della foto
+  (`rit.segui`). Si salva componendo foto + segni in un canvas, codificato **dalla pagina** (JPG 0.97, PNG, WEBP) e
+  mandato in base64 a `salvaRitocco` → `Lettore/Ritocco.cs`: JPG con l'EXIF dell'originale innestato (orientamento
+  rimesso a 1: i pixel sono già dritti), bozza `.~` e `Modifiche.Sostituisci`. Formati che non si riscrivono → PNG accanto.
+- **Trascinare fuori dall'archivio** (dalla 1.5.0): l'HTML5 drag non sa portare file fuori da WebView2, quindi si
+  guida col mouse (`pointerdown/move` in `archivio.ts`). Dopo 6 px parte `preparaTrascinamento` (`Trascinamento.cs`
+  estrae con `tar` in `%TEMP%\DaP Convertitore\trascina\<guid>`); quando il mouse esce dalla finestra con il tasto
+  premuto la pagina chiama `trascinaFuori` e C# fa `DragDrop.DoDragDrop` col FileDrop (la risposta torna a drop
+  finito). Sulla zona in alto si estrae accanto all'archivio. Per provarlo: `mouse_event` (SendInput) dal lettore a una
+  finestra di Esplora file; `scripts\clic.mjs` fa i clic veri (non `.click()`) dentro la pagina.
+- **Slider del peso delle foto** (dalla 1.5.0): `StimaImmagini.cs` risponde a `stimaImmagine` codificando davvero (JPG/HEIC
+  interi con WIC; WEBP/AVIF/JXL su un ritaglio 512×512 al centro riportato all'intera foto, `Esatta=false`). La
+  conversione col peso usa la stessa `Immagini.Cerca` con qualità massima 95 (`QualitaPerPeso`, anche in
+  `pannelli/immagine.ts`): sopra 95 il WEBP diventa lossless. `pesoPerFile` vale per video e foto (un file è l'uno o
+  l'altra). `#app` e `#lettore` hanno `grid-template-columns: minmax(0, 1fr)`: senza, un nome di file lungo e senza spazi
+  allargava la pagina oltre la finestra.
+- **I pezzi della piastra** parlano fra loro tramite `ui` (`ui/src/app/stato.ts`: `ui.scegli()`, `ui.piede()`…), che
+  `main.ts` collega all'avvio: così i moduli non si importano in tondo.
 - **Il Cestino a mano** (dalla 1.1.0): `Impostazioni.CestinoDaSolo`, spento di partenza (nome nuovo apposta: la
   1.0.2 salvava `cestino` acceso). Il tasto accanto al risultato chiama `Coda.OriginaleNelCestino`.

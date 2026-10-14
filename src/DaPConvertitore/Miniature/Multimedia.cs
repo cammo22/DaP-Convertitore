@@ -235,8 +235,7 @@ public static class Multimedia
             try
             {
                 var foto = await Immagini.Apri(percorso, ctx, (uint)L);
-                if (foto.BitmapAlphaMode != BitmapAlphaMode.Straight) foto = SoftwareBitmap.Convert(foto, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Straight);
-                return await Immagini.Codifica(foto, Windows.Graphics.Imaging.BitmapEncoder.PngEncoderId);
+                return await Immagini.Codifica(Immagini.Diritta(foto), Windows.Graphics.Imaging.BitmapEncoder.PngEncoderId);
             }
             finally { ctx.Pulisci(); }
         });

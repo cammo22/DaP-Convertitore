@@ -76,6 +76,7 @@ public sealed class Ponte
     }
 
     string? versioneNuova;
+    CancellationTokenSource? stima;
 
     // ————————————————————————— richieste da fuori (riga di comando, altre istanze) —————————————————————————
 
@@ -243,6 +244,17 @@ public sealed class Ponte
                     p.Punteggio, p.Giudizio, p.PesoStimato, p.PesoMin, p.PesoMax, p.PuoCopiare, p.Note,
                     codecAmmessi = PianoVideo.CodecPer(f.Estensione, hw),
                 };
+            }
+            case "stimaImmagine":
+            {
+                // quanto peserà la foto (e a che qualità ci si arriva): una stima alla volta, la nuova ferma la vecchia
+                var v = file[(string)a["id"]!];
+                var f = Catalogo.Trova((string)a["formato"]!)!;
+                var mia = new CancellationTokenSource();
+                Interlocked.Exchange(ref stima, mia)?.Cancel();
+                var s = await StimaImmagini.Fai(strumenti, v.Info.Percorso, f.Estensione, a["lato"]?.GetValue<int>() ?? 0, a["qualita"]?.GetValue<int>() ?? 88,
+                    a["pesoMax"]?.GetValue<long>() ?? 0, a["intervallo"]?.GetValue<bool>() == true, mia.Token);
+                return new { s.Peso, s.Qualita, s.Scala, s.Min, s.Max, s.Larghezza, s.Altezza, s.Esatta };
             }
             case "converti":
             {

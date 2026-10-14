@@ -131,7 +131,7 @@ public static class Modifiche
     }
 
     /// <summary>I byte nuovi prendono il posto del file; la data di creazione resta quella di prima.</summary>
-    static void Sostituisci(string percorso, byte[] dati)
+    internal static void Sostituisci(string percorso, byte[] dati)
     {
         var bozza = Nomi.Bozza(percorso);
         var creato = File.GetCreationTime(percorso);

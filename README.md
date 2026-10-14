@@ -107,7 +107,8 @@ apre il lettore: nero, senza cornice, leggero. Ogni tipo di file ha la sua pagin
   brano dopo l'altro. WMA, APE, ALAC e compagnia diventano FLAC in cache, senza perdere niente.
 - **Foto · il tavolo luminoso.** La rotella zooma dove c'è il mouse, si trascina, doppio clic per il 100%, la
   mappa in basso quando sei dentro. ← → passano alla foto dopo (già pronta), **S presentazione**, R gira,
-  B sfondo scuro/scacchi/chiaro, Ctrl+C copia l'immagine, W la mette come sfondo del desktop. In *Proprietà* i
+  B sfondo scuro/scacchi/chiaro, Ctrl+C copia l'immagine, W la mette come sfondo del desktop, **D ritocca**:
+  si disegna e si scrive sopra la foto (vedi sotto). In *Proprietà* i
   dati dello scatto (fotocamera, obiettivo, f/, tempo, ISO, posizione) e l'**istogramma**. HEIC, RAW, TIFF, PSD
   passano dal motore di Windows.
 - **PDF · la scrivania.** I fogli con la loro ombra, le miniature a lato, il numero di pagina sul display a sette
@@ -123,8 +124,14 @@ apre il lettore: nero, senza cornice, leggero. Ogni tipo di file ha la sua pagin
 
 **Testi e archivi.** Un TXT o un Markdown si legge come un libro. **Modifica** (F2) lo trasforma in un campo di
 scrittura, e **Salva** (Ctrl+S) lo riscrive nel file con la sua codifica e le sue fini riga. Dentro un archivio
-(ZIP, 7Z…) scegli cartelle e file (clic, Ctrl per più) e li trascini sulla zona in alto: escono subito accanto
-all'archivio. Nella piastra, **Ctrl+Canc** (o il tasto *svuota*) svuota la coda; **Canc** toglie il file scelto.
+(ZIP, 7Z…) scegli cartelle e file (clic, Ctrl per più) e li **trascini fuori dalla finestra**, nella cartella di
+Esplora file o sul desktop: escono come file veri, dove li lasci. Sulla zona in alto escono accanto all'archivio. Nella piastra, **Ctrl+Canc** (o il tasto *svuota*) svuota la coda; **Canc** toglie il file scelto.
+
+**Ritoccare una foto.** Nel lettore **D** (o la matita in alto) apre la barra del ritocco: penna, evidenziatore, freccia,
+riquadro, ovale e **testo** (clic dove scrivere, Invio per fissarlo), otto colori più uno a scelta, lo spessore, annulla e
+rifai (Ctrl Z, Ctrl Y). Due tasti: **Salva le modifiche** scrive i segni sulla foto e *sostituisce il file* (dopo una
+conferma; nelle JPG restano i dati dello scatto), **Copia** mette la foto ritoccata negli appunti *senza* salvare niente. I
+formati che non si riscrivono (HEIC, BMP, GIF…) salvano accanto, in PNG, e l'originale non si tocca.
 
 **Piccole modifiche sul file vero, senza ricodificare.** **R** gira (**Maiusc R** a sinistra, **M** specchia le
 foto), e **Salva nel file** (Ctrl S) riscrive il file: nelle JPG cambia solo l'orientamento, nei video MP4 e MOV
@@ -153,7 +160,7 @@ app → Sempre*).
 
 ## Lo slider del peso
 
-Il video deve stare in **10 MB per Discord**, **100 MB per WhatsApp**, **4 GB per la chiavetta FAT32**? Tiri il
+Vale per i video e per le foto (JPG, WEBP, AVIF, JXL, HEIC). Il video deve stare in **10 MB per Discord**, **100 MB per WhatsApp**, **4 GB per la chiavetta FAT32**? Tiri il
 fader (o premi il preset) e il display a sette segmenti dice il peso. Il convertitore fa il conto:
 
 - toglie l'audio dal totale e trova il bitrate del video;
@@ -165,7 +172,9 @@ fader (o premi il preset) e il display a sette segmenti dice il peso. Il convert
   sicuro.
 
 I pesi si contano come li conta Esplora file (1 KB = 1024 byte): il numero che vedi è quello che ritrovi.
-Se invece del peso ti interessa la qualità c'è il modo **QUALITÀ**. E quando il video può passare così com'è
+Per le foto il display dice a che qualità ci si arriva e se la foto va rimpicciolita per starci: il peso non è
+un'indovinata, il motore codifica davvero la foto (JPG e HEIC interi; WEBP, AVIF e JXL su un pezzo al centro, e allora
+è una stima). Se invece del peso ti interessa la qualità c'è il modo **QUALITÀ**. E quando il video può passare così com'è
 (un MKV in H.264 che deve diventare MP4) c'è **VELOCE**: cambia solo la scatola, in pochi secondi e senza
 perdere niente.
 
@@ -205,7 +214,7 @@ AV1; in H.264 diventa SDR coi colori giusti. FFmpeg gira a priorità bassa: ment
 | **Cartelle** e qualsiasi altro file | ZIP, 7Z | il `tar` di Windows |
 
 Le foto si girano da sole come le vede il telefono (orientamento EXIF); la posizione GPS e gli altri dati
-nascosti non passano, la data del file sì. Col **peso massimo** la qualità scende finché la foto ci sta, e se
+nascosti non passano, la data del file sì. Con lo slider del **peso** la qualità scende finché la foto ci sta, e se
 non basta la foto si rimpicciolisce. Il CSV esce col punto e virgola e il BOM, come lo vuole Excel in Italia.
 
 Per documenti, fogli e presentazioni serve **[LibreOffice](https://it.libreoffice.org/download/download/)**
@@ -268,7 +277,8 @@ la musica, che il video tradotto esca a frammenti, che Word e gli archivi si leg
 - `src/DaPConvertitore/` — l'app: `Programma.cs` (avvio, Velopack, istanza unica), `Regia.cs` (chi apre cosa),
   `Finestra.cs` e `Ponte.cs` (il convertitore), `FinestraLettore.cs`, `PonteLettore.cs` e `Risorse.cs` (il
   lettore), `Stampante.cs` (HTML → PDF), `Notifiche.cs`, `Aggiornamenti.cs`.
-- `ui/` — l'interfaccia (`src/main.ts` la piastra, `src/lettore/` il lettore). `test/` — le prove.
+- `ui/` — l'interfaccia: `src/main.ts` coordina la piastra e i pezzi stanno in `src/app/` (`stato.ts`, `scheletro.ts`,
+  `controlli.ts`, `pannelli/` video e foto, `lavoro.ts`, `risultati.ts`, `impostazioni.ts`, `rapido.ts`); `src/lettore/` è il lettore. `test/` — le prove.
   `scripts/` — FFmpeg, compilazione, pacchetto, icona, foto dell'app vera (`schermo.mjs`).
 
 ---

@@ -119,6 +119,20 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
       const file = esempi.find((e) => e.id === args.id)!;
       return piano(file, { ...args.opzioni.video, __est: formati.find((x) => x.id === args.formato)?.estensione });
     }
+    case 'stimaImmagine': {
+      // un finto conto: il peso sale con la qualità, e sotto il peso voluto la foto si rimpicciolisce
+      const file = esempi.find((e) => e.id === args.id)!;
+      const w = dettagli[file.id]?.larghezza ?? 4000, hh = dettagli[file.id]?.altezza ?? 3000;
+      const alQuadrato = (q: number) => file.peso * Math.pow(q / 88, 2.2) * 0.9;
+      const max = alQuadrato(95), min = alQuadrato(35) * 0.3;
+      let qualita = args.qualita as number, scala = 1, peso = alQuadrato(qualita);
+      if (args.pesoMax > 0) {
+        qualita = 95; peso = alQuadrato(95);
+        while (peso > args.pesoMax && qualita > 35) { qualita -= 1; peso = alQuadrato(qualita); }
+        if (peso > args.pesoMax) { scala = Math.max(0.3, Math.sqrt(args.pesoMax / peso)); peso = args.pesoMax; }
+      }
+      return { peso: Math.round(peso), qualita, scala, min: Math.round(min), max: Math.round(max), larghezza: Math.round(w * scala), altezza: Math.round(hh * scala), esatta: true };
+    }
     case 'converti': {
       const ids: string[] = [];
       for (const el of args.elementi as { ids: string[]; formato: string }[]) {

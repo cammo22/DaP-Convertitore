@@ -85,6 +85,8 @@ public sealed class OpzioniAudio
 
 public sealed class OpzioniImmagine
 {
+    /// <summary>«peso»: si sceglie quanto deve pesare e la qualità viene da sé; «qualita»: si sceglie la qualità. Lo usa l'interfaccia.</summary>
+    public string Modo { get; set; } = "peso";
     public int Qualita { get; set; } = 88;
     /// <summary>Il lato lungo massimo in pixel. 0 = come l'originale.</summary>
     public int Lato { get; set; }

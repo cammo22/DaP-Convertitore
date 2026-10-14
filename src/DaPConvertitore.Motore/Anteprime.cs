@@ -40,7 +40,7 @@ public static class Anteprime
                     try
                     {
                         var foto = await Immagini.Apri(percorso, ctx, lato);
-                        return new Anteprima(await Immagini.Codifica(Diritta(foto), BitmapEncoder.PngEncoderId), "image/png");
+                        return new Anteprima(await Immagini.Codifica(Immagini.Diritta(foto), BitmapEncoder.PngEncoderId), "image/png");
                     }
                     finally { ctx.Pulisci(); }
                 }
@@ -55,9 +55,6 @@ public static class Anteprime
         catch (Exception e) { Registro.Scrivi($"Anteprima di {Path.GetFileName(percorso)}: {e.Message}"); }
         return await DiWindows(percorso, (int)Math.Min(lato, 256));
     }
-
-    static SoftwareBitmap Diritta(SoftwareBitmap f) =>
-        f.BitmapAlphaMode == BitmapAlphaMode.Straight ? f : SoftwareBitmap.Convert(f, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Straight);
 
     /// <summary>L'anteprima di Esplora file (IShellItemImageFactory), su un thread STA come piace alla shell.</summary>
     public static Task<Anteprima?> DiWindows(string percorso, int lato)
@@ -93,7 +90,7 @@ public static class Anteprime
             if (px.Where((_, i) => i % 4 == 3).All(a => a == 0))
                 for (var i = 3; i < px.Length; i += 4) px[i] = 255;
             var sb = SoftwareBitmap.CreateCopyFromBuffer(px.AsBuffer(), BitmapPixelFormat.Bgra8, w, h, BitmapAlphaMode.Premultiplied);
-            var png = Immagini.Codifica(Diritta(sb), BitmapEncoder.PngEncoderId).GetAwaiter().GetResult();
+            var png = Immagini.Codifica(Immagini.Diritta(sb), BitmapEncoder.PngEncoderId).GetAwaiter().GetResult();
             return new Anteprima(png, "image/png");
         }
         finally { DeleteObject(hbm); }

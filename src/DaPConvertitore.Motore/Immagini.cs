@@ -113,76 +113,86 @@ public static class Immagini
         // l'AVIF di FFmpeg non porta la trasparenza: si mette su bianco invece di lasciarla nera
         await File.WriteAllBytesAsync(png, await Codifica(est == ".avif" ? SuBianco(foto) : Diritta(foto), BitmapEncoder.PngEncoderId), ctx.Ct);
 
-        async Task<byte[]> Fai(int q, double scala)
-        {
-            var dest = Path.Combine(cartella, "uscita" + est);
-            var a = new List<string> { "-hide_banner", "-loglevel", "error", "-y", "-i", png };
-            if (scala < 1) a.AddRange(["-vf", $"scale=trunc(iw*{scala.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)}/2)*2:-2:flags=lanczos"]);
-            switch (est)
-            {
-                case ".webp":
-                    a.AddRange(["-c:v", "libwebp", "-compression_level", "6", "-preset", "photo"]);
-                    a.AddRange(q >= 100 ? ["-lossless", "1"] : ["-quality", $"{q}"]);
-                    break;
-                case ".avif":
-                    // da RGB a YUV con la matrice dichiarata (BT.709, gamma piena, sRGB): senza, FFmpeg usa la BT.601
-                    // senza dirlo e chi apre il file vede i colori più chiari
-                    if (scala >= 1) a.AddRange(["-vf", "scale=out_color_matrix=bt709:out_range=pc"]);
-                    else a[^1] += ":out_color_matrix=bt709:out_range=pc";
-                    a.AddRange(["-c:v", "libaom-av1", "-still-picture", "1", "-crf", $"{(int)Math.Round(55 - q * 0.35)}", "-b:v", "0",
-                        "-cpu-used", "4", "-row-mt", "1", "-pix_fmt", "yuv420p",
-                        "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "iec61966-2-1", "-color_range", "pc", "-f", "avif"]);
-                    break;
-                case ".jxl":
-                    a.AddRange(["-c:v", "libjxl", "-distance", $"{Math.Max(0, (100 - q) * 0.1):0.0}".Replace(',', '.'), "-effort", "7"]);
-                    break;
-                case ".gif":
-                    a.AddRange(["-filter_complex", "split[a][b];[a]palettegen=max_colors=256[p];[b][p]paletteuse=dither=sierra2_4a", "-f", "gif"]);
-                    break;
-            }
-            a.AddRange(["-frames:v", "1", dest]);
-            var r = await Processi.Esegui(ctx.Strumenti.Ffmpeg, a, ctx.Ct);
-            if (r.Codice != 0) throw new ErroreConversione(Ffmpeg.Spiega(r.Errori), r.Errori);
-            return await File.ReadAllBytesAsync(dest, ctx.Ct);
-        }
-
         var q0 = Math.Clamp(o.Qualita, 1, 100);
         var dati = o.PesoMaxByte > 0 && est != ".gif"
-            ? CercaPeso((qq, s) => Fai(qq, s).GetAwaiter().GetResult(), q0, o.PesoMaxByte)
-            : await Fai(q0, 1);
+            ? CercaPeso((qq, s) => CodificaFfmpeg(png, est, qq, s, ctx, cartella).GetAwaiter().GetResult(), q0, o.PesoMaxByte)
+            : await CodificaFfmpeg(png, est, q0, 1, ctx, cartella);
         await File.WriteAllBytesAsync(uscita, dati, ctx.Ct);
     }
+
+    /// <summary>Un PNG pulito diventa WEBP, AVIF, JXL o GIF alla qualità e alla scala date.</summary>
+    internal static async Task<byte[]> CodificaFfmpeg(string png, string est, int q, double scala, Contesto ctx, string cartella, bool silenzioso = false)
+    {
+        var dest = Path.Combine(cartella, "uscita" + est);
+        var a = new List<string> { "-hide_banner", "-loglevel", "error", "-y", "-i", png };
+        if (scala < 1) a.AddRange(["-vf", $"scale=trunc(iw*{scala.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)}/2)*2:-2:flags=lanczos"]);
+        switch (est)
+        {
+            case ".webp":
+                a.AddRange(["-c:v", "libwebp", "-compression_level", "6", "-preset", "photo"]);
+                a.AddRange(q >= 100 ? ["-lossless", "1"] : ["-quality", $"{q}"]);
+                break;
+            case ".avif":
+                // da RGB a YUV con la matrice dichiarata (BT.709, gamma piena, sRGB): senza, FFmpeg usa la BT.601
+                // senza dirlo e chi apre il file vede i colori più chiari
+                if (scala >= 1) a.AddRange(["-vf", "scale=out_color_matrix=bt709:out_range=pc"]);
+                else a[^1] += ":out_color_matrix=bt709:out_range=pc";
+                a.AddRange(["-c:v", "libaom-av1", "-still-picture", "1", "-crf", $"{(int)Math.Round(55 - q * 0.35)}", "-b:v", "0",
+                    "-cpu-used", "4", "-row-mt", "1", "-pix_fmt", "yuv420p",
+                    "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "iec61966-2-1", "-color_range", "pc", "-f", "avif"]);
+                break;
+            case ".jxl":
+                a.AddRange(["-c:v", "libjxl", "-distance", $"{Math.Max(0, (100 - q) * 0.1):0.0}".Replace(',', '.'), "-effort", "7"]);
+                break;
+            case ".gif":
+                a.AddRange(["-filter_complex", "split[a][b];[a]palettegen=max_colors=256[p];[b][p]paletteuse=dither=sierra2_4a", "-f", "gif"]);
+                break;
+        }
+        a.AddRange(["-frames:v", "1", dest]);
+        var r = await Processi.Esegui(ctx.Strumenti.Ffmpeg, a, ctx.Ct, silenzioso: silenzioso);
+        if (r.Codice != 0) throw new ErroreConversione(Ffmpeg.Spiega(r.Errori), r.Errori);
+        return await File.ReadAllBytesAsync(dest, ctx.Ct);
+    }
+
+    /// <summary>Quello che la ricerca del peso ha trovato: il risultato, quanto pesa, a che qualità e a che scala.</summary>
+    public sealed record EsitoRicerca<T>(T Dati, long Peso, int Qualita, double Scala);
 
     /// <summary>
     /// "Sotto i 2 MB": si cerca la qualità più alta che ci sta, dimezzando l'intervallo (al massimo 7 prove).
     /// Sotto 35 la foto si rovina: piuttosto si rimpicciolisce, di quanto serve, e si ricerca. Ci sta di sicuro.
+    /// La stessa ricerca serve alla conversione (T = i byte) e alla stima per lo slider (T = niente: conta solo il peso).
     /// </summary>
-    public static byte[] CercaPeso(Func<int, double, byte[]> fai, int qualitaMax, long pesoMax)
+    public static EsitoRicerca<T> Cerca<T>(Func<int, double, (long Peso, T Dati)> fai, int qualitaMax, long pesoMax)
     {
         const int pavimento = 35;
         double scala = 1;
-        byte[] ultimo = [];
+        EsitoRicerca<T>? ultimo = null;
         for (var giro = 0; giro < 8; giro++)
         {
             var d = fai(qualitaMax, scala);
-            if (d.LongLength <= pesoMax) return d;
+            if (d.Peso <= pesoMax) return new(d.Dati, d.Peso, qualitaMax, scala);
             int basso = Math.Min(pavimento, qualitaMax), alto = qualitaMax - 1;
-            byte[]? trovato = null;
+            EsitoRicerca<T>? trovato = null;
             for (var i = 0; i < 7 && basso <= alto; i++)
             {
                 var mezzo = (basso + alto) / 2;
                 var prova = fai(mezzo, scala);
-                if (prova.LongLength <= pesoMax) { trovato = prova; basso = mezzo + 1; }
+                if (prova.Peso <= pesoMax) { trovato = new(prova.Dati, prova.Peso, mezzo, scala); basso = mezzo + 1; }
                 else alto = mezzo - 1;
             }
             if (trovato is not null) return trovato;
-            ultimo = fai(Math.Min(pavimento, qualitaMax), scala);
-            if (ultimo.LongLength <= pesoMax) return ultimo;
+            var q = Math.Min(pavimento, qualitaMax);
+            var u = fai(q, scala);
+            ultimo = new(u.Dati, u.Peso, q, scala);
+            if (u.Peso <= pesoMax) return ultimo;
             // il peso va col numero di pixel: si scende della radice del rapporto, con un po' di margine
-            scala *= Math.Clamp(Math.Sqrt(pesoMax / (double)ultimo.LongLength) * 0.95, 0.3, 0.9);
+            scala *= Math.Clamp(Math.Sqrt(pesoMax / (double)u.Peso) * 0.95, 0.3, 0.9);
         }
-        return ultimo;
+        return ultimo!;
     }
+
+    public static byte[] CercaPeso(Func<int, double, byte[]> fai, int qualitaMax, long pesoMax) =>
+        Cerca<byte[]>((q, s) => { var d = fai(q, s); return (d.LongLength, d); }, qualitaMax, pesoMax).Dati;
 
     public static async Task<byte[]> Codifica(SoftwareBitmap foto, Guid encoder, float? qualita = null, double scala = 1, params (string chiave, BitmapTypedValue valore)[] altro)
     {
@@ -205,7 +215,8 @@ public static class Immagini
         return dati;
     }
 
-    static SoftwareBitmap Diritta(SoftwareBitmap foto) =>
+    /// <summary>Pixel con alfa «diritta» (non premoltiplicata): quella che vogliono i codificatori PNG e JPEG.</summary>
+    public static SoftwareBitmap Diritta(SoftwareBitmap foto) =>
         foto.BitmapAlphaMode == BitmapAlphaMode.Straight ? foto : SoftwareBitmap.Convert(foto, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Straight);
 
     /// <summary>Per i formati senza trasparenza: i pixel trasparenti diventano bianchi, non neri.</summary>

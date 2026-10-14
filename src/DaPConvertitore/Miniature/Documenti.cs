@@ -25,8 +25,7 @@ public static class Documenti
         {
             var pagina = await DaP.Convertitore.Pdf.Copertina(percorso, (uint)L);
             if (pagina is null) return null;
-            if (pagina.BitmapAlphaMode != BitmapAlphaMode.Straight) pagina = SoftwareBitmap.Convert(pagina, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Straight);
-            return await Immagini.Codifica(pagina, Windows.Graphics.Imaging.BitmapEncoder.PngEncoderId);
+            return await Immagini.Codifica(Immagini.Diritta(pagina), Windows.Graphics.Imaging.BitmapEncoder.PngEncoderId);
         });
         var img = Tela.Immagine(png);
         return img is null ? null : Multimedia.Incornicia(img, L, "PDF", Tavolozza.Tinta("Pdf"));
