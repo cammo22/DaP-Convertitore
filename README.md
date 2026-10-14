@@ -18,6 +18,7 @@ E per **guardarli**: un lettore leggero per qualsiasi file, con una pagina fatta
 [![FFmpeg](https://img.shields.io/badge/FFmpeg-9.0-ff3df2?labelColor=1a1428)](TERZE-PARTI.md)
 [![licenza](https://img.shields.io/badge/licenza-MIT-a19db0?labelColor=1a1428)](LICENSE)
 ![locale](https://img.shields.io/badge/100%25-locale-5dffb4?labelColor=1a1428)
+[![Discord](https://img.shields.io/badge/Discord-DaProd-5865F2?logo=discord&logoColor=white)](https://discord.gg/Njs52aacwq)
 
 **[⬇ Scarica per Windows](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe)** ·
 [Tutte le versioni](https://github.com/cammo22/DaP-Convertitore/releases) ·
@@ -290,3 +291,9 @@ la musica, che il video tradotto esca a frammenti, che Word e gli archivi si leg
 <div align="center">
 <sub>Fatto da <b>DaProd</b> · i programmi di altri dentro l'installer sono in <a href="TERZE-PARTI.md">TERZE-PARTI.md</a></sub>
 </div>
+
+---
+
+## 💬 Community
+
+Domande, idee, bug o solo voglia di chiacchierare? Entra nel **[Discord di DaProd](https://discord.gg/Njs52aacwq)**: ogni app ha la sua stanza e le nuove versioni arrivano in automatico.
