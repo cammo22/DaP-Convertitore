@@ -6,6 +6,7 @@ import { h } from '../util';
 import { icone, iconaCategoria } from '../icone';
 import { clac, accendiSuoni } from '../suoni';
 import { s, ui } from './stato';
+import { mostraAvviso } from './scheletro';
 import { proponiRiavvio, rigaMenu11 } from './menu11';
 
 /** Gruppi spenti di partenza: i documenti e gli archivi li aprono meglio Office ed Esplora file. */
@@ -18,6 +19,7 @@ const spentiDiPartenza = new Set(['Documento', 'Presentazione', 'Tabella', 'Arch
 export function apriPredefinite() {
   const imp = s.stato.impostazioni;
   const gruppi = s.stato.apriConGruppi ?? [];
+  const regola = s.stato.regolaPredefiniti ?? { supportata: false, attiva: false, diAltri: false };
   const acceso = new Map(gruppi.map((g) => [g.id, imp.gruppiPredefiniti ? imp.gruppiPredefiniti.includes(g.id) : !spentiDiPartenza.has(g.id)]));
   document.querySelector('.velo.predefinite')?.remove();
   const conta = h('span.pred-conta');
@@ -34,18 +36,32 @@ export function apriPredefinite() {
     h('div.confronto-testa', null, h('b', null, 'APRIRE TUTTO CON DAPROD?'), h('span'), h('button.btn-fin', { html: icone.chiudi, onclick: () => velo.remove() })),
     h('p.spiega', null, 'Sicuro che vuoi che questi file si aprano col lettore di DaP Convertitore? Spegni quelli che vuoi lasciare ai programmi di prima.'),
     h('div.pred-lista', null, ...gruppi.map(riga)),
-    h('p.spiega.piccolo', null, 'Attenzione: Windows non lascia che sia un programma a scegliere i predefiniti, e DaP Convertitore non aggira questa regola. Con OK registro solo i tipi accesi e apro la pagina di Windows con quei tipi in lista: lì il clic su ognuno lo fai tu.'),
+    h('p.spiega.piccolo', null, regola.supportata && !regola.diAltri
+      ? 'Con OK Windows ti chiede il permesso di amministratore (una volta): scrivo la lista dei tipi accesi come regola di Windows, e si applica quando ti disconnetti e riaccedi. Da lì quei tipi tornano al lettore anche se li cambi a mano, finché non togli la regola.'
+      : 'Questo Windows non accetta la regola (edizione Home, o ce n\'è già una di altri): con OK registro i tipi accesi e apro la pagina di Windows, dove il clic su ognuno lo fai tu.'),
     h('div.invito-tasti', null,
       h('button.tasto.su', { onclick: () => {
         clac(true);
         const scelti = gruppi.filter((g) => acceso.get(g.id)).map((g) => g.id);
         imp.gruppiPredefiniti = scelti;
-        velo.remove();
-        void chiedi('predefinite', { gruppi: scelti });
-      } }, h('i.led.verde'), 'OK, registra e vai a Windows', conta),
+        void chiedi<{ esito: string }>('predefinite', { gruppi: scelti }).then((r) => { velo.remove(); if (r.esito !== 'pagina') esitoRegola(r.esito, true); });
+      } }, h('i.led.verde'), regola.supportata && !regola.diAltri ? 'OK, applica (chiede l\'amministratore)' : 'OK, registra e vai a Windows', conta),
+      regola.attiva ? h('button.tasto', { title: 'Cancella la regola di Windows: i tipi tornano a come li scegli tu', onclick: () => { clac(); void chiedi<{ esito: string }>('predefiniteTogli').then((r) => { velo.remove(); esitoRegola(r.esito, false); }); } }, 'Togli la regola') : null,
       h('button.tasto', { onclick: () => { clac(); velo.remove(); } }, 'Annulla'))));
   document.body.append(velo);
   aggiorna();
+}
+
+/** Com'è andata la regola di Windows (permesso dato o negato). */
+function esitoRegola(esito: string, applicata: boolean) {
+  const imp = s.stato.regolaPredefiniti;
+  if (esito === 'ok' && imp) imp.attiva = applicata;
+  mostraAvviso(({
+    ok: applicata ? 'Fatto. Disconnettiti e riaccedi a Windows: da lì i tipi scelti si aprono con DaP Convertitore.' : 'Regola tolta. I tipi tornano a come li scegli tu (al prossimo accesso).',
+    negato: 'Non hai dato il permesso: non ho cambiato niente.',
+    gia: 'Su questo PC c\'è già una regola di associazioni (di un\'azienda o di un altro programma): non la tocco.',
+    errore: 'Non sono riuscito a scrivere la regola. Il registro (Impostazioni → Apri il registro) dice perché.',
+  } as Record<string, string>)[esito] ?? 'Fatto.');
 }
 
 export function apriImpostazioni() {

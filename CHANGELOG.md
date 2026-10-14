@@ -2,6 +2,15 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.7.0 — 14 ottobre 2026
+
+- **«Aprire tutto con DaProd?» applica davvero**, col modo che Windows prevede per gli amministratori: con **OK** Windows
+  chiede il permesso (una volta) e l'app scrive la lista dei tipi accesi come *regola delle associazioni predefinite*.
+  Si applica quando ti **disconnetti e riaccedi**. Finché la regola c'è, quei tipi tornano al lettore a ogni accesso anche
+  se li cambi a mano: **Togli la regola** (nella stessa finestra) la cancella. Se hai detto no al permesso non cambia
+  niente; se c'è già una regola di altri (un'azienda) non la tocca; su Windows Home, che la ignora, si apre la pagina
+  delle impostazioni come prima. Il file sta in `C:\ProgramData\DaProd\Convertitore\associazioni.xml`.
+
 ## 1.6.1 — 14 ottobre 2026
 
 - La finestra «Aprire tutto con DaProd?» dice le cose come stanno: l'app registra i tipi accesi e apre la pagina di

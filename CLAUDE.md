@@ -93,8 +93,11 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
   `pannelli/immagine.ts`): sopra 95 il WEBP diventa lossless. `pesoPerFile` vale per video e foto (un file è l'uno o
   l'altra). `#app` e `#lettore` hanno `grid-template-columns: minmax(0, 1fr)`: senza, un nome di file lungo e senza spazi
   allargava la pagina oltre la finestra.
-- **App predefinite** (dalla 1.6.0): Windows non lascia impostarle da programma (UserChoice ha un hash legato a utente e
-  data); l'app **non** lo falsifica. `apriPredefinite()` (`ui/src/app/impostazioni.ts`) fa scegliere i gruppi, il comando
+- **App predefinite** (dalla 1.6.0, regola dalla 1.7.0): Windows non lascia impostarle da programma (UserChoice ha un hash
+  legato a utente e data); l'app **non** lo falsifica. Il modo previsto è la regola per amministratori
+  `HKLM\SOFTWARE\Policies\Microsoft\Windows\System\DefaultAssociationsConfiguration` → `Predefiniti.cs`: l'app si rilancia con
+  `runas` (`--predefiniti-applica xml` / `--predefiniti-togli`), scrive il file in ProgramData e il valore; Windows lo applica
+  all'accesso (non su Home). Le prove non scrivono mai nel sistema: provano solo `Predefiniti.Xml`. `apriPredefinite()` (`ui/src/app/impostazioni.ts`) fa scegliere i gruppi, il comando
   `predefinite` salva `Impostazioni.GruppiPredefiniti`, richiama `ApriCon.Registra(exe, gruppi)` (solo quei gruppi finiscono
   nelle Capabilities, quindi nella pagina di Windows) e apre `ms-settings:defaultapps`. `incolla` legge `Clipboard.GetFileDropList`.
 - **I pezzi della piastra** parlano fra loro tramite `ui` (`ui/src/app/stato.ts`: `ui.scegli()`, `ui.piede()`…), che

@@ -34,6 +34,9 @@ public static class ApriCon
 
     static string ProgId(string gruppo) => $"DaProd.Lettore.{gruppo}";
 
+    /// <summary>Il ProgID di un gruppo (per il file delle associazioni di Windows).</summary>
+    public static string ProgIdDi(string gruppo) => ProgId(gruppo);
+
     static readonly Dictionary<string, string> nomiGruppo = new()
     {
         ["Video"] = "Video", ["Audio"] = "Audio", ["Immagine"] = "Immagine", ["Pdf"] = "Documento PDF",

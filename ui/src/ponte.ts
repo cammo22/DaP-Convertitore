@@ -140,6 +140,8 @@ export interface Stato {
   menu11: StatoMenu11;
   /** I tipi di file che il lettore sa aprire, per la lista «Aprire tutto con DaProd?». */
   apriConGruppi: { id: string; nome: string; esempi: string }[];
+  /** La regola di Windows con le associazioni: se questo Windows la applica, se c'è la nostra, se ce n'è una di altri. */
+  regolaPredefiniti: { supportata: boolean; attiva: boolean; diAltri: boolean };
 }
 
 export interface StatoMenu11 {

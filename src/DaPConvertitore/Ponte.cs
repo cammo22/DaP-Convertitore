@@ -208,6 +208,7 @@ public sealed class Ponte
                     categorie = Enum.GetValues<Categoria>().Select(c => new { id = Catalogo.Chiave(c), nome = Catalogo.NomeCategoria(c) }),
                     impostazioni = imp,
                     apriConGruppi = ApriCon.Elenco().Select(g => new { g.Id, g.Nome, g.Esempi }),
+                    regolaPredefiniti = new { supportata = Predefiniti.Supportata(), attiva = Predefiniti.Attiva(), diAltri = Predefiniti.DiAltri() },
                     aggiornamento = versioneNuova,
                     modo = finestra.Modo,
                     file = Ordinati().Select(FileDto),
@@ -356,8 +357,22 @@ public sealed class Ponte
                     imp.ApriCon = true;
                     ApriCon.Registra(Environment.ProcessPath!, gruppi);
                 }
-                Process.Start(new ProcessStartInfo($"ms-settings:defaultapps?registeredAppUser={Uri.EscapeDataString(ApriCon.NomeApp)}") { UseShellExecute = true });
-                return true;
+                var pagina = () => Process.Start(new ProcessStartInfo($"ms-settings:defaultapps?registeredAppUser={Uri.EscapeDataString(ApriCon.NomeApp)}") { UseShellExecute = true });
+                if (a["gruppi"] is not JsonArray || !Predefiniti.Supportata() || Predefiniti.DiAltri()) { pagina(); return new { esito = "pagina" }; }
+                // il modo di Windows per gli amministratori: un file di associazioni, applicato all'accesso (serve il permesso)
+                var xml = Path.Combine(Path.GetTempPath(), $"dap-associazioni-{Guid.NewGuid():N}.xml");
+                await File.WriteAllTextAsync(xml, Predefiniti.Xml(imp.GruppiPredefiniti ?? []), new System.Text.UTF8Encoding(false));
+                try
+                {
+                    var codice = await Predefiniti.ChiediAdmin(Environment.ProcessPath!, $"--predefiniti-applica \"{xml}\"");
+                    return new { esito = codice switch { null => "negato", Predefiniti.Fatto => "ok", Predefiniti.GiaUsata => "gia", _ => "errore" } };
+                }
+                finally { try { File.Delete(xml); } catch { } }
+            }
+            case "predefiniteTogli":
+            {
+                var codice = await Predefiniti.ChiediAdmin(Environment.ProcessPath!, "--predefiniti-togli");
+                return new { esito = codice switch { null => "negato", Predefiniti.Fatto => "ok", _ => "errore" } };
             }
             case "esplora":
                 await Menu11.RiavviaEsplora();

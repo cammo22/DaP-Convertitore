@@ -73,6 +73,10 @@ public static class Programma
         // solo «Apri con», senza toccare i menu del tasto destro (per le prove)
         if (args.Contains("--apricon")) { RegistraApriCon(); return; }
         if (args.Contains("--togli-apricon")) { ApriCon.Rimuovi(); return; }
+        // la regola delle app predefinite: l'app rilanciata con i permessi di amministratore fa solo questo (Predefiniti.cs)
+        var applica = Array.IndexOf(args, "--predefiniti-applica");
+        if (applica >= 0 && applica + 1 < args.Length) { Environment.Exit(Predefiniti.ApplicaDaAdmin(args[applica + 1])); return; }
+        if (args.Contains("--predefiniti-togli")) { Environment.Exit(Predefiniti.TogliDaAdmin()); return; }
         var url = Array.IndexOf(args, "--url");
         if (url >= 0 && url + 1 < args.Length) { Url(args[url + 1]); return; }
 
