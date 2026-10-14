@@ -1,3 +1,8 @@
+<!-- discord-card -->
+<p align="center">
+  <a href="https://discord.gg/Njs52aacwq"><img src=".github/discord-card.svg" alt="Entra nella community DaProd su Discord" width="720"></a>
+</p>
+
 <div align="center">
 
 <img src="risorse/icona-256.png" width="110" alt="DaP Convertitore">
@@ -291,14 +296,3 @@ la musica, che il video tradotto esca a frammenti, che Word e gli archivi si leg
 <div align="center">
 <sub>Fatto da <b>DaProd</b> · i programmi di altri dentro l'installer sono in <a href="TERZE-PARTI.md">TERZE-PARTI.md</a></sub>
 </div>
-
----
-
-<!-- discord-card -->
-## 💬 Community
-
-<p align="center">
-  <a href="https://discord.gg/Njs52aacwq"><img src=".github/discord-card.svg" alt="Entra nella community DaProd su Discord" width="720"></a>
-</p>
-
-Domande, idee, bug o solo voglia di chiacchierare? Entra nel **[Discord di DaProd](https://discord.gg/Njs52aacwq)**: ogni app ha la sua stanza e le nuove versioni arrivano in automatico.
