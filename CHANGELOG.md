@@ -2,6 +2,12 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.6.1 — 14 ottobre 2026
+
+- La finestra «Aprire tutto con DaProd?» dice le cose come stanno: l'app registra i tipi accesi e apre la pagina di
+  Windows con quei tipi in lista, ma la scelta finale di ogni predefinito è di Windows e resta a te. Il tasto si
+  chiama «OK, registra e vai a Windows» (prima prometteva «applica»).
+
 ## 1.6.0 — 14 ottobre 2026
 
 - **Ritagliare le foto.** Nel ritocco (**D**) c'è lo strumento *Ritaglia*: trascini il rettangolo che resta (con Maiusc

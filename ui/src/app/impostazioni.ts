@@ -34,7 +34,7 @@ export function apriPredefinite() {
     h('div.confronto-testa', null, h('b', null, 'APRIRE TUTTO CON DAPROD?'), h('span'), h('button.btn-fin', { html: icone.chiudi, onclick: () => velo.remove() })),
     h('p.spiega', null, 'Sicuro che vuoi che questi file si aprano col lettore di DaP Convertitore? Spegni quelli che vuoi lasciare ai programmi di prima.'),
     h('div.pred-lista', null, ...gruppi.map(riga)),
-    h('p.spiega.piccolo', null, 'Windows non lascia che un programma si metta da solo come predefinito: con OK registro i tipi accesi e apro la pagina di Windows già pronta, dove basta un clic su «Imposta predefinita».'),
+    h('p.spiega.piccolo', null, 'Attenzione: Windows non lascia che sia un programma a scegliere i predefiniti, e DaP Convertitore non aggira questa regola. Con OK registro solo i tipi accesi e apro la pagina di Windows con quei tipi in lista: lì il clic su ognuno lo fai tu.'),
     h('div.invito-tasti', null,
       h('button.tasto.su', { onclick: () => {
         clac(true);
@@ -42,7 +42,7 @@ export function apriPredefinite() {
         imp.gruppiPredefiniti = scelti;
         velo.remove();
         void chiedi('predefinite', { gruppi: scelti });
-      } }, h('i.led.verde'), 'OK, applica', conta),
+      } }, h('i.led.verde'), 'OK, registra e vai a Windows', conta),
       h('button.tasto', { onclick: () => { clac(); velo.remove(); } }, 'Annulla'))));
   document.body.append(velo);
   aggiorna();
