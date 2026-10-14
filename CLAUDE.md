@@ -70,6 +70,10 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
   accanto e poi si sposta sull'originale (`Sposta` ritenta con GC: le routine di lettura di Windows lasciano la
   maniglia aperta, e il file si legge in memoria per non tenerla). L'orientamento EXIF si compone con
   `ComponiExif` (tabella «prima si specchia, poi si gira in senso orario»), provato.
+- **Scrivere e estrarre** (`Lettore/Scrittura.cs`, dalla 1.4.0): il testo salvato dal lettore torna nella stessa
+  codifica (`FormatoDi`: BOM UTF-8/UTF-16, CRLF se il file lo ha, Latin-1 → UTF-8 e lo si dice) con bozza e
+  `Sposta`. Le voci scelte dentro un archivio escono con `tar -xf archivio -C dest voci…`: il percorso di una
+  cartella (`foto/`) porta con sé anche quello che c'è dentro (provato in `ProveScrittura`).
 - **La barra bianca**: `.testa` (convertitore) e `.l-barra` (lettore) hanno uno sfondo chiaro apposta, il resto è
   scuro. Non è la barra di Windows (la finestra è senza cornice): è disegnata dalla pagina.
 - **Il Cestino a mano** (dalla 1.1.0): `Impostazioni.CestinoDaSolo`, spento di partenza (nome nuovo apposta: la

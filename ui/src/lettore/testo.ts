@@ -3,7 +3,7 @@
 // l'indice, l'HTML com'è (senza script), il JSON ad albero, i sottotitoli battuta per battuta.
 import { chiedi } from '../ponte';
 import { h, clamp } from '../util';
-import { attesa, errore, ic, memoria, type Contesto, type Tasto, type Vista } from './comune';
+import { attesa, conferma, errore, ic, memoria, type Contesto, type Tasto, type Vista } from './comune';
 
 export async function monta(c: Contesto): Promise<Vista> {
   c.palco.append(attesa('Leggo…'));
@@ -38,6 +38,8 @@ function doppia(c: Contesto, bella: () => Vista, sorgente: () => Vista): Vista {
   let attuale = su ? sorgente() : bella();
   const giro: Tasto = {
     k: ['m'], etichetta: 'M', cosa: 'Impaginato / sorgente', fai: () => {
+      // con modifiche non salvate non si cambia faccia: prima si salva o si torna a leggere
+      if (attuale.sporco?.()) { c.hud('Salva o torna a leggere, prima'); return; }
       attuale.smonta();
       su = 1 - su;
       memoria.scrivi(`sorgente:${c.scheda.tipo}`, su === 1);
@@ -48,7 +50,7 @@ function doppia(c: Contesto, bella: () => Vista, sorgente: () => Vista): Vista {
       c.hud(su ? 'Sorgente' : 'Impaginato', su ? ic.codice : ic.libro);
     },
   };
-  const v: Vista = { tasti: [giro, ...attuale.tasti], info: attuale.info, smonta: () => attuale.smonta() };
+  const v: Vista = { tasti: [giro, ...attuale.tasti], info: attuale.info, smonta: () => attuale.smonta(), sporco: () => attuale.sporco?.() ?? false };
   return v;
 }
 
@@ -190,20 +192,30 @@ function codice(c: Contesto, testo: string, fam: Fam, troncato: boolean): Vista 
   if (fam === 'log') righe = grezze.map((r) => coloraLog(esc(r)));
   if (fam === 'diff') righe = grezze.map((r) => `<span class="${r.startsWith('+') ? 'di-piu' : r.startsWith('-') ? 'di-meno' : r.startsWith('@@') ? 'pa' : ''}">${esc(r)}</span>`);
 
-  let a_capo = memoria.leggi<boolean>('a-capo') ?? (fam === 'testo' || fam === 'md');
-  let corpo = memoria.leggi<number>('codice-corpo') ?? 13;
-  const ALTEZZA = () => Math.round(corpo * 1.6);
+  // il testo di tutti i giorni (TXT, Markdown) si legge come un libro: più grande, con l'interlinea, a capo
+  const prosa = fam === 'testo' || fam === 'md';
+  let a_capo = memoria.leggi<boolean>('a-capo') ?? prosa;
+  let corpo = memoria.leggi<number>(prosa ? 'testo-corpo' : 'codice-corpo') ?? (prosa ? 16 : 13);
+  const ALTEZZA = () => Math.round(corpo * (prosa ? 1.75 : 1.6));
   const fogli = h('div.t-righe');
   const spazio = h('div.t-spazio', null, fogli);
   const scorre = h('div.t-scorre', null, spazio);
   const cerca = h<HTMLInputElement>('input.t-cerca', { placeholder: 'Cerca…  (Invio: dopo)', spellcheck: false });
   const trovati = h('span.t-trovati');
+  const cercaBox = h('div.t-cerca-box', null, h('span', { html: ic.cerca }), cerca, trovati);
+  const stato = h('span.t-stato');
+  const bModifica = h('button.t-btn', { title: 'Modifica il testo (F2)', onclick: () => void entraModifica(!modifica) }, 'Modifica');
+  const bSalva = h<HTMLButtonElement>('button.t-btn.oro', { title: 'Salva nel file (Ctrl+S)', onclick: () => void salva() }, 'Salva');
+  bSalva.hidden = true;
   const sopra = h('div.t-sopra', null,
     h('span.c-nota', null, `${n.toLocaleString('it-IT')} righe${troncato ? ' · è lungo: ne vedi l\'inizio' : ''}`),
     h('span.l-spazio'),
-    h('div.t-cerca-box', null, h('span', { html: ic.cerca }), cerca, trovati),
+    cercaBox,
+    stato,
+    bModifica,
+    bSalva,
     h('button.l-icona', { title: 'A capo (W)', html: ic.avvolgi, onclick: () => giraACapo() }));
-  const box = h(`div.t-codice.fam-${fam}`, null, sopra, scorre);
+  const box = h(`div.t-codice.fam-${fam}${prosa ? '.prosa' : ''}`, null, sopra, scorre);
   c.palco.replaceChildren(box);
   let cercato = '';
   let colpi: number[] = [];
@@ -253,8 +265,8 @@ function codice(c: Contesto, testo: string, fam: Fam, troncato: boolean): Vista 
     c.hud(a_capo ? 'A capo' : 'Righe intere', ic.avvolgi);
   }
   function dimensione(d: number) {
-    corpo = clamp(corpo + d, 9, 26);
-    memoria.scrivi('codice-corpo', corpo);
+    corpo = clamp(corpo + d, 9, 28);
+    memoria.scrivi(prosa ? 'testo-corpo' : 'codice-corpo', corpo);
     disegna(true);
     c.hud(`Testo ${corpo} px`);
   }
@@ -281,9 +293,79 @@ function codice(c: Contesto, testo: string, fam: Fam, troncato: boolean): Vista 
   cerca.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); trova(!e.shiftKey); } });
   cerca.addEventListener('input', () => { colpo = -1; cercato = ''; trova(); });
 
+  // ——— modificare: il testo diventa un campo; si salva col tasto (o Ctrl+S), e tornando a leggere si rilegge ———
+  const puoModificare = !troncato;
+  let modifica = false;
+  let salvato = testo;          // quello che c'è sul disco
+  let daRileggere = false;      // dopo un salvataggio la lettura va rifatta
+  let area: HTMLTextAreaElement | null = null;
+  const sporco = () => modifica && area !== null && area.value !== salvato;
+
+  function aggiornaStato() {
+    const s = sporco();
+    bSalva.disabled = !s;
+    bSalva.hidden = !modifica;
+    bModifica.textContent = modifica ? 'Leggi' : 'Modifica';
+    bModifica.classList.toggle('su', modifica);
+    stato.textContent = !modifica ? '' : s ? 'modificato · non salvato' : 'salvato';
+    stato.classList.toggle('sporco', s);
+  }
+
+  async function entraModifica(si: boolean) {
+    if (si === modifica) return;
+    if (si && !puoModificare) { c.hud('È troppo grande per modificarlo qui', ic.codice); return; }
+    if (!si && sporco() && !(await conferma('Tornare a leggere?', 'Le modifiche non salvate si perdono.', 'Torna a leggere', true))) return;
+    modifica = si;
+    box.classList.toggle('modifica', si);
+    scorre.hidden = si;
+    cercaBox.hidden = si;
+    if (si) {
+      area = h<HTMLTextAreaElement>('textarea.t-edita', { spellcheck: false });
+      area.value = salvato;
+      area.addEventListener('input', aggiornaStato);
+      area.addEventListener('keydown', tastiArea);
+      box.append(area);
+      area.focus();
+    } else {
+      area?.remove();
+      area = null;
+      if (daRileggere) { daRileggere = false; void c.ricarica(); return; }
+    }
+    aggiornaStato();
+  }
+
+  async function salva() {
+    if (!sporco()) return;
+    const nuovo = area!.value;
+    bSalva.disabled = true;
+    stato.textContent = 'salvo…';
+    try {
+      const r = await chiedi<{ nota: string | null }>('salvaTesto', { testo: nuovo });
+      salvato = nuovo;
+      daRileggere = true;
+      c.hud(r.nota ? `Salvato · ${r.nota}` : 'Salvato nel file', ic.salva);
+    } catch (e) { c.hud((e as Error).message, ic.codice); }
+    aggiornaStato();
+  }
+
+  function tastiArea(e: KeyboardEvent) {
+    const k = e.key.toLowerCase();
+    // il campo ferma le scorciatoie del lettore: queste le gestisce lui
+    if ((e.ctrlKey || e.metaKey) && k === 's') { e.preventDefault(); e.stopPropagation(); void salva(); return; }
+    if (e.key === 'F2' || e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); void entraModifica(false); return; }
+    if (e.key === 'Tab' && !e.ctrlKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      area!.setRangeText('    ', area!.selectionStart, area!.selectionEnd, 'end');
+      aggiornaStato();
+    }
+  }
+
   return {
     tasti: [
-      { k: ['ctrl+f', '/'], etichetta: 'Ctrl F', cosa: 'Cerca', fai: () => { cerca.focus(); cerca.select(); } },
+      { k: ['f2'], etichetta: 'F2', cosa: 'Modifica il testo / torna a leggere', fai: () => void entraModifica(!modifica) },
+      { k: ['ctrl+s'], etichetta: 'Ctrl S', cosa: 'Salva nel file (mentre modifichi)', fai: () => void salva() },
+      { k: ['ctrl+f', '/'], etichetta: 'Ctrl F', cosa: 'Cerca', fai: () => { if (!modifica) { cerca.focus(); cerca.select(); } } },
       { k: ['f3'], etichetta: 'F3', cosa: 'Il prossimo trovato', fai: () => trova(true) },
       { k: ['w'], etichetta: 'W', cosa: 'A capo / righe intere', fai: giraACapo },
       { k: ['+', '=', 'ctrl+='], etichetta: '+', cosa: 'Testo più grande', fai: () => dimensione(1) },
@@ -293,6 +375,7 @@ function codice(c: Contesto, testo: string, fam: Fam, troncato: boolean): Vista 
       { k: ['ctrl+a'], etichetta: 'Ctrl A', cosa: 'Copia tutto il testo', fai: () => void navigator.clipboard.writeText(testo).then(() => c.hud('Testo copiato', ic.copia)) },
     ],
     info: () => ({ c: 'Codice', py: 'Python', sh: 'Script', ps: 'PowerShell / batch', sql: 'SQL', lua: 'Lua', markup: 'XML / HTML', css: 'CSS', yaml: 'YAML', ini: 'Configurazione', json: 'JSON', log: 'Registro', diff: 'Differenze', md: 'Markdown', testo: 'Testo' } as Record<Fam, string>)[fam] + ` · ${n.toLocaleString('it-IT')} righe`,
+    sporco,
     smonta() {},
   };
 }

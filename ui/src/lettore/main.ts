@@ -65,7 +65,7 @@ function disegnaBarra() {
     h('div.l-finestra', null,
       h('button.l-icona', { title: 'Riduci', html: ic.riduci, onclick: () => void chiedi('finestra', { azione: 'riduci' }) }),
       h('button.l-icona', { title: 'Ingrandisci', html: ic.ingrandisci, onclick: () => void chiedi('finestra', { azione: 'massimizza' }) }),
-      h('button.l-icona.chiudi', { title: 'Chiudi (Ctrl+W)', html: ic.chiudi, onclick: () => void chiedi('finestra', { azione: 'chiudi' }) })),
+      h('button.l-icona.chiudi', { title: 'Chiudi (Ctrl+W)', html: ic.chiudi, onclick: () => void chiudi() })),
   ].filter((x): x is HTMLElement => !!x));
 }
 
@@ -176,7 +176,15 @@ async function mostra(f: Scheda, verso = 0) {
   sveglia();
 }
 
+/** Chiude il lettore: con un testo non salvato si chiede prima. */
+async function chiudi() {
+  if (s.vista?.sporco?.() && !(await conferma('Chiudere senza salvare?', 'Le modifiche non salvate si perdono.', 'Chiudi', true))) return;
+  void chiedi('finestra', { azione: 'chiudi' });
+}
+
 async function vai(passo: number) {
+  // con un testo modificato e non salvato non si cambia file senza chiedere
+  if (s.vista?.sporco?.() && !(await conferma('Cambiare file?', 'Le modifiche non salvate si perdono.', 'Cambia file', true))) return;
   if (s.fratelli.length < 2) return;
   const n = s.fratelli.length;
   const i = ((s.indice + passo) % n + n) % n;
@@ -280,7 +288,7 @@ const globali: Tasto[] = [
   { k: ['ctrl+e'], etichetta: 'Ctrl E', cosa: 'Converti', fai: () => { if (s.scheda?.convertibile) void chiedi('converti'); } },
   { k: ['ctrl+o'], etichetta: 'Ctrl O', cosa: 'Apri un file', fai: () => void chiedi('apriFile') },
   { k: ['ctrl+shift+c'], etichetta: 'Ctrl Maiusc C', cosa: 'Copia il percorso', fai: () => void navigator.clipboard.writeText(s.scheda!.percorso).then(() => hud('Percorso copiato', ic.copia)) },
-  { k: ['ctrl+w'], etichetta: 'Ctrl W', cosa: 'Chiudi', fai: () => void chiedi('finestra', { azione: 'chiudi' }) },
+  { k: ['ctrl+w'], etichetta: 'Ctrl W', cosa: 'Chiudi', fai: () => void chiudi() },
   { k: ['?', 'f1'], etichetta: '?', cosa: 'Questi tasti', fai: () => foglietto() },
 ];
 
@@ -329,9 +337,12 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 
 // trascina dei file dentro: li apre il lettore
-document.addEventListener('dragover', (e) => { e.preventDefault(); radice.classList.add('lascia'); });
+// solo i file veri aprono la pagina del «lascia qui»: le voci trascinate dentro (da un archivio) le gestiscono le viste
+const portaFile = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
+document.addEventListener('dragover', (e) => { if (!portaFile(e)) return; e.preventDefault(); radice.classList.add('lascia'); });
 document.addEventListener('dragleave', (e) => { if (!e.relatedTarget) radice.classList.remove('lascia'); });
 document.addEventListener('drop', (e) => {
+  if (!portaFile(e)) return;
   e.preventDefault();
   radice.classList.remove('lascia');
   const w = (window as any).chrome?.webview;

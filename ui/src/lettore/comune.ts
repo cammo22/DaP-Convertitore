@@ -47,6 +47,8 @@ export interface Vista {
   info?: () => string;
   /** Le righe in più nel pannello delle proprietà (i dati della foto, le tracce del video…). */
   scheda?: () => Promise<Node[]>;
+  /** Ci sono modifiche non salvate (il testo): prima di cambiare file si chiede. */
+  sporco?: () => boolean;
 }
 
 export interface Contesto {

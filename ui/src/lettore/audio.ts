@@ -1,5 +1,6 @@
-// Il giradischi: il disco gira (33 giri, la copertina fa da etichetta), il braccio scende e avanza col brano,
-// la forma d'onda si scorre col dito, sotto l'analizzatore di spettro balla. Finito un brano parte il dopo.
+// Il lettore di musica: una scheda pulita, come un lettore vero. A sinistra la copertina (o una mattonella con
+// l'estensione se non c'è), a destra titolo e artista, la forma d'onda che è anche la barra di avanzamento, i comandi,
+// il volume, e sotto lo spettro che balla. La rotella cambia il volume, ovunque sulla pagina; la scaletta si apre a destra.
 import { chiedi } from '../ponte';
 import { h, clamp, durata as tempo } from '../util';
 import { attesa, ic, memoria, type Contesto, type Tasto, type Vista } from './comune';
@@ -17,6 +18,7 @@ export async function monta(c: Contesto): Promise<Vista> {
   const album = t('album') ?? '';
   const anno = (t('date') ?? t('year') ?? '').slice(0, 4);
   const a0 = info.audio[0];
+  const estensione = (f.estensione || '').replace('.', '').toUpperCase();
 
   const audio = h<HTMLAudioElement>('audio', { preload: 'auto' });
   audio.crossOrigin = 'anonymous';
@@ -24,13 +26,10 @@ export async function monta(c: Contesto): Promise<Vista> {
   // il muto sta dopo l'analizzatore: lo spettro balla anche a volume zero
   let zitto = memoria.leggi<boolean>('muto') ?? false;
 
-  // ——— il disco e il braccio ———
-  const etichetta = info.copertina
-    ? h('div.a-etichetta', { style: { backgroundImage: `url(${info.copertina})` } })
-    : h('div.a-etichetta.vuota', null, h('b', null, 'DaP'), h('span', null, (f.estensione || '').replace('.', '').toUpperCase()));
-  const disco = h('div.a-disco', null, h('div.a-solchi'), etichetta, h('i.a-perno'));
-  const braccio = h('div.a-braccio', { html: braccioSvg });
-  const piatto = h('div.a-piatto', null, h('div.a-base'), disco, h('div.a-riflesso'), braccio);
+  // ——— la copertina: se non c'è, una mattonella col formato ———
+  const copertina = info.copertina
+    ? h('div.a-cover', { style: { backgroundImage: `url(${info.copertina})` } })
+    : h('div.a-cover.vuota', null, h('b', null, estensione || 'AUDIO'), h('small', null, a0 ? a0.codec.toUpperCase().replace('PCM_', 'PCM ') : ''));
 
   // ——— la parte di destra ———
   const onda = h<HTMLCanvasElement>('canvas.a-onda');
@@ -44,7 +43,7 @@ export async function monta(c: Contesto): Promise<Vista> {
   const bVol = h('button.a-b', { title: 'Muto (M)', html: zitto ? ic.muto : ic.volume, onclick: () => muto() });
   const spettro = h<HTMLCanvasElement>('canvas.a-spettro');
   const tecnica = [
-    (f.estensione || '').replace('.', '').toUpperCase(),
+    estensione,
     a0 && a0.codec !== f.estensione.replace('.', '') ? a0.codec.toUpperCase().replace('PCM_', 'PCM ') : null,
     a0?.campionamento ? `${(a0.campionamento / 1000).toLocaleString('it-IT')} kHz` : null,
     a0?.canali ? (a0.canali === 1 ? 'mono' : a0.canali === 2 ? 'stereo' : `${a0.canali} canali`) : null,
@@ -53,26 +52,35 @@ export async function monta(c: Contesto): Promise<Vista> {
   const scaletta = h('aside.a-scaletta');
   const stanza = h('div.a-stanza', null,
     info.copertina ? h('div.a-fondo', { style: { backgroundImage: `url(${info.copertina})` } }) : h('div.a-fondo.vuoto'),
-    piatto,
-    h('div.a-destra', null,
-      h('div.a-titoli', null,
-        h('h1', { title: titolo }, titolo),
-        artista ? h('div.a-artista', null, artista) : null,
-        album || anno ? h('div.a-album', null, [album, anno].filter(Boolean).join(' · ')) : null),
-      h('div.a-tecnica', null, ...tecnica.map((x) => h('span', null, x))),
-      h('div.a-onda-box', null, onda, bollaOnda),
-      h('div.a-tempi', null, ora, h('span', null, tempo(info.durata))),
-      h('div.a-comandi', null,
-        h('button.a-b.solo-fratelli', { title: 'Brano prima (P)', html: ic.prima, onclick: () => prima() }),
-        bPlay,
-        h('button.a-b.solo-fratelli', { title: 'Brano dopo (N)', html: ic.dopo, onclick: () => c.vai(1) }),
-        h('span.a-spazio'),
-        bRipeti,
-        h('button.a-b.solo-fratelli', { title: 'Scaletta (L)', html: ic.elenco, onclick: () => giraScaletta() }),
-        h('div.v-volume', null, bVol, vol)),
-      spettro),
+    h('div.a-scheda', null,
+      h('div.a-sinistra', null,
+        copertina,
+        h('div.a-tecnica', null, ...tecnica.map((x) => h('span', null, x)))),
+      h('div.a-destra', null,
+        h('div.a-titoli', null,
+          h('h1', { title: titolo }, titolo),
+          artista ? h('div.a-artista', null, artista) : null,
+          album || anno ? h('div.a-album', null, [album, anno].filter(Boolean).join(' · ')) : null),
+        h('div.a-onda-box', null, onda, bollaOnda),
+        h('div.a-tempi', null, ora, h('span', null, tempo(info.durata))),
+        h('div.a-comandi', null,
+          h('button.a-b.solo-fratelli', { title: 'Brano prima (P)', html: ic.prima, onclick: () => prima() }),
+          bPlay,
+          h('button.a-b.solo-fratelli', { title: 'Brano dopo (N)', html: ic.dopo, onclick: () => c.vai(1) }),
+          h('span.a-spazio'),
+          bRipeti,
+          h('button.a-b.solo-fratelli', { title: 'Scaletta (L)', html: ic.elenco, onclick: () => giraScaletta() }),
+          h('div.a-volume', null, bVol, vol)),
+        spettro)),
     scaletta);
   c.palco.replaceChildren(stanza);
+
+  // la rotella cambia il volume, ovunque sulla pagina (sulla scaletta scorre la lista)
+  stanza.addEventListener('wheel', (e) => {
+    if (scaletta.contains(e.target as Node) || e.deltaY === 0) return;
+    e.preventDefault();
+    volume(e.deltaY < 0 ? 0.05 : -0.05);
+  }, { passive: false });
 
   // il colore della copertina tinge la stanza
   if (info.copertina) tintaDa(info.copertina).then((col) => { if (col) stanza.style.setProperty('--cop', col); });
@@ -147,16 +155,13 @@ export async function monta(c: Contesto): Promise<Vista> {
   });
   onda.addEventListener('pointerup', () => (tieni = false));
 
-  // ——— lo spettro, 60 volte al secondo ———
+  // ——— lo spettro, 60 volte al secondo: barre che salgono dal basso, con la cima che scende piano ———
   let giro = 0;
   const cime: number[] = [];
   function anima() {
     giro = requestAnimationFrame(anima);
     ora.textContent = tempo(audio.currentTime);
     disegnaOnda();
-    // il braccio entra col brano: dall'orlo verso l'etichetta
-    const p = audio.duration ? audio.currentTime / audio.duration : 0;
-    braccio.style.setProperty('--avanza', String(p));
     const dpr = devicePixelRatio;
     const w = spettro.clientWidth, hh = spettro.clientHeight;
     if (!w) return;
@@ -168,7 +173,11 @@ export async function monta(c: Contesto): Promise<Vista> {
     const dati = new Uint8Array(analisi?.frequencyBinCount ?? 0);
     analisi?.getByteFrequencyData(dati);
     const largo = w / n;
-    const base = hh * 0.72;
+    const base = hh - 2;
+    const gr = g.createLinearGradient(0, base, 0, 0);
+    gr.addColorStop(0, '#5dffb4');
+    gr.addColorStop(0.6, '#ffd54a');
+    gr.addColorStop(1, '#ff3df2');
     for (let i = 0; i < n; i++) {
       // bande in scala logaritmica, da 40 Hz a 16 kHz
       let v = 0;
@@ -178,22 +187,13 @@ export async function monta(c: Contesto): Promise<Vista> {
         for (let b = b0; b < b1; b++) v = Math.max(v, dati[b]);
         v = Math.pow(v / 255, 1.6);
       }
-      const alto = Math.max(2, v * base);
-      cime[i] = Math.max((cime[i] ?? 0) - 0.6, alto);
+      const alto = Math.max(2, v * (hh - 8));
+      cime[i] = Math.max((cime[i] ?? 0) - 0.7, alto);
       const x = i * largo + 1;
-      const gr = g.createLinearGradient(0, base, 0, base - base);
-      gr.addColorStop(0, '#5dffb4');
-      gr.addColorStop(0.6, '#ffd54a');
-      gr.addColorStop(1, '#ff3df2');
       g.fillStyle = gr;
       g.fillRect(x, base - alto, largo - 3, alto);
       g.fillStyle = 'rgba(255,255,255,0.85)';
-      g.fillRect(x, base - cime[i] - 3, largo - 3, 2);
-      // il riflesso sul piano lucido
-      g.globalAlpha = 0.16;
-      g.fillStyle = gr;
-      g.fillRect(x, base + 3, largo - 3, alto * 0.35);
-      g.globalAlpha = 1;
+      g.fillRect(x, base - cime[i] - 2, largo - 3, 2);
     }
   }
   anima();
@@ -307,13 +307,3 @@ async function tintaDa(url: string): Promise<string | null> {
   }
   return `rgb(${Math.round(r / n)}, ${Math.round(gg / n)}, ${Math.round(b / n)})`;
 }
-
-const braccioSvg = `<svg viewBox="0 0 120 300">
-<defs><linearGradient id="br" x1="0" x2="1"><stop offset="0" stop-color="#8d8a96"/><stop offset=".5" stop-color="#f1eef7"/><stop offset="1" stop-color="#77737f"/></linearGradient></defs>
-<circle cx="88" cy="34" r="26" fill="#1c1b22" stroke="#3a3842" stroke-width="3"/>
-<circle cx="88" cy="34" r="12" fill="url(#br)"/>
-<rect x="76" y="2" width="24" height="18" rx="4" fill="#2b2a31"/>
-<path d="M88 40 L88 200 Q88 236 60 262" fill="none" stroke="url(#br)" stroke-width="7" stroke-linecap="round"/>
-<rect x="40" y="252" width="34" height="22" rx="4" transform="rotate(38 57 263)" fill="#26252c" stroke="#ffd54a" stroke-width="1.5"/>
-<circle cx="50" cy="276" r="2.5" fill="#ff3df2"/>
-</svg>`;

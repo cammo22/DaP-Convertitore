@@ -303,6 +303,21 @@ public sealed class PonteLettore
                 Regia.Gestisci(new Richiesta(id, [P(a)], false));
                 return true;
             }
+            case "salvaTesto":
+            {
+                var p = P(a);
+                var nota = await Task.Run(() => Scrittura.SalvaTesto(p, (string?)a["testo"] ?? ""));
+                risorse.Ferma();
+                return new { nota };
+            }
+            case "estraiVoci":
+            {
+                // solo le voci scelte (cartelle o file) escono, in una cartella accanto all'archivio; poi si apre
+                var voci = (a["voci"] as JsonArray ?? []).Select(x => (string?)x).Where(x => !string.IsNullOrEmpty(x)).Cast<string>().ToList();
+                var dest = await Scrittura.EstraiVoci(strumenti, P(a), voci);
+                Programma.Mostra(dest);
+                return new { cartella = dest };
+            }
             case "aggiorna":
                 await Aggiornamenti.Installa();
                 return true;

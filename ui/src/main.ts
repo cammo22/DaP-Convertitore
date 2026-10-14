@@ -144,10 +144,24 @@ function disegnaCoda() {
     lista.append(scheda);
   }
   coda.replaceChildren(...[
-    h('div.titolo-sezione', null, h('span', null, 'SORGENTE'), h('span.conta', null, s.ordine.length ? `${s.ordine.length} · ${peso(tot)}` : '')),
+    h('div.titolo-sezione', null, h('span', null, 'SORGENTE'), h('span.conta', null, s.ordine.length ? `${s.ordine.length} · ${peso(tot)}` : ''),
+      s.ordine.length && s.vista === 'scegli' ? h('button.svuota', { title: 'Svuota la coda (Ctrl+Canc): i file restano dove sono', onclick: () => { clac(); svuota(); } }, 'svuota') : null),
     s.ordine.length ? lista : h('div.vuota', null, h('div.icona-grande', { html: icone.scarica }), h('p', null, 'Trascina qui i file da convertire'), h('p.piccolo', null, 'o tasto destro su un file → DaP Convertitore')),
     s.vista === 'scegli' ? h('button.aggiungi', { onclick: () => { clac(); void chiedi('scegli'); } }, h('span', { html: icone.aggiungi }), 'Aggiungi file') : null,
   ].filter((x): x is HTMLElement => !!x));
+}
+
+/** Svuota la coda in un colpo: i file non si toccano, si tolgono solo dalla lista. */
+function svuota() {
+  if (s.ordine.length === 0) return;
+  s.file.clear();
+  s.ordine = [];
+  s.pesoPerFile.clear();
+  s.attiva = null;
+  s.fileAttivo = null;
+  s.piano = null;
+  void chiedi('svuota');
+  disegnaTutto();
 }
 
 function togli(id: string) {
@@ -1078,6 +1092,10 @@ async function avvia() {
   document.addEventListener('keydown', (e) => {
     // Esc chiude quello sopra (il velo più in alto), non quello sotto
     if (e.key === 'Escape') [...document.querySelectorAll('.velo')].pop()?.remove();
+    // Canc toglie il file scelto dalla coda; Ctrl+Canc la svuota. I file sul disco non si toccano.
+    if (e.key === 'Delete' && s.vista === 'scegli' && !document.querySelector('.velo') && !(e.target instanceof HTMLInputElement)) {
+      if (e.ctrlKey) svuota(); else if (s.fileAttivo) togli(s.fileAttivo);
+    }
     if (e.key === 'Enter' && s.vista === 'scegli' && !document.querySelector('.velo') && !(e.target instanceof HTMLInputElement)) void converti();
   });
   void chiedi('pronto');

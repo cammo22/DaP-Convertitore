@@ -484,3 +484,7 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .testa .btn-fin { color: #4a4659; }
 .testa .btn-fin:hover { background: rgba(0, 0, 0, 0.08); color: #14121a; }
 .testa .btn-fin.chiudi:hover { background: #c42b4a; color: #fff; }
+
+/* ——— 1.4.0: svuotare la coda in un colpo (Ctrl+Canc) ——— */
+.titolo-sezione .svuota { font: 700 11px var(--ui); letter-spacing: 0.06em; color: var(--testo3); padding: 2px 8px; margin-left: 6px; border-radius: 6px; }
+.titolo-sezione .svuota:hover { background: rgba(255, 77, 109, 0.15); color: var(--rosso); }

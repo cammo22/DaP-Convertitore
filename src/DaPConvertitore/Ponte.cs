@@ -218,6 +218,11 @@ public sealed class Ponte
             case "scegli":
                 Scegli();
                 return true;
+            case "svuota":
+                // la coda si svuota tutta: i file restano dove sono, si tolgono solo dalla lista
+                file.Clear();
+                lock (ordine) ordine.Clear();
+                return true;
             case "togli":
             {
                 var id = (string?)a["id"];

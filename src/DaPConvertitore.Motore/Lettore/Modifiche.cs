@@ -148,7 +148,7 @@ public static class Modifiche
     /// La bozza prende il posto del file. Se qualcuno lo tiene ancora aperto (Windows lascia le maniglie delle sue
     /// routine di lettura finché non passa il garbage collector) si fa pulizia e si riprova per qualche secondo.
     /// </summary>
-    static void Sposta(string bozza, string percorso)
+    internal static void Sposta(string bozza, string percorso)
     {
         for (var i = 0; ; i++)
         {

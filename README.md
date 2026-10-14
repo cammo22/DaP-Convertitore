@@ -121,6 +121,11 @@ apre il lettore: nero, senza cornice, leggero. Ogni tipo di file ha la sua pagin
   OTF, WOFF) col campionario e **Installa** solo per te; **modelli 3D** (GLB, GLTF, STL, OBJ, PLY, 3MF) che girano
   su un piano; tutto il resto **byte per byte**, con la firma del file e l'impronta SHA-256.
 
+**Testi e archivi.** Un TXT o un Markdown si legge come un libro. **Modifica** (F2) lo trasforma in un campo di
+scrittura, e **Salva** (Ctrl+S) lo riscrive nel file con la sua codifica e le sue fini riga. Dentro un archivio
+(ZIP, 7Z…) scegli cartelle e file (clic, Ctrl per più) e li trascini sulla zona in alto: escono subito accanto
+all'archivio. Nella piastra, **Ctrl+Canc** (o il tasto *svuota*) svuota la coda; **Canc** toglie il file scelto.
+
 **Piccole modifiche sul file vero, senza ricodificare.** **R** gira (**Maiusc R** a sinistra, **M** specchia le
 foto), e **Salva nel file** (Ctrl S) riscrive il file: nelle JPG cambia solo l'orientamento, nei video MP4 e MOV
 la rotazione dentro il file (copiando i flussi, pochi secondi anche per 20 GB), nei PNG i pixel, nei PDF la pagina.

@@ -2,6 +2,28 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.4.0 — 14 ottobre 2026
+
+- **Svuotare la coda in un colpo**: il tasto *svuota* accanto a SORGENTE, oppure **Ctrl+Canc**. **Canc** toglie
+  solo il file scelto. I file sul disco non si toccano, si tolgono solo dalla lista.
+- **Archivi, si estrae quello che serve**: nel lettore si scelgono cartelle e file (clic, **Ctrl** per più) e si
+  trascinano sulla zona in alto, *Trascina qui cartelle e file per estrarli subito*: escono in una cartella accanto
+  all'archivio, e si apre Esplora file. Il pulsante *Estrai* estrae la scelta, o tutto se non hai scelto niente.
+  Non è ancora possibile trascinarli fuori dall'app, nella cartella di Esplora file: si trascinano sulla zona.
+- **I testi si leggono bene**: TXT e Markdown hanno il carattere da libro (16 px, interlinea larga, a capo), con
+  testo chiaro su fondo scuro.
+- **I testi si modificano e si salvano**: **Modifica** (F2) apre il testo come campo di scrittura; **Salva** (Ctrl+S)
+  scrive nel file. Il file torna con la sua codifica (UTF-8, UTF-16, col BOM se c'era) e con le sue fini riga
+  (CRLF o LF). Un file in una codifica vecchia si salva in UTF-8, e il lettore lo dice. Con modifiche non salvate
+  il lettore chiede prima di cambiare file, di chiudere o di tornare a leggere. Non si modificano i testi troppo
+  grandi (oltre 6 MB).
+- **Lettore musicale riscritto**: niente più disco e braccio. Copertina a sinistra (o una mattonella col formato
+  se non c'è), titolo e artista a destra, la forma d'onda che è anche la barra di avanzamento, i comandi, il volume,
+  e sotto lo spettro che balla.
+- **La rotella cambia il volume** nel lettore musicale, ovunque sulla pagina (sulla scaletta scorre la lista).
+- Nel lettore si corregge il contrasto della pillola del formato sulla barra bianca, e la percentuale di compressione
+  degli archivi appare solo quando è davvero un risparmio.
+
 ## 1.3.0 — 9 ottobre 2026
 
 - **Girare e salvare nel file.** Nel lettore **R** gira a destra, **Maiusc R** a sinistra, **M** specchia (foto); si
