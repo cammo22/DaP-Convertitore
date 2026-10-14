@@ -49,7 +49,15 @@ public static class ApriCon
     /// </summary>
     public static Func<string, string, string?>? FaiIcona { get; set; }
 
-    public static void Registra(string exe)
+    /// <summary>I gruppi con un esempio di estensioni, per la lista «Aprire tutto con DaProd?» (id, nome, esempi).</summary>
+    public static IEnumerable<(string Id, string Nome, string Esempi)> Elenco() =>
+        nomiGruppo.Select(g => (g.Key, g.Value, string.Join(" ", Vista.Estensioni.Where(e => Vista.Gruppo(e) == g.Key).Take(7))));
+
+    /// <param name="predefiniti">
+    /// I gruppi che entrano in «App predefinite» (Capabilities): sono quelli che Windows farà scegliere con un clic. Gli
+    /// altri restano solo in «Apri con». Null = tutti.
+    /// </param>
+    public static void Registra(string exe, IReadOnlyCollection<string>? predefiniti = null)
     {
         var icona = $"\"{exe}\",0";
         var comando = $"\"{exe}\" --guarda \"%1\"";
@@ -87,7 +95,7 @@ public static class ApriCon
             foreach (var est in Vista.Estensioni)
             {
                 var id = ProgId(Vista.Gruppo(est));
-                fa.SetValue(est, id);
+                if (predefiniti is null || predefiniti.Contains(Vista.Gruppo(est))) fa.SetValue(est, id);
                 using var owp = classi.CreateSubKey($@"{est}\OpenWithProgids");
                 owp.SetValue(id, Array.Empty<byte>(), RegistryValueKind.None);
                 // i gruppi cambiano da una versione all'altra (la 1.2.0 ha separato codice e presentazioni): niente doppioni

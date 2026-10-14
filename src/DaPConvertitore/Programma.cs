@@ -103,7 +103,7 @@ public static class Programma
     /// <summary>Il lettore in «Apri con» e fra le app predefinite: si offre, non si impone.</summary>
     static void RegistraApriCon()
     {
-        try { ApriCon.Registra(Environment.ProcessPath!); }
+        try { ApriCon.Registra(Environment.ProcessPath!, Impostazioni.Carica().GruppiPredefiniti); }
         catch (Exception e) { Registro.Errore("Apri con", e); }
     }
 

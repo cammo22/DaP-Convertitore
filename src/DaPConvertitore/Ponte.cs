@@ -207,6 +207,7 @@ public sealed class Ponte
                     formati = Catalogo.Formati.Select(f => new { f.Id, categoria = Catalogo.Chiave(f.Categoria), f.Etichetta, f.Descrizione, f.Estensione, f.Unisce, f.Sostituisce, manca = Conversioni.Manca(f, strumenti) }),
                     categorie = Enum.GetValues<Categoria>().Select(c => new { id = Catalogo.Chiave(c), nome = Catalogo.NomeCategoria(c) }),
                     impostazioni = imp,
+                    apriConGruppi = ApriCon.Elenco().Select(g => new { g.Id, g.Nome, g.Esempi }),
                     aggiornamento = versioneNuova,
                     modo = finestra.Modo,
                     file = Ordinati().Select(FileDto),
@@ -219,6 +220,13 @@ public sealed class Ponte
             case "scegli":
                 Scegli();
                 return true;
+            case "incolla":
+            {
+                // i file copiati in Esplora file (Ctrl+C) entrano nella coda, come se fossero trascinati
+                var elenco = Clipboard.ContainsFileDropList() ? Clipboard.GetFileDropList().Cast<string>().Where(p => File.Exists(p) || Directory.Exists(p)).ToList() : [];
+                if (elenco.Count > 0) Gestisci(new Richiesta(null, elenco, true));
+                return elenco.Count;
+            }
             case "svuota":
                 // la coda si svuota tutta: i file restano dove sono, si tolgono solo dalla lista
                 file.Clear();
@@ -337,9 +345,20 @@ public sealed class Ponte
                 return true;
             }
             case "predefinite":
-                // Impostazioni → App predefinite, già sulla pagina del convertitore
+            {
+                // la lista scelta nella pagina: si registrano solo quei tipi, e Windows (che le app predefinite le fa scegliere
+                // a te) apre la pagina del convertitore già pronta, col clic finale
+                if (a["gruppi"] is JsonArray scelti)
+                {
+                    var gruppi = scelti.Select(x => (string?)x).Where(x => !string.IsNullOrEmpty(x)).Cast<string>().ToList();
+                    imp.GruppiPredefiniti = gruppi;
+                    imp.Salva();
+                    imp.ApriCon = true;
+                    ApriCon.Registra(Environment.ProcessPath!, gruppi);
+                }
                 Process.Start(new ProcessStartInfo($"ms-settings:defaultapps?registeredAppUser={Uri.EscapeDataString(ApriCon.NomeApp)}") { UseShellExecute = true });
                 return true;
+            }
             case "esplora":
                 await Menu11.RiavviaEsplora();
                 return true;

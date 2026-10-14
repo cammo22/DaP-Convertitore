@@ -354,11 +354,19 @@ kbd { display: inline-grid; place-items: center; min-width: 24px; height: 23px; 
 .c-carta code { font: 0.88em var(--mono); background: #f1eef5; padding: 1px 5px; border-radius: 4px; }
 .c-carta pre { background: #17161d; color: #ebe7f4; padding: 14px 16px; border-radius: 8px; overflow: auto; }
 .c-carta pre code { background: none; color: inherit; padding: 0; }
+.c-carta pre { margin: 1em 0; max-width: 100%; }
+.c-codice { position: relative; margin: 1em 0; }
+.c-codice pre { margin: 0; padding-right: 52px; }
+.c-copia { position: absolute; right: 10px; top: 10px; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: #b9b4c8; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.12); opacity: 0.5; transition: opacity 0.15s, background 0.15s, color 0.15s; }
+.c-copia svg { width: 17px; height: 17px; }
+.c-codice:hover .c-copia, .c-copia:focus-visible { opacity: 1; }
+.c-copia:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.c-copia.fatto { opacity: 1; color: var(--verde); }
 .c-carta hr { border: 0; border-top: 1px solid #e3e0e8; margin: 2em 0; }
 .c-carta ul, .c-carta ol { padding-left: 1.6em; }
-.c-indice { overflow-y: auto; padding: 26px 10px 26px 18px; display: grid; gap: 2px; align-content: start; border-right: 1px solid var(--bordo); }
+.c-indice { overflow-y: auto; padding: 26px 10px 26px 18px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid var(--bordo); }
 .c-indice b { font: 900 11px var(--marchio); letter-spacing: 0.18em; color: var(--testo3); margin-bottom: 8px; }
-.c-indice button { text-align: left; padding: 5px 8px; border-radius: 6px; font-size: 13.5px; color: var(--testo2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-indice button { flex: none; text-align: left; padding: 5px 8px; border-radius: 6px; font-size: 13.5px; color: var(--testo2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c-indice button:hover { background: rgba(255, 255, 255, 0.06); color: var(--testo); }
 .c-indice .l2 { padding-left: 18px; } .c-indice .l3 { padding-left: 30px; font-size: 12.5px; }
 .d-sala { position: absolute; inset: 0; display: grid; grid-template-rows: 1fr auto; background: radial-gradient(900px 500px at 50% 30%, rgba(255, 159, 67, 0.1), transparent), #0d0c11; }

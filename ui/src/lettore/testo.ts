@@ -399,6 +399,16 @@ function markdown(c: Contesto, html: string): Vista {
     e.preventDefault();
     if (href.startsWith('#')) carta.querySelector(`[id="${CSS.escape(decodeURIComponent(href.slice(1)))}"]`)?.scrollIntoView({ behavior: 'smooth' });
   }));
+  // ogni blocco di codice ha il suo tasto «Copia», come su GitHub
+  carta.querySelectorAll('pre').forEach((pre) => {
+    const involucro = h('div.c-codice');
+    pre.replaceWith(involucro);
+    const b = h('button.c-copia', { title: 'Copia il codice', html: ic.copia, onclick: async () => {
+      try { await navigator.clipboard.writeText((pre.textContent ?? '').replace(/\n$/, '')); b.classList.add('fatto'); b.innerHTML = ic.ok; c.hud('Codice copiato', ic.copia); setTimeout(() => { b.classList.remove('fatto'); b.innerHTML = ic.copia; }, 1600); }
+      catch { c.hud('Non si copia', ic.copia); }
+    } });
+    involucro.append(pre, b);
+  });
   const titoli = [...carta.querySelectorAll('h1, h2, h3')] as HTMLElement[];
   const indice = titoli.length > 2 ? h('nav.c-indice', null, h('b', null, 'INDICE'), ...titoli.map((t) =>
     h(`button.l${t.tagName[1]}`, { onclick: () => t.scrollIntoView({ behavior: 'smooth' }) }, t.textContent ?? ''))) : null;

@@ -127,9 +127,13 @@ scrittura, e **Salva** (Ctrl+S) lo riscrive nel file con la sua codifica e le su
 (ZIP, 7Z…) scegli cartelle e file (clic, Ctrl per più) e li **trascini fuori dalla finestra**, nella cartella di
 Esplora file o sul desktop: escono come file veri, dove li lasci. Sulla zona in alto escono accanto all'archivio. Nella piastra, **Ctrl+Canc** (o il tasto *svuota*) svuota la coda; **Canc** toglie il file scelto.
 
+**Incollare.** Nella piastra, tasto destro → **Incolla** (o Ctrl+V) aggiunge i file copiati in Esplora file.
+**App predefinite** apre una lista dei tipi con un interruttore ciascuno: con OK si registrano quelli accesi e si
+arriva alla pagina di Windows, dove basta un clic. I blocchi di codice dei Markdown hanno il loro tasto **Copia**.
+
 **Ritoccare una foto.** Nel lettore **D** (o la matita in alto) apre la barra del ritocco: penna, evidenziatore, freccia,
 riquadro, ovale e **testo** (clic dove scrivere, Invio per fissarlo), otto colori più uno a scelta, lo spessore, annulla e
-rifai (Ctrl Z, Ctrl Y). Due tasti: **Salva le modifiche** scrive i segni sulla foto e *sostituisce il file* (dopo una
+rifai (Ctrl Z, Ctrl Y). Lo strumento **Ritaglia** tiene solo il rettangolo scelto. Due tasti: **Salva le modifiche** scrive i segni sulla foto e *sostituisce il file* (dopo una
 conferma; nelle JPG restano i dati dello scatto), **Copia** mette la foto ritoccata negli appunti *senza* salvare niente. I
 formati che non si riscrivono (HEIC, BMP, GIF…) salvano accanto, in PNG, e l'originale non si tocca.
 

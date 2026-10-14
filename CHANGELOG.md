@@ -2,6 +2,20 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.6.0 — 14 ottobre 2026
+
+- **Ritagliare le foto.** Nel ritocco (**D**) c'è lo strumento *Ritaglia*: trascini il rettangolo che resta (con Maiusc
+  è un quadrato), fuori la foto si scurisce con il bordo tratteggiato. Il ritaglio entra in **Salva le modifiche** e in
+  **Copia** come tutti gli altri segni (annulla e rifai compresi): il file o gli appunti prendono solo il pezzo scelto.
+- **Incollare i file nella piastra.** Tasto destro → **Incolla** (o **Ctrl+V**): entrano in coda i file copiati in
+  Esplora file, come se li trascinassi. Nello stesso menu c'è *Aggiungi file…*.
+- **«Aprire tutto con DaProd?»**: il tasto *App predefinite* delle impostazioni non butta più nella pagina di Windows.
+  Mostra una lista ordinata dei tipi (video, audio, foto, PDF, documenti…) con un interruttore ciascuno; con **OK**
+  l'app registra solo i tipi accesi e apre la pagina di Windows già pronta. Windows le app predefinite le fa scegliere
+  a te: l'ultimo clic su «Imposta predefinita» resta tuo, e l'app non aggira la protezione.
+- **Markdown sistemato.** L'indice a sinistra, con tante intestazioni, si schiacciava in puntini illeggibili: ora le righe
+  hanno la loro altezza. E ogni blocco di codice ha il tasto **Copia** in alto a destra, come su GitHub.
+
 ## 1.5.0 — 14 ottobre 2026
 
 - **Ritoccare le foto nel lettore.** **D** (o la matita in alto) apre la barra del ritocco: penna, evidenziatore,

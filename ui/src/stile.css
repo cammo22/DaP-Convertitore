@@ -493,3 +493,23 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 
 /* i due modi della foto (peso finale / qualità) */
 .modi.due { grid-template-columns: repeat(2, 1fr); }
+
+/* «Aprire tutto con DaProd?»: la lista dei tipi con gli interruttori */
+.cassetto.predefinite { width: min(560px, 94vw); }
+.pred-lista { display: grid; gap: 4px; margin: 4px 0 12px; max-height: 46vh; overflow-y: auto; padding-right: 4px; }
+.pred-riga { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: var(--gomma); border: 1px solid var(--bordo); cursor: pointer; }
+.pred-riga:hover { border-color: var(--bordo-forte); }
+.pred-num { width: 20px; font: 900 12px var(--marchio); color: var(--testo3); text-align: right; }
+.pred-icona svg { width: 22px; height: 22px; color: var(--oro); }
+.pred-testo { flex: 1; min-width: 0; display: grid; }
+.pred-testo b { font: 700 15px var(--ui); }
+.pred-testo small { font: 600 12px var(--ui); color: var(--testo3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pred-conta { margin-left: 8px; padding: 1px 8px; border-radius: 8px; background: rgba(0, 0, 0, 0.3); font: 700 12px var(--ui); }
+
+/* il tasto destro sulla piastra */
+.menu-destro { position: fixed; z-index: 80; min-width: 210px; padding: 5px; border-radius: 12px; background: rgba(22, 20, 29, 0.97); border: 1px solid var(--bordo-forte); box-shadow: var(--ombra); animation: entra 0.12s ease-out; }
+.menu-destro button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; color: var(--testo); font: 700 14px var(--ui); text-align: left; }
+.menu-destro button:hover { background: rgba(255, 213, 74, 0.12); color: var(--oro); }
+.menu-destro svg { width: 18px; height: 18px; }
+.menu-destro b { flex: 1; font-weight: 700; }
+.menu-destro small { color: var(--testo3); font: 600 12px var(--ui); }

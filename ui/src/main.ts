@@ -22,6 +22,7 @@ import { disegnaFatto, tastoCestino } from './app/risultati';
 import { disegnaRapido } from './app/rapido';
 import { apriImpostazioni } from './app/impostazioni';
 import { invitoMenu11 } from './app/menu11';
+import { avviaIncolla } from './app/incolla';
 
 // ————————————————————————————————— testa —————————————————————————————————
 
@@ -300,6 +301,7 @@ function opzioniSalvate() {
 async function avvia() {
   Object.assign(ui, { tutto: disegnaTutto, scegli: disegnaScegli, piede: disegnaPiede, coda: disegnaCoda, fatto: disegnaFatto, rapido: disegnaRapido, impostazioni: apriImpostazioni, nuovoGiro });
   await avviaFinto();
+  avviaIncolla();
   ascolta('file', (f: InfoFile) => {
     if (!s.file.has(f.id)) s.ordine.push(f.id);
     s.file.set(f.id, f);

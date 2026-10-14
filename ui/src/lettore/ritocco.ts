@@ -5,11 +5,11 @@
 import { h, clamp } from '../util';
 import { ic, memoria, type Contesto } from './comune';
 
-type Strumento = 'penna' | 'evid' | 'freccia' | 'rett' | 'ovale' | 'testo';
+type Strumento = 'penna' | 'evid' | 'freccia' | 'rett' | 'ovale' | 'testo' | 'ritaglia';
 type Punto = [number, number];
 type Segno =
   | { t: 'penna' | 'evid'; c: string; w: number; p: Punto[] }
-  | { t: 'freccia' | 'rett' | 'ovale'; c: string; w: number; a: Punto; b: Punto }
+  | { t: 'freccia' | 'rett' | 'ovale' | 'ritaglio'; c: string; w: number; a: Punto; b: Punto }
   | { t: 'testo'; c: string; dim: number; x: number; y: number; s: string; contorno: boolean };
 
 export interface Ritocco {
@@ -105,12 +105,14 @@ function luminosita(c: string) {
 
 export function creaRitocco(c: Contesto, tavolo: HTMLElement, img: HTMLImageElement, W: number, H: number, aiuti: Aiuti): Ritocco {
   const base = h<HTMLCanvasElement>('canvas.r-foglio', { width: W, height: H });
+  const maschera = h<HTMLCanvasElement>('canvas.r-foglio', { width: W, height: H });
   const viva = h<HTMLCanvasElement>('canvas.r-foglio.viva', { width: W, height: H });
-  const foglio = h('div.i-disegno', null, base, viva);
+  const foglio = h('div.i-disegno', null, base, maschera, viva);
   foglio.style.width = `${W}px`;
   foglio.style.height = `${H}px`;
   const gb = base.getContext('2d')!;
   const gv = viva.getContext('2d')!;
+  const gm = maschera.getContext('2d')!;
 
   const segni: Segno[] = [];
   const rifare: Segno[] = [];
@@ -126,13 +128,40 @@ export function creaRitocco(c: Contesto, tavolo: HTMLElement, img: HTMLImageElem
   const unita = () => Math.max(W, H) / 1000;
   const w = () => Math.max(1, spessore * unita());
 
+  /** Il ritaglio in vigore: l'ultimo scelto, come rettangolo intero in pixel (null = tutta la foto). */
+  const ritaglioFissato = () => {
+    for (let i = segni.length - 1; i >= 0; i--) {
+      const o = segni[i];
+      if (o.t === 'ritaglio') return rettangolo(o.a, o.b);
+    }
+    return null;
+  };
+  const rettangolo = (a: Punto, b: Punto) => {
+    const x = Math.round(Math.min(a[0], b[0])), y = Math.round(Math.min(a[1], b[1]));
+    return { x, y, w: Math.max(1, Math.round(Math.abs(b[0] - a[0]))), h: Math.max(1, Math.round(Math.abs(b[1] - a[1]))) };
+  };
+  /** Fuori dal ritaglio la foto si scurisce, col bordo tratteggiato: si vede cosa resterà. */
+  const disegnaMaschera = () => {
+    gm.clearRect(0, 0, W, H);
+    const r = corrente?.t === 'ritaglio' ? rettangolo(corrente.a, corrente.b) : ritaglioFissato();
+    if (!r) return;
+    gm.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    gm.fillRect(0, 0, W, H);
+    gm.clearRect(r.x, r.y, r.w, r.h);
+    gm.strokeStyle = '#ffd54a';
+    gm.lineWidth = Math.max(2, unita() * 2);
+    gm.setLineDash([unita() * 9, unita() * 6]);
+    gm.strokeRect(r.x, r.y, r.w, r.h);
+  };
   const ridisegnaTutto = () => {
     gb.clearRect(0, 0, W, H);
     for (const o of segni) disegnaSegno(gb, o);
+    disegnaMaschera();
   };
   const ridisegnaViva = () => {
     gv.clearRect(0, 0, W, H);
-    if (corrente) disegnaSegno(gv, corrente);
+    if (corrente && corrente.t !== 'ritaglio') disegnaSegno(gv, corrente);
+    if (corrente?.t === 'ritaglio') disegnaMaschera();
   };
 
   const punto = (e: PointerEvent): Punto => {
@@ -144,6 +173,7 @@ export function creaRitocco(c: Contesto, tavolo: HTMLElement, img: HTMLImageElem
     segni.push(o);
     rifare.length = 0;
     disegnaSegno(gb, o);
+    disegnaMaschera();
     aggiornaBarra();
     aiuti.cambiato();
   };
@@ -162,6 +192,7 @@ export function creaRitocco(c: Contesto, tavolo: HTMLElement, img: HTMLImageElem
     if (!o) return;
     segni.push(o);
     disegnaSegno(gb, o);
+    disegnaMaschera();
     aggiornaBarra();
     aiuti.cambiato();
   }
@@ -188,7 +219,7 @@ export function creaRitocco(c: Contesto, tavolo: HTMLElement, img: HTMLImageElem
     try { viva.setPointerCapture(e.pointerId); } catch { /* senza cattura (eventi finti) funziona uguale */ }
     corrente = strumento === 'penna' || strumento === 'evid'
       ? { t: strumento, c: colore, w: w(), p: [p] }
-      : { t: strumento, c: colore, w: w(), a: p, b: p };
+      : { t: strumento === 'ritaglia' ? 'ritaglio' : strumento, c: colore, w: w(), a: p, b: p };
     ridisegnaViva();
   });
   viva.addEventListener('pointermove', (e) => {
@@ -198,7 +229,7 @@ export function creaRitocco(c: Contesto, tavolo: HTMLElement, img: HTMLImageElem
       const ultimo = corrente.p[corrente.p.length - 1];
       if (Math.hypot(p[0] - ultimo[0], p[1] - ultimo[1]) < unita() * 0.8) return; // niente punti inutili
       corrente.p.push(p);
-    } else if (corrente.t === 'freccia' || corrente.t === 'rett' || corrente.t === 'ovale') {
+    } else if (corrente.t === 'freccia' || corrente.t === 'rett' || corrente.t === 'ovale' || corrente.t === 'ritaglio') {
       corrente.b = e.shiftKey && corrente.t !== 'freccia' ? quadrato(corrente.a, p) : p;
     }
     ridisegnaViva();
@@ -208,12 +239,13 @@ export function creaRitocco(c: Contesto, tavolo: HTMLElement, img: HTMLImageElem
     const o: Segno = corrente;
     corrente = null;
     gv.clearRect(0, 0, W, H);
-    // un clic senza trascinare non fa una forma vuota
+    // un clic senza trascinare non fa una forma vuota (e un ritaglio minuscolo non è un ritaglio)
     if ((o.t === 'freccia' || o.t === 'rett' || o.t === 'ovale') && Math.hypot(o.b[0] - o.a[0], o.b[1] - o.a[1]) < unita() * 4) return;
+    if (o.t === 'ritaglio' && (Math.abs(o.b[0] - o.a[0]) < unita() * 20 || Math.abs(o.b[1] - o.a[1]) < unita() * 20)) { disegnaMaschera(); return; }
     aggiungi(o);
   };
   viva.addEventListener('pointerup', finisci);
-  viva.addEventListener('pointercancel', () => { corrente = null; ridisegnaViva(); });
+  viva.addEventListener('pointercancel', () => { corrente = null; ridisegnaViva(); disegnaMaschera(); });
 
   const quadrato = (a: Punto, b: Punto): Punto => {
     const d = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
@@ -261,8 +293,9 @@ export function creaRitocco(c: Contesto, tavolo: HTMLElement, img: HTMLImageElem
     rett: sv('<rect x="4" y="6" width="16" height="12" rx="1.5"/>'),
     ovale: sv('<ellipse cx="12" cy="12" rx="8.5" ry="6"/>'),
     testo: sv('<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'),
+    ritaglia: sv('<path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/>'),
   };
-  const nomi: Record<Strumento, string> = { penna: 'Penna', evid: 'Evidenziatore', freccia: 'Freccia', rett: 'Riquadro', ovale: 'Ovale', testo: 'Testo' };
+  const nomi: Record<Strumento, string> = { penna: 'Penna', evid: 'Evidenziatore', freccia: 'Freccia', rett: 'Riquadro', ovale: 'Ovale', testo: 'Testo', ritaglia: 'Ritaglia (trascina il rettangolo che resta)' };
   const bAnnulla = h<HTMLButtonElement>('button.r-b', { title: 'Annulla l\'ultimo segno (Ctrl Z)', html: ic.annulla, onclick: annulla });
   const bRifai = h<HTMLButtonElement>('button.r-b', { title: 'Rifai (Ctrl Y)', html: ic.rifai, onclick: rifai });
   const bSvuota = h<HTMLButtonElement>('button.r-b', { title: 'Butta tutti i segni', html: ic.cestino, onclick: scarta });
@@ -321,9 +354,11 @@ export function creaRitocco(c: Contesto, tavolo: HTMLElement, img: HTMLImageElem
     },
     segui(t) { foglio.style.transform = t; },
     compone() {
-      const out = h<HTMLCanvasElement>('canvas', { width: W, height: H });
+      const r = ritaglioFissato() ?? { x: 0, y: 0, w: W, h: H };
+      const out = h<HTMLCanvasElement>('canvas', { width: r.w, height: r.h });
       const g = out.getContext('2d')!;
-      g.drawImage(img, 0, 0, W, H);
+      g.drawImage(img, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+      g.translate(-r.x, -r.y);
       for (const o of segni) disegnaSegno(g, o);
       return out;
     },

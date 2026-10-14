@@ -71,6 +71,8 @@ export interface Impostazioni {
   /** Il lettore in «Apri con» di Windows. */
   apriCon: boolean;
   menu11Chiesto: boolean;
+  /** I gruppi scelti per «Aprire tutto con DaProd» (null = tutti). */
+  gruppiPredefiniti?: string[] | null;
   formati: Record<string, string>;
   scelte?: Record<string, unknown> | null;
 }
@@ -136,6 +138,8 @@ export interface Stato {
   office: { libreOffice: boolean; word: boolean };
   /** Il tasto destro nuovo di Windows 11. */
   menu11: StatoMenu11;
+  /** I tipi di file che il lettore sa aprire, per la lista «Aprire tutto con DaProd?». */
+  apriConGruppi: { id: string; nome: string; esempi: string }[];
 }
 
 export interface StatoMenu11 {

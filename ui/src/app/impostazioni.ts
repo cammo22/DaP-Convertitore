@@ -3,10 +3,50 @@
 import { chiedi } from '../ponte';
 import type { StatoMenu11 } from '../ponte';
 import { h } from '../util';
-import { icone } from '../icone';
+import { icone, iconaCategoria } from '../icone';
 import { clac, accendiSuoni } from '../suoni';
 import { s, ui } from './stato';
 import { proponiRiavvio, rigaMenu11 } from './menu11';
+
+/** Gruppi spenti di partenza: i documenti e gli archivi li aprono meglio Office ed Esplora file. */
+const spentiDiPartenza = new Set(['Documento', 'Presentazione', 'Tabella', 'Archivio']);
+
+/**
+ * «Sicuro che vuoi che tutto si apra con DaProd?»: la lista dei tipi con un interruttore ciascuno. Con OK l'app registra
+ * solo quelli accesi e apre la pagina di Windows già pronta: le app predefinite Windows le fa scegliere a te, con un clic.
+ */
+export function apriPredefinite() {
+  const imp = s.stato.impostazioni;
+  const gruppi = s.stato.apriConGruppi ?? [];
+  const acceso = new Map(gruppi.map((g) => [g.id, imp.gruppiPredefiniti ? imp.gruppiPredefiniti.includes(g.id) : !spentiDiPartenza.has(g.id)]));
+  document.querySelector('.velo.predefinite')?.remove();
+  const conta = h('span.pred-conta');
+  const aggiorna = () => { const n = [...acceso.values()].filter(Boolean).length; conta.textContent = n === 1 ? '1 tipo' : `${n} tipi`; };
+  const velo = h('div.velo.predefinite', { onclick: (e: Event) => { if (e.target === velo) velo.remove(); } });
+  const riga = (g: { id: string; nome: string; esempi: string }, i: number) => {
+    const b = h(`button.interruttore.solo${acceso.get(g.id) ? '.su' : ''}`, null, h('i.levetta'));
+    const r = h('div.pred-riga', { onclick: () => { clac(); acceso.set(g.id, !acceso.get(g.id)); b.classList.toggle('su', !!acceso.get(g.id)); aggiorna(); } },
+      h('span.pred-num', null, String(i + 1)), h('span.pred-icona', { html: iconaCategoria[({ Tabella: 'foglio', Font: 'altro', Modello: 'altro', Codice: 'testo' } as Record<string, string>)[g.id] ?? g.id.toLowerCase()] ?? iconaCategoria.altro }),
+      h('div.pred-testo', null, h('b', null, g.nome), h('small', null, g.esempi.replaceAll('.', ''))), b);
+    return r;
+  };
+  velo.append(h('div.cassetto.predefinite', null,
+    h('div.confronto-testa', null, h('b', null, 'APRIRE TUTTO CON DAPROD?'), h('span'), h('button.btn-fin', { html: icone.chiudi, onclick: () => velo.remove() })),
+    h('p.spiega', null, 'Sicuro che vuoi che questi file si aprano col lettore di DaP Convertitore? Spegni quelli che vuoi lasciare ai programmi di prima.'),
+    h('div.pred-lista', null, ...gruppi.map(riga)),
+    h('p.spiega.piccolo', null, 'Windows non lascia che un programma si metta da solo come predefinito: con OK registro i tipi accesi e apro la pagina di Windows già pronta, dove basta un clic su «Imposta predefinita».'),
+    h('div.invito-tasti', null,
+      h('button.tasto.su', { onclick: () => {
+        clac(true);
+        const scelti = gruppi.filter((g) => acceso.get(g.id)).map((g) => g.id);
+        imp.gruppiPredefiniti = scelti;
+        velo.remove();
+        void chiedi('predefinite', { gruppi: scelti });
+      } }, h('i.led.verde'), 'OK, applica', conta),
+      h('button.tasto', { onclick: () => { clac(); velo.remove(); } }, 'Annulla'))));
+  document.body.append(velo);
+  aggiorna();
+}
 
 export function apriImpostazioni() {
   clac();
@@ -34,7 +74,7 @@ export function apriImpostazioni() {
     riga('Nel menu «Apri con»', 'Il lettore di DaP fra i programmi che aprono foto, video, musica, PDF, documenti, archivi, codice. Non si prende niente da solo. Porta anche le icone di ogni tipo e le anteprime vere in Esplora file (la foto, il fotogramma del video, il modello 3D, la forma dell\'onda).',
       leva(imp.apriCon, (v) => salva({ apriCon: v }))),
     riga('Aprire col doppio clic', 'Per farlo diventare il programma di tutti i giorni (al posto di Foto o Lettore multimediale): Windows lo fa scegliere a te, tipo per tipo.',
-      h('button.tasto', { onclick: () => { clac(); void chiedi('predefinite'); } }, 'App predefinite')),
+      h('button.tasto', { onclick: () => { clac(); apriPredefinite(); } }, 'App predefinite')),
     h('div.imp-sezione', null, 'TASTO DESTRO'),
     rigaMenu11(),
     s.stato.menu11?.windows11

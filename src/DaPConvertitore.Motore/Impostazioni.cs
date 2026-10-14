@@ -22,6 +22,8 @@ public sealed class Impostazioni
     public bool CestinoDaSolo { get; set; }
     /// <summary>"Apri con" di Windows: il lettore fra le app che aprono foto, video, musica, PDF…</summary>
     public bool ApriCon { get; set; } = true;
+    /// <summary>I gruppi che si è scelto di aprire sempre col lettore (la lista di «App predefinite»). Null = tutti.</summary>
+    public List<string>? GruppiPredefiniti { get; set; }
     /// <summary>L'invito a mettere il convertitore nel menu di Windows 11 è già stato mostrato (e chiuso).</summary>
     public bool Menu11Chiesto { get; set; }
     /// <summary>L'ultimo formato scelto per ogni categoria ("video" → "video.mp4").</summary>
