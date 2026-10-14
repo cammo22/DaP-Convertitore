@@ -43,6 +43,26 @@ public static class Ambiente
         w.NewWindowRequested += (_, e) => e.Handled = true;
     }
 
+    /// <summary>
+    /// Il tasto destro del lettore: solo le voci per il testo (copia, taglia, incolla, seleziona tutto), nella lingua
+    /// di Windows. Fuori da un testo il menu non compare. Niente «Salva con nome», «Ispeziona» e compagnia.
+    /// </summary>
+    public static void MenuTesto(CoreWebView2 w)
+    {
+        w.Settings.AreDefaultContextMenusEnabled = true;
+        w.ContextMenuRequested += (_, e) =>
+        {
+            var voci = e.MenuItems;
+            for (var i = voci.Count - 1; i >= 0; i--)
+                if (voci[i].Name is not ("copy" or "cut" or "paste" or "pasteAsPlainText" or "selectAll" or "undo" or "redo")) voci.RemoveAt(i);
+            // tolti i separatori rimasti in cima, in fondo o doppi
+            for (var i = voci.Count - 1; i >= 0; i--)
+                if (voci[i].Kind == CoreWebView2ContextMenuItemKind.Separator && (i == 0 || i == voci.Count - 1 || voci[i - 1].Kind == CoreWebView2ContextMenuItemKind.Separator)) voci.RemoveAt(i);
+            var nelTesto = e.ContextMenuTarget.IsEditable || e.ContextMenuTarget.HasSelection;
+            if (voci.Count == 0 || !nelTesto) e.Handled = true;
+        };
+    }
+
     /// <summary>La pagina: quella vera accanto all'exe, o quella del server di Vite mentre si sviluppa (DAP_UI).</summary>
     public static string Pagina(string nome)
     {

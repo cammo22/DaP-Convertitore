@@ -18,7 +18,8 @@ public sealed class FinestraLettore : Window
     Rect? primaDelloSchermo;
     WindowState statoPrima;
 
-    public FinestraLettore(IReadOnlyList<string> file)
+    /// <param name="aperti">Quanti lettori ci sono già: ognuno in più scende di un gradino a destra e in basso.</param>
+    public FinestraLettore(IReadOnlyList<string> file, int aperti = 0)
     {
         Title = Path.GetFileName(file[0]) + " · DaP Convertitore";
         Background = new SolidColorBrush(Color.FromRgb(0x07, 0x06, 0x0A));
@@ -37,7 +38,7 @@ public sealed class FinestraLettore : Window
         Content = vista;
         MinWidth = 520;
         MinHeight = 380;
-        Posiziona();
+        Posiziona(aperti);
 
         Ponte = new PonteLettore(this, vista, file);
         SourceInitialized += (_, _) => Ambiente.Windows11(Maniglia);
@@ -53,6 +54,7 @@ public sealed class FinestraLettore : Window
             var env = await Ambiente.Prendi();
             await vista.EnsureCoreWebView2Async(env);
             Ambiente.Prepara(vista.CoreWebView2);
+            Ambiente.MenuTesto(vista.CoreWebView2);
             Ponte.Collega(env);
             vista.CoreWebView2.ContainsFullScreenElementChanged += (_, _) => SchermoIntero(vista.CoreWebView2.ContainsFullScreenElement);
             vista.CoreWebView2.Navigate(Ambiente.Pagina("lettore.html"));
@@ -96,7 +98,7 @@ public sealed class FinestraLettore : Window
     }
 
     /// <summary>La misura dell'ultima volta (se sta ancora su uno schermo), se no grande al centro.</summary>
-    void Posiziona()
+    void Posiziona(int aperti)
     {
         var lavoro = SystemParameters.WorkArea;
         var imp = Impostazioni.Comune;
@@ -113,6 +115,12 @@ public sealed class FinestraLettore : Window
             Height = Math.Min(820, lavoro.Height * 0.86);
             Left = lavoro.Left + (lavoro.Width - Width) / 2;
             Top = lavoro.Top + (lavoro.Height - Height) / 2;
+        }
+        if (aperti > 0)
+        {
+            var passo = 34 * (aperti % 8 + 1);
+            Left = Math.Min(Left + passo, Math.Max(lavoro.Left, lavoro.Right - Width));
+            Top = Math.Min(Top + passo, Math.Max(lavoro.Top, lavoro.Bottom - Height));
         }
         if (imp.LettoreGrande) Loaded += (_, _) => WindowState = WindowState.Maximized;
     }

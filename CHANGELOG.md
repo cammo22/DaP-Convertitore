@@ -2,6 +2,16 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.7.1 — 14 ottobre 2026
+
+- **Ogni file si apre in una finestra nuova.** Prima, se il lettore era già aperto (per esempio con un Markdown), aprire
+  una foto sostituiva quello che stavi leggendo. Ora il vecchio resta com'è e il nuovo si apre accanto, un po' più in
+  basso a destra. Più file scelti insieme in Esplora file restano nella stessa finestra, uno dopo l'altro.
+- **Tasto destro → Copia** nel lettore: sul testo scelto (e dentro il campo di modifica) compare il menu con Copia,
+  Taglia, Incolla e Seleziona tutto. Fuori dal testo non compare niente.
+- **Il testo scelto si vede**: sulla carta bianca dei documenti e dei Markdown era quasi invisibile, ora è viola pieno
+  con le lettere bianche; sui fondi scuri è più carico.
+
 ## 1.7.0 — 14 ottobre 2026
 
 - **«Aprire tutto con DaProd?» applica davvero**, col modo che Windows prevede per gli amministratori: con **OK** Windows

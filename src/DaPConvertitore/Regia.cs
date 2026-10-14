@@ -5,7 +5,7 @@ namespace DaP.Convertitore.App;
 
 /// <summary>
 /// Chi apre cosa. Un processo solo per tutto: la piastra del convertitore (una) e il lettore. Il doppio clic su
-/// una foto apre il lettore; se è già aperto ci passa dentro, come fa Foto. Più file scelti insieme finiscono
+/// una foto apre un lettore nuovo, anche se ce n'è già uno aperto. Più file scelti insieme finiscono
 /// nello stesso lettore, uno dopo l'altro. Quando si chiude l'ultima finestra, si chiude l'app.
 /// </summary>
 public static class Regia
@@ -47,17 +47,11 @@ public static class Regia
         var file = daGuardare.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         daGuardare.Clear();
         if (file.Count == 0) { ForseFine(); return; }
-        var l = lettori.LastOrDefault();
-        if (l is null)
-        {
-            l = new FinestraLettore(file);
-            lettori.Add(l);
-            var questo = l;
-            l.Closed += (_, _) => { lettori.Remove(questo); ForseFine(); };
-            l.Show();
-        }
-        else l.Ponte.Apri(file);
-        if (l.WindowState == WindowState.Minimized) l.WindowState = WindowState.Normal;
+        // ogni apertura è una finestra nuova (quelle già aperte restano dove sono); a cascata, se no si coprono
+        var l = new FinestraLettore(file, lettori.Count);
+        lettori.Add(l);
+        l.Closed += (_, _) => { lettori.Remove(l); ForseFine(); };
+        l.Show();
         l.Activate();
     }
 
