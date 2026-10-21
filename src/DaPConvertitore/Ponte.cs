@@ -157,7 +157,12 @@ public sealed class Ponte
         return info.Id;
     }
 
-    static double DurataDi(VoceFile v) => v.Dettagli is not null && v.Dettagli.TryGetValue("durata", out var x) && x is double d ? d : 0;
+    /// <summary>La durata dai dettagli del file; se l'analisi non è ancora finita (la colonna dell'anteprima la chiede subito) la aspetta un po'.</summary>
+    static async Task<double> DurataDi(VoceFile v)
+    {
+        for (var i = 0; i < 100 && v.Dettagli is null; i++) await Task.Delay(50);
+        return v.Dettagli is not null && v.Dettagli.TryGetValue("durata", out var x) && x is double d ? d : 0;
+    }
 
     // ————————————————————————— messaggi dall'interfaccia —————————————————————————
 
@@ -358,14 +363,14 @@ public sealed class Ponte
             {
                 // la colonna a destra per i file che non sono testo: com'è fatto l'indice (pagine, fotogrammi, onde, una figura sola)
                 var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
-                var i = await IndiceAnteprima.Descrivi(v.Info.Percorso, Catalogo.CategoriaDi(v.Info.Percorso), DurataDi(v));
+                var i = await IndiceAnteprima.Descrivi(v.Info.Percorso, Catalogo.CategoriaDi(v.Info.Percorso), await DurataDi(v));
                 return new { tipo = i.Tipo, voci = i.Voci, totale = i.Totale, punti = Enumerable.Range(0, i.Voci).Select(n => IndiceAnteprima.Punto(i, n)).ToArray() };
             }
             case "voceAnteprima":
             {
                 var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
                 var c = Catalogo.CategoriaDi(v.Info.Percorso);
-                var i = await IndiceAnteprima.Descrivi(v.Info.Percorso, c, DurataDi(v));
+                var i = await IndiceAnteprima.Descrivi(v.Info.Percorso, c, await DurataDi(v));
                 var lato = (uint)Math.Clamp((int?)a["lato"] ?? 160, 48, 1024);
                 await anteprime.WaitAsync();
                 try

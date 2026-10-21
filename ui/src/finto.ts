@@ -164,6 +164,15 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
       return [];
     case 'anteprimaTesto':
       return registroFinto();
+    case 'indiceAnteprima': {
+      // pagine per i PDF, dodici punti nel tempo per video e audio, una figura sola per il resto
+      const c = esempi.find((x) => x.id === args.id)?.categoria;
+      if (c === 'pdf') return { tipo: 'pagine', voci: 24, totale: 24, punti: Array.from({ length: 24 }, (_, n) => n + 1) };
+      if (c === 'video' || c === 'audio') return { tipo: 'tempo', voci: 12, totale: 240, punti: Array.from({ length: 12 }, (_, n) => 10 + n * 20) };
+      return { tipo: 'singola', voci: 1, totale: 1, punti: [0] };
+    }
+    case 'voceAnteprima':
+      return { url: quadro('#3b1d6e', '#ff3df2', String(Number(args.n) + 1)) };
     default:
       return true;
   }

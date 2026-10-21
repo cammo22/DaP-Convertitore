@@ -207,4 +207,15 @@ public static class Pdf
         }
         catch { return null; }
     }
+
+    /// <summary>La pagina `n` (da 0) in piccolo, per la colonna a destra dell'anteprima.</summary>
+    public static async Task<SoftwareBitmap?> PaginaPiccola(string percorso, int n, uint lato)
+    {
+        try
+        {
+            var doc = await Apri(percorso);
+            return n >= 0 && n < doc.PageCount ? await Disegna(doc, (uint)n, 96, lato) : null;
+        }
+        catch { return null; }
+    }
 }

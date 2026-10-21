@@ -2,6 +2,22 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.9.0 — 21 ottobre 2026
+
+- **La minimappa, come in VS Code.** Nell'anteprima a destra dei testi (e nel lettore, sui TXT, Markdown, registri e codice) a
+  lato del testo c'è la sua **miniatura**: una riga ogni due pixel, un pixel per carattere. Il **riquadro** viola è quello che
+  vedi; **clic o trascinamento** ti portano lì. I risultati di Ctrl+F sono **segni dorati** sulla miniatura (quello scelto è
+  arancione). Le righe lunghe vanno a capo anche nella miniatura (una riga sola da 1 KB, o da sei milioni di caratteri, si
+  vede come un blocco, non come un filo), e un registro da 100.000 righe si schiaccia in 30 ms circa.
+- **Anteprima per tutti i file, non solo i testi.** Scegli un file qualunque nella coda e a destra c'è la stessa colonna con le
+  figurine cliccabili: le **pagine** di un PDF (fino a 400), **12 fotogrammi** di un video, **12 onde** di un brano; foto,
+  documenti, cartelle e il resto hanno una figura sola (l'anteprima o l'icona di Esplora file). Il clic sulla figurina la
+  porta in grande, le frecce e PagUp/PagGiù scorrono l'elenco, il clic sulla figura grande apre il lettore. Le figurine si
+  chiedono solo quando entrano in vista, una alla volta.
+- Dentro: `IndiceAnteprima.cs` (motore), comandi `indiceAnteprima` e `voceAnteprima`, `ui/src/app/minimappa.ts` (i conti,
+  senza finestre), `minimappa-vista.ts` (il disegno), `colonna.ts` (le figurine). Prove: `scripts/prova-minimappa.mjs`
+  (node, 10 prove) e `ProveIndice.cs` (5 prove che fanno davvero PDF, video, brano, foto e file qualunque).
+
 ## 1.8.1 — 21 ottobre 2026
 
 - **Il controllo aggiornamenti non si ferma più all'avvio.** L'app guarda le release di GitHub appena si apre, poi ogni
