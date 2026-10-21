@@ -513,3 +513,66 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .menu-destro svg { width: 18px; height: 18px; }
 .menu-destro b { flex: 1; font-weight: 700; }
 .menu-destro small { color: var(--testo3); font: 600 12px var(--ui); }
+
+/* ——— 1.8.0: l'anteprima a destra, come in VS Code ——— */
+.corpo.con-anteprima { grid-template-columns: 318px minmax(0, 1fr) var(--ap-larghezza, 400px); }
+.corpo.con-linguetta { grid-template-columns: 318px minmax(0, 1fr) 34px; }
+.anteprima[hidden], .ap-linguetta[hidden], .ap-cerca[hidden], .ap-avviso[hidden] { display: none !important; }
+.anteprima {
+  position: relative; display: flex; flex-direction: column; min-height: 0; min-width: 0;
+  background: linear-gradient(270deg, rgba(20, 19, 26, 0.92), rgba(20, 19, 26, 0.7));
+  border-left: 1px solid #000; box-shadow: -1px 0 0 rgba(255, 255, 255, 0.03);
+}
+.ap-maniglia { position: absolute; left: -4px; top: 0; bottom: 0; width: 8px; cursor: col-resize; z-index: 5; }
+.ap-maniglia::after { content: ''; position: absolute; left: 3px; top: 0; bottom: 0; width: 2px; background: transparent; transition: background 0.15s; }
+.ap-maniglia:hover::after, .anteprima.tira .ap-maniglia::after { background: var(--oro); box-shadow: 0 0 8px rgba(255, 213, 74, 0.5); }
+.anteprima.tira { user-select: none; }
+.ap-testa { padding: 14px 12px 8px 14px; display: flex; flex-direction: column; gap: 4px; flex: none; }
+.ap-titolo { display: flex; align-items: center; justify-content: space-between; font: 700 11px var(--marchio); letter-spacing: 0.22em; color: var(--testo2); }
+.ap-azioni { display: flex; gap: 2px; }
+.ap-btn { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 6px; color: var(--testo3); flex: none; }
+.ap-btn svg { width: 15px; height: 15px; }
+.ap-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.07); color: var(--testo); }
+.ap-btn:disabled { opacity: 0.35; }
+.ap-nome { font: 700 14px var(--ui); color: var(--testo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Ctrl+F: la barra in alto, come il «Trova» di VS Code */
+.ap-cerca { display: flex; align-items: center; gap: 4px; margin: 0 10px 8px; padding: 4px 4px 4px 9px; border-radius: 9px; background: #0d0c12; border: 1px solid rgba(255, 213, 74, 0.35); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.45); flex: none; animation: entra 0.12s ease-out; }
+.ap-lente svg { width: 15px; height: 15px; color: var(--oro); }
+.ap-campo { flex: 1; min-width: 60px; height: 26px; border: 0; outline: 0; background: none; font: 600 13.5px var(--ui); color: var(--testo); user-select: text; }
+.ap-campo::placeholder { color: var(--testo3); }
+.ap-aa { height: 22px; padding: 0 6px; border-radius: 5px; font: 700 12px 'Cascadia Mono', Consolas, monospace; color: var(--testo3); border: 1px solid transparent; }
+.ap-aa:hover { color: var(--testo); }
+.ap-aa.su { color: var(--oro); border-color: rgba(255, 213, 74, 0.45); background: rgba(255, 213, 74, 0.1); }
+.ap-conta { font: 700 12px var(--ui); color: var(--testo2); white-space: nowrap; min-width: 58px; text-align: right; padding-right: 2px; }
+.ap-conta.niente { color: var(--rosso); }
+
+/* il testo: righe tutte alte uguali, si disegnano solo quelle che si vedono */
+.ap-scorre { position: relative; flex: 1; min-height: 0; overflow: auto; margin: 0 4px 0 0; outline: 0; background: rgba(9, 8, 13, 0.55); border-top: 1px solid #000; border-bottom: 1px solid #000; }
+.ap-scorre::-webkit-scrollbar-corner { background: transparent; }
+.ap-spazio { position: relative; min-width: 100%; width: calc(var(--cifre, 3) * 1ch + 24px + var(--lunga, 80) * 1ch + 32px); font: 400 12.5px/19px 'Cascadia Mono', Consolas, monospace; }
+.ap-righe { position: absolute; left: 0; top: 0; right: 0; will-change: transform; }
+.ap-r { display: flex; height: 19px; white-space: pre; }
+.ap-r i { position: sticky; left: 0; z-index: 1; flex: none; width: calc(var(--cifre, 3) * 1ch + 24px); padding-right: 12px; text-align: right; font-style: normal; color: #4f4b5c; background: #0f0e14; border-right: 1px solid #1d1b25; user-select: none; }
+.ap-r code { font: inherit; color: #d6d2e2; background: none; padding: 0 16px 0 10px; border-radius: 0; tab-size: 4; user-select: text; }
+.ap-r.su { background: rgba(255, 213, 74, 0.06); }
+.ap-r.su i { color: var(--oro); }
+.ap-r code mark { background: rgba(255, 213, 74, 0.26); color: inherit; border-radius: 2px; box-shadow: 0 0 0 1px rgba(255, 213, 74, 0.25); }
+.ap-r code mark.su { background: var(--oro); color: #1d1405; box-shadow: 0 0 0 1px var(--oro), 0 0 10px rgba(255, 213, 74, 0.55); }
+.ap-r code ::selection, .ap-r code::selection { background: rgba(138, 44, 255, 0.55); color: #fff; }
+.ap-avviso { margin: 6px 10px 0; padding: 6px 10px; border-radius: 8px; background: rgba(255, 178, 61, 0.1); border: 1px solid rgba(255, 178, 61, 0.3); color: var(--ambra); font: 600 12.5px var(--ui); flex: none; }
+.ap-piede { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 12px 9px 14px; font: 600 12px var(--ui); color: var(--testo3); flex: none; }
+.ap-piede .ap-dove { margin-left: auto; }
+.ap-chip { padding: 1px 7px; border-radius: 6px; background: #0e0d13; border: 1px solid var(--bordo); color: var(--testo2); }
+.ap-errore { color: var(--rosso); }
+
+/* chiusa: resta una linguetta sul bordo per riaprirla */
+.ap-linguetta { display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 14px; background: rgba(20, 19, 26, 0.85); border-left: 1px solid #000; color: var(--testo3); }
+.ap-linguetta:hover { color: var(--oro); }
+.ap-linguetta svg { width: 16px; height: 16px; }
+.ap-linguetta-testo { writing-mode: vertical-rl; font: 700 10px var(--marchio); letter-spacing: 0.24em; }
+
+@media (max-width: 900px) {
+  .corpo.con-anteprima { grid-template-columns: 250px minmax(0, 1fr) min(var(--ap-larghezza, 400px), 40vw); }
+  .corpo.con-linguetta { grid-template-columns: 250px minmax(0, 1fr) 34px; }
+}

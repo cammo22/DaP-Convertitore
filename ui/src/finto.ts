@@ -3,7 +3,7 @@
 import type { Formato, InfoFile, Lavoro, Piano, Stato } from './ponte';
 
 const f = (id: string, etichetta: string, descrizione: string, estensione: string, unisce = false, manca: string | null = null): Formato =>
-  ({ id, categoria: ({ video: 'video', audio: 'audio', img: 'immagine', pdf: 'pdf', doc: 'documento', arch: 'archivio' } as any)[id.split('.')[0]], etichetta, descrizione, estensione, unisce, sostituisce: !unisce && !['video.mp3', 'video.wav', 'video.srt', 'video.gif', 'img.txt', 'pdf.jpg', 'pdf.png', 'pdf.txt', 'arch.estrai'].includes(id), manca });
+  ({ id, categoria: ({ video: 'video', audio: 'audio', img: 'immagine', pdf: 'pdf', doc: 'documento', testo: 'testo', arch: 'archivio' } as any)[id.split('.')[0]], etichetta, descrizione, estensione, unisce, sostituisce: !unisce && !['video.mp3', 'video.wav', 'video.srt', 'video.gif', 'img.txt', 'pdf.jpg', 'pdf.png', 'pdf.txt', 'arch.estrai'].includes(id), manca });
 
 const formati: Formato[] = [
   f('video.mp4', 'MP4', 'va ovunque', '.mp4'), f('video.mkv', 'MKV', 'tiene tutte le tracce', '.mkv'), f('video.webm', 'WEBM', 'per il web', '.webm'),
@@ -18,6 +18,7 @@ const formati: Formato[] = [
   f('pdf.jpg', 'JPG', 'una foto per pagina', ''), f('pdf.png', 'PNG', 'una immagine per pagina', ''), f('pdf.txt', 'TXT', 'il testo (anche delle scansioni)', '.txt'),
   f('pdf.docx', 'DOCX', 'da modificare in Word', '.docx'), f('pdf.unisci', 'UNISCI', 'tutti in un PDF solo', '.pdf', true),
   f('doc.pdf', 'PDF', 'da mandare e stampare', '.pdf'), f('doc.docx', 'DOCX', 'Word', '.docx'), f('doc.odt', 'ODT', 'LibreOffice', '.odt'),
+  f('testo.pdf', 'PDF', 'impaginato e pulito', '.pdf'), f('testo.html', 'HTML', 'pagina web', '.html'), f('testo.docx', 'DOCX', 'Word', '.docx'), f('testo.txt', 'TXT', 'solo il testo', '.txt'),
   f('arch.estrai', 'ESTRAI', 'in una cartella qui', ''), f('arch.zip', 'ZIP', 'lo apre chiunque', '.zip'), f('arch.7z', '7Z', 'il più piccolo', '.7z'),
 ];
 
@@ -37,6 +38,7 @@ const esempi: InfoFile[] = [
   { id: 'F1', percorso: 'C:\\Users\\cammo\\Videos\\Matrimonio Napoli 4K.mov', nome: 'Matrimonio Napoli 4K.mov', cartella: 'C:\\Users\\cammo\\Videos', estensione: '.mov', categoria: 'video', nomeCategoria: 'Video', peso: 7_840_000_000, eDirectory: false, formati: formati.filter((x) => x.categoria === 'video').map((x) => x.id) },
   { id: 'F2', percorso: 'C:\\Users\\cammo\\Pictures\\Tramonto Posillipo.heic', nome: 'Tramonto Posillipo.heic', cartella: 'C:\\Users\\cammo\\Pictures', estensione: '.heic', categoria: 'immagine', nomeCategoria: 'Immagini', peso: 3_120_000, eDirectory: false, formati: formati.filter((x) => x.categoria === 'immagine').map((x) => x.id) },
   { id: 'F3', percorso: 'C:\\Users\\cammo\\Documents\\Preventivo DaProd.pdf', nome: 'Preventivo DaProd.pdf', cartella: 'C:\\Users\\cammo\\Documents', estensione: '.pdf', categoria: 'pdf', nomeCategoria: 'PDF', peso: 482_000, eDirectory: false, formati: formati.filter((x) => x.categoria === 'pdf').map((x) => x.id) },
+  { id: 'F4', percorso: 'C:\\Users\\cammo\\Desktop\\server DaProd.log', nome: 'server DaProd.log', cartella: 'C:\\Users\\cammo\\Desktop', estensione: '.log', categoria: 'testo', nomeCategoria: 'Testi', peso: 2_480_000, eDirectory: false, formati: formati.filter((x) => x.categoria === 'testo').map((x) => x.id) },
 ];
 const dettagli: Record<string, any> = {
   F1: { durata: 1834, larghezza: 3840, altezza: 2160, fps: 25, codec: 'hevc', hdr: true, bitrate: 33_800_000, audio: 'aac', canali: 2, tracceAudio: 1, sottotitoli: 0 },
@@ -91,6 +93,7 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
     case 'stato': {
       setTimeout(() => {
         for (const e of esempi) {
+          if (!dettagli[e.id]) continue;
           emetti('dettagli', { id: e.id, dettagli: dettagli[e.id] });
           emetti('anteprima', { id: e.id, url: quadro(...anteprime[e.id]) });
         }
@@ -108,7 +111,7 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
         formati,
         regolaPredefiniti: { supportata: true, attiva: false, diAltri: false },
         apriConGruppi: [{ id: 'Video', nome: 'Video', esempi: '.mp4 .mkv .mov' }, { id: 'Audio', nome: 'Audio', esempi: '.mp3 .flac .wav' }, { id: 'Immagine', nome: 'Immagine', esempi: '.jpg .png .heic' }, { id: 'Pdf', nome: 'Documento PDF', esempi: '.pdf' }],
-        categorie: [{ id: 'video', nome: 'Video' }, { id: 'audio', nome: 'Audio' }, { id: 'immagine', nome: 'Immagini' }, { id: 'pdf', nome: 'PDF' }, { id: 'documento', nome: 'Documenti' }, { id: 'archivio', nome: 'Archivi' }],
+        categorie: [{ id: 'video', nome: 'Video' }, { id: 'audio', nome: 'Audio' }, { id: 'immagine', nome: 'Immagini' }, { id: 'pdf', nome: 'PDF' }, { id: 'documento', nome: 'Documenti' }, { id: 'testo', nome: 'Testi' }, { id: 'archivio', nome: 'Archivi' }],
         impostazioni: { scritta: 'convertito', menu: true, alMassimo: false, suoni: true, apriCartella: false, cestinoDaSolo: false, apriCon: true, menu11Chiesto: false, formati: {} },
         modo,
         file: modo === 'rapido' ? [esempi[0]] : esempi,
@@ -159,6 +162,8 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
       return { prima: quadro('#3b1d6e', '#ff3df2', 'ORIGINALE'), dopo: quadro('#36195f', '#e83ad9', 'CONVERTITO'), tempo: 917 };
     case 'scegli':
       return [];
+    case 'anteprimaTesto':
+      return registroFinto();
     default:
       return true;
   }
@@ -188,4 +193,18 @@ function simula(l: Lavoro, emetti: (e: string, d: any) => void) {
     }
     emetti('lavoro', { ...l });
   }, 120);
+}
+
+/** Un registro lungo (40.000 righe, qualcuna lunghissima) per provare lo scorrimento e la ricerca dell'anteprima. */
+function registroFinto() {
+  // ?enorme: due milioni di righe, oltre l'altezza massima di un elemento (lo scorrimento va in scala)
+  if (location.search.includes('enorme')) return { testo: 'riga\n'.repeat(2_000_000) + 'in fondo: Napoli', codifica: 'UTF-8', bom: false, troncato: true, peso: 9_000_000_000 };
+  const livelli = ['INFO', 'INFO', 'INFO', 'DEBUG', 'WARN', 'ERRORE'];
+  const cose = ['converto «Matrimonio Napoli 4K.mov» con NVENC', 'città: Napoli · perché no?', 'il caffè costa 2 €', 'FFmpeg ha finito in 14,2 s', 'apro la finestra del lettore', '\tsotto-passo con il tab'];
+  const righe: string[] = [];
+  for (let i = 0; i < 40_000; i++) {
+    const t = new Date(Date.UTC(2026, 9, 21, 9, 0, 0) + i * 1370).toISOString().replace('T', ' ').slice(0, 19);
+    righe.push(i % 997 === 0 ? `${t} DEBUG ${`{"chiave":"valore lunghissimo","n":${i}},`.repeat(400)}` : `${t} ${livelli[i % livelli.length]} ${cose[(i * 7) % cose.length]} #${i}`);
+  }
+  return { testo: righe.join('\r\n'), codifica: 'UTF-8', bom: false, troncato: false, peso: 2_480_000 };
 }

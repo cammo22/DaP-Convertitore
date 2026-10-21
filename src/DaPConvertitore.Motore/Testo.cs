@@ -6,8 +6,8 @@ using Markdig;
 namespace DaP.Convertitore;
 
 /// <summary>
-/// Testi: TXT, Markdown e HTML. Diventano una pagina impaginata pulita, e da lì PDF (lo stampa WebView2, il motore
-/// di Edge), Word (LibreOffice) o testo semplice.
+/// Testi: TXT, Markdown, HTML e i testi semplici (registri, configurazioni, codice). Diventano una pagina impaginata
+/// pulita, e da lì PDF (lo stampa WebView2, il motore di Edge), Word (LibreOffice) o testo semplice in UTF-8.
 /// </summary>
 public static partial class Testo
 {
@@ -29,16 +29,18 @@ public static partial class Testo
                 ".html" or ".htm" => SenzaTag(testo),
                 _ => testo,
             };
-            await File.WriteAllTextAsync(l.Bozza, semplice.Trim() + Environment.NewLine, new UTF8Encoding(true), ctx.Ct);
+            // le righe vuote in cima e in fondo via, ma il rientro della prima riga resta (nel codice conta)
+            await File.WriteAllTextAsync(l.Bozza, semplice.Trim('\r', '\n').TrimEnd() + Environment.NewLine, new UTF8Encoding(true), ctx.Ct);
             return;
         }
 
-        // la pagina: l'HTML com'è, o quella fatta da noi per Markdown e TXT
+        // la pagina: l'HTML com'è, o quella fatta da noi per Markdown, TXT e i testi semplici
         string pagina;
         if (sorg is ".html" or ".htm") pagina = l.Sorgente;
         else
         {
-            var corpo = sorg is ".md" or ".markdown" ? Markdown.ToHtml(testo, md) : DaTesto(testo);
+            var corpo = sorg is ".md" or ".markdown" ? Markdown.ToHtml(testo, md)
+                : Catalogo.Prosa(l.Sorgente) ? DaTesto(testo) : DaCodice(testo);
             pagina = Path.Combine(ctx.Temporanea(), "pagina.html");
             await File.WriteAllTextAsync(pagina, Impagina(corpo, Nomi.Radice(l.Sorgente), Path.GetDirectoryName(Path.GetFullPath(l.Sorgente))!), new UTF8Encoding(false), ctx.Ct);
         }
@@ -61,26 +63,38 @@ public static partial class Testo
         }
     }
 
-    /// <summary>UTF-8 se lo è davvero, se no Latin-1 (i vecchi TXT di Windows con le accentate).</summary>
-    public static string Leggi(string percorso)
+    /// <summary>Il testo del file, qualunque codifica abbia (UTF-8, UTF-16, i vecchi TXT di Windows): vedi <see cref="Codifiche"/>.</summary>
+    public static string Leggi(string percorso) => Codifiche.Leggi(percorso).Testo;
+
+    /// <summary>
+    /// La prosa a paragrafi (una riga vuota li separa). Dentro un paragrafo gli a capo restano, e anche i rientri e gli
+    /// spazi doppi: in HTML si schiaccerebbero in uno solo, quindi diventano spazi che non si schiacciano (vale anche
+    /// per LibreOffice, che lo stile «pre-wrap» non lo legge). Il tab vale quattro spazi.
+    /// </summary>
+    public static string DaTesto(string testo)
     {
-        var byte_ = File.ReadAllBytes(percorso);
-        try
-        {
-            return new UTF8Encoding(false, true).GetString(byte_).TrimStart('﻿');
-        }
-        catch (DecoderFallbackException)
-        {
-            return Encoding.Latin1.GetString(byte_);
-        }
+        var paragrafi = Regex.Split(testo.Replace("\r\n", "\n").Replace('\r', '\n'), @"\n[ \t]*\n");
+        return string.Join("\n", paragrafi.Where(p => p.Trim().Length > 0)
+            .Select(p => $"<p>{string.Join("<br>", p.Trim('\n').TrimEnd().Split('\n').Select(Spazi))}</p>"));
     }
 
-    static string DaTesto(string testo)
+    static string Spazi(string riga)
     {
-        var paragrafi = Regex.Split(testo.Replace("\r\n", "\n"), @"\n\s*\n");
-        return string.Join("\n", paragrafi.Where(p => p.Trim().Length > 0)
-            .Select(p => $"<p>{WebUtility.HtmlEncode(p.TrimEnd()).Replace("\n", "<br>")}</p>"));
+        var r = WebUtility.HtmlEncode(riga.TrimEnd().Replace("\t", "    "));
+        // il rientro all'inizio, e gli spazi dopo il primo nelle file di spazi
+        r = RientroIniziale().Replace(r, m => string.Concat(Enumerable.Repeat("&nbsp;", m.Length)));
+        return SpaziDoppi().Replace(r, m => " " + string.Concat(Enumerable.Repeat("&nbsp;", m.Length - 1)));
     }
+
+    [GeneratedRegex("^ +")]
+    private static partial Regex RientroIniziale();
+
+    [GeneratedRegex(" {2,}")]
+    private static partial Regex SpaziDoppi();
+
+    /// <summary>Registri, configurazioni e codice: un blocco a spaziatura fissa, le righe come sono.</summary>
+    public static string DaCodice(string testo) =>
+        $"<pre class=\"codice\">{WebUtility.HtmlEncode(testo.Replace("\r\n", "\n").Replace('\r', '\n').Replace("\t", "    ").Trim('\n').TrimEnd())}</pre>";
 
     static string SenzaTag(string html)
     {
@@ -111,6 +125,7 @@ public static partial class Testo
           code { font: 10pt Consolas, "Cascadia Mono", monospace; background: #f3f0f8; padding: .1em .3em; border-radius: 3px; }
           pre { background: #f3f0f8; padding: .8em 1em; border-radius: 6px; overflow-wrap: anywhere; white-space: pre-wrap; }
           pre code { background: none; padding: 0; }
+          pre.codice { font: 9pt/1.45 Consolas, "Cascadia Mono", monospace; background: none; padding: 0; border-radius: 0; }
           blockquote { margin: 1em 0; padding: .2em 1em; border-left: 4px solid #ff3df2; color: #4a4558; }
           table { border-collapse: collapse; margin: 1em 0; width: 100%; }
           th, td { border: 1px solid #d8d3e2; padding: .35em .6em; text-align: left; vertical-align: top; }

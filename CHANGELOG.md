@@ -2,6 +2,25 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.8.0 — 21 ottobre 2026
+
+- **L'anteprima a destra, come in VS Code.** Scegli un testo nella coda (TXT, Markdown, registri, codice, CSV, JSON,
+  sottotitoli…) e a destra si apre il suo contenuto, coi **numeri di riga**. Scorre liscio anche su un registro da
+  6 MB e più di centomila righe (si disegnano solo le righe che si vedono; le righe lunghissime si spezzano). **Ctrl+F**
+  (o la lente) apre la ricerca: evidenzia tutti i risultati, dice «3 di 1.200», **Invio / Maiusc+Invio** (o F3 e le
+  frecce) vanno al prossimo e al precedente, **Aa** distingue maiuscole e minuscole, Esc chiude. Si allarga trascinando il
+  bordo sinistro (doppio clic: larghezza di partenza); chiusa, resta una linguetta per riaprirla. In fondo dice la
+  codifica del file (UTF-8, UTF-16, Windows-1252…), CRLF o LF, righe e peso. Il tasto destro sul testo scelto fa Copia.
+- **I file di testo si leggono giusti.** I TXT UTF-16 (quelli «Unicode» del Blocco note, l'output di PowerShell con `>`)
+  uscivano pieni di caratteri strani in PDF, DOCX e TXT, e i CSV in UTF-16 diventavano colonne di byte vuoti. I vecchi
+  TXT ANSI non perdono più €, virgolette e trattini (si leggevano come Latin-1 invece che Windows-1252). Ora c'è un posto
+  solo che decide la codifica (`Codifiche.cs`): lo usano convertitore, lettore e salvataggio.
+- **Più file sono testi**: `.log .ini .yaml .xml .py .cs .nfo` e simili prima erano «altri file» (si potevano solo
+  comprimere), ora si convertono in PDF, HTML, DOCX e TXT. Anche i file senza estensione (LICENSE, LEGGIMI) se dentro
+  c'è testo.
+- **Il testo non si schiaccia più**: rientri, tab e spazi doppi restano com'erano in PDF, DOCX e HTML; registri e codice
+  escono a spaziatura fissa. TXT → TXT non taglia più il rientro della prima riga.
+
 ## 1.7.1 — 14 ottobre 2026
 
 - **Ogni file si apre in una finestra nuova.** Prima, se il lettore era già aperto (per esempio con un Markdown), aprire

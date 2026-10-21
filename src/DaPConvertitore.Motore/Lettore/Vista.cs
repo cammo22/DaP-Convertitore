@@ -52,24 +52,8 @@ public static class Vista
         };
     }
 
-    /// <summary>Senza estensione nota: se i primi 8 KB sono UTF-8 senza byte zero, è testo.</summary>
-    public static bool SembraTesto(string percorso)
-    {
-        try
-        {
-            using var f = File.OpenRead(percorso);
-            var b = new byte[8192];
-            var n = f.Read(b, 0, b.Length);
-            if (n == 0) return true;
-            if (b.AsSpan(0, n).IndexOf((byte)0) >= 0) return false;
-            // l'ultimo carattere può essere tagliato a metà: si guarda fino a 4 byte prima
-            var dec = new System.Text.UTF8Encoding(false, true);
-            for (var taglio = 0; taglio < 4 && taglio < n; taglio++)
-                try { dec.GetCharCount(b, 0, n - taglio); return true; } catch { }
-            return false;
-        }
-        catch { return false; }
-    }
+    /// <summary>Senza estensione nota: se dentro è testo (UTF-8, UTF-16 o ANSI, senza byte strani), è testo.</summary>
+    public static bool SembraTesto(string percorso) => Codifiche.SembraTesto(percorso);
 
     /// <summary>Le estensioni che il lettore sa aprire: vanno in «Apri con» di Windows.</summary>
     public static IEnumerable<string> Estensioni =>

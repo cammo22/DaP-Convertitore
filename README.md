@@ -217,7 +217,7 @@ AV1; in H.264 diventa SDR coi colori giusti. FFmpeg gira a priorità bassa: ment
 | **Documenti** DOCX, DOC, ODT, RTF, Pages… | PDF, DOCX, ODT, RTF, TXT, HTML | Microsoft Office se c'è, se no LibreOffice |
 | **Fogli** XLSX, XLS, ODS, Numbers | PDF, XLSX, ODS, CSV, JSON | Office/LibreOffice, MiniExcel |
 | **Presentazioni** PPTX, PPT, ODP, Keynote | PDF, PPTX, ODP | Office/LibreOffice |
-| **Testi** Markdown, TXT, HTML | PDF impaginato, HTML, DOCX, TXT | WebView2 (il motore di Edge), Markdig |
+| **Testi** Markdown, TXT, HTML, registri e codice (LOG, INI, YAML, XML, PY…), con l'**anteprima a destra** (numeri di riga, Ctrl+F) | PDF impaginato, HTML, DOCX, TXT | WebView2 (il motore di Edge), Markdig |
 | **Dati** CSV, TSV, JSON | XLSX, CSV, JSON, TSV | il convertitore |
 | **Sottotitoli** SRT, VTT, ASS | SRT, VTT, ASS, TXT (solo le battute) | FFmpeg |
 | **Archivi** ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB, ISO | estrai qui, ZIP, 7Z, TAR.GZ, TAR.XZ | il `tar` di Windows |

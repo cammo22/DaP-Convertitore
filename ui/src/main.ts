@@ -23,6 +23,7 @@ import { disegnaRapido } from './app/rapido';
 import { apriImpostazioni } from './app/impostazioni';
 import { invitoMenu11 } from './app/menu11';
 import { avviaIncolla } from './app/incolla';
+import { aggiornaAnteprima, dimenticaAnteprima } from './app/anteprima';
 
 // ————————————————————————————————— testa —————————————————————————————————
 
@@ -82,7 +83,8 @@ function disegnaCoda() {
       { dataset: { id }, style: { '--tinta': coloreCategoria[f.categoria] }, onclick: () => { clac(); s.attiva = f.categoria; s.fileAttivo = id; s.piano = null; disegnaTutto(); } },
       h('div.figurina', null,
         f.anteprima ? h('img', { src: f.anteprima, alt: '' }) : h('span.icona-cat', { html: iconaCategoria[f.categoria] }),
-        h('span.est', null, (f.estensione || 'cartella').replace('.', '').toUpperCase()),
+        // senza estensione (LEGGIMI, LICENSE) non è una cartella: si dice FILE
+        h('span.est', null, (f.eDirectory ? 'cartella' : f.estensione || 'file').replace('.', '').toUpperCase()),
       ),
       h('div.testo', null,
         h('div.nome', { title: f.percorso }, f.nome),
@@ -111,6 +113,7 @@ function svuota() {
   s.attiva = null;
   s.fileAttivo = null;
   s.piano = null;
+  dimenticaAnteprima();
   void chiedi('svuota');
   disegnaTutto();
 }
@@ -120,6 +123,7 @@ function togli(id: string) {
   s.file.delete(id);
   s.ordine = s.ordine.filter((x) => x !== id);
   s.pesoPerFile.delete(id);
+  dimenticaAnteprima(id);
   void chiedi('togli', { id });
   if (s.fileAttivo === id) s.fileAttivo = null;
   sistemaAttiva();
@@ -289,6 +293,7 @@ function disegnaTutto() {
   else if (s.vista === 'lavoro') disegnaLavoro();
   else disegnaFatto();
   disegnaPiede();
+  aggiornaAnteprima();
 }
 
 function opzioniSalvate() {
@@ -380,10 +385,12 @@ async function avvia() {
     // Esc chiude quello sopra (il velo più in alto), non quello sotto
     if (e.key === 'Escape') [...document.querySelectorAll('.velo')].pop()?.remove();
     // Canc toglie il file scelto dalla coda; Ctrl+Canc la svuota. I file sul disco non si toccano.
-    if (e.key === 'Delete' && s.vista === 'scegli' && !document.querySelector('.velo') && !(e.target instanceof HTMLInputElement)) {
+    // (Non dall'anteprima a destra: lì Canc è sul testo che stai leggendo.)
+    const nellAnteprima = e.target instanceof Element && !!e.target.closest('.anteprima');
+    if (e.key === 'Delete' && s.vista === 'scegli' && !nellAnteprima && !document.querySelector('.velo') && !(e.target instanceof HTMLInputElement)) {
       if (e.ctrlKey) svuota(); else if (s.fileAttivo) togli(s.fileAttivo);
     }
-    if (e.key === 'Enter' && s.vista === 'scegli' && !document.querySelector('.velo') && !(e.target instanceof HTMLInputElement)) void converti();
+    if (e.key === 'Enter' && s.vista === 'scegli' && !nellAnteprima && !document.querySelector('.velo') && !(e.target instanceof HTMLInputElement)) void converti();
   });
   void chiedi('pronto');
 }

@@ -39,6 +39,17 @@ public static class Catalogo
 {
     static readonly Dictionary<string, Categoria> estensioni = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// I testi che non sono prosa (registri, configurazioni, codice): nel PDF e in Word escono a spaziatura fissa,
+    /// con i rientri e le righe come sono. Il «ts» no: è il video delle dirette TV.
+    /// </summary>
+    public const string TestiSemplici = "log nfo ini cfg conf toml yaml yml xml xaml rst tex diff patch " +
+        "js mjs cjs jsx tsx py cs c h cpp hpp cc java kt go rs rb php swift lua sql css scss less vue svelte dart vb fs json5 jsonc gradle";
+
+    /// <summary>I testi da leggere come un libro: nel PDF a paragrafi, col carattere proporzionale.</summary>
+    public static bool Prosa(string percorso) =>
+        !TestiSemplici.Split(' ').Contains(Path.GetExtension(percorso).TrimStart('.').ToLowerInvariant());
+
     static void Metti(Categoria c, string elenco)
     {
         foreach (var e in elenco.Split(' ', StringSplitOptions.RemoveEmptyEntries)) estensioni["." + e] = c;
@@ -55,6 +66,9 @@ public static class Catalogo
         Metti(Categoria.Foglio, "xls xlsx xlsm xlsb ods numbers");
         Metti(Categoria.Presentazione, "ppt pptx pps ppsx odp key");
         Metti(Categoria.Testo, "txt md markdown html htm");
+        // i testi semplici che non sono prosa: registri, configurazioni, codice. Fino alla 1.7 erano «altri file» e
+        // si potevano solo comprimere. Gli script (bat, ps1, sh, reg…) restano fuori: il menu su quelli non serve.
+        Metti(Categoria.Testo, TestiSemplici);
         Metti(Categoria.Dati, "csv tsv json");
         Metti(Categoria.Sottotitoli, "srt vtt ass ssa");
         Metti(Categoria.Archivio, "zip 7z rar tar gz tgz bz2 tbz2 xz txz zst tzst cab iso");
@@ -233,7 +247,9 @@ public static class Catalogo
         if (nome.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase) || nome.EndsWith(".tar.xz", StringComparison.OrdinalIgnoreCase)
             || nome.EndsWith(".tar.bz2", StringComparison.OrdinalIgnoreCase) || nome.EndsWith(".tar.zst", StringComparison.OrdinalIgnoreCase))
             return Categoria.Archivio;
-        return estensioni.TryGetValue(Path.GetExtension(percorso), out var c) ? c : Categoria.Altro;
+        if (estensioni.TryGetValue(Path.GetExtension(percorso), out var c)) return c;
+        // senza estensione nota (LEGGIMI, LICENSE, .gitignore, un .dat che è testo): se dentro è testo, è un testo
+        return Codifiche.SembraTesto(percorso) ? Categoria.Testo : Categoria.Altro;
     }
 
     public static Formato? Trova(string id) => Formati.FirstOrDefault(f => f.Id == id);

@@ -24,6 +24,11 @@ export const icone = {
   aggiungi: i('<path d="M12 5v14M5 12h14"/>'),
   menu: i('<path d="M4 7h16M4 12h16M4 17h10"/>'),
   occhio: i('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  cerca: i('<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>'),
+  su: i('<path d="M6 15l6-6 6 6"/>'),
+  giu: i('<path d="M6 9l6 6 6-6"/>'),
+  pannello: i('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/>'),
+  copia: i('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
 };
 
 export const iconaCategoria: Record<string, string> = {

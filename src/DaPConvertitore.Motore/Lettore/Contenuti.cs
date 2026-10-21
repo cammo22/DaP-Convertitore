@@ -24,20 +24,8 @@ public static partial class Contenuti
     /// <summary>Il testo, fino a 6 MB (oltre si legge l'inizio: un log da un giga non serve tutto a schermo).</summary>
     public static (string Testo, bool Troncato) Testo(string percorso)
     {
-        using var f = File.OpenRead(percorso);
-        var troncato = f.Length > MaxTesto;
-        var b = new byte[Math.Min(f.Length, MaxTesto)];
-        f.ReadExactly(b);
-        string t;
-        try { t = new UTF8Encoding(false, true).GetString(b); }
-        catch (DecoderFallbackException)
-        {
-            // UTF-16 col BOM (i file di Windows), se no Latin-1 (i vecchi TXT con le accentate)
-            t = b.Length > 1 && b[0] == 0xFF && b[1] == 0xFE ? Encoding.Unicode.GetString(b)
-                : b.Length > 1 && b[0] == 0xFE && b[1] == 0xFF ? Encoding.BigEndianUnicode.GetString(b)
-                : troncato ? new UTF8Encoding(false, false).GetString(b) : Encoding.Latin1.GetString(b);
-        }
-        return (t.TrimStart('﻿'), troncato);
+        var t = Codifiche.Leggi(percorso, MaxTesto);
+        return (t.Testo, t.Troncato);
     }
 
     static readonly MarkdownPipeline md = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseEmojiAndSmiley().Build();

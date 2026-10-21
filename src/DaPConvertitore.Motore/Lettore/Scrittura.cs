@@ -14,22 +14,17 @@ public static class Scrittura
 
     public static Formato FormatoDi(string percorso)
     {
-        var b = File.ReadAllBytes(percorso);
-        if (b.Length >= 2 && b[0] == 0xFF && b[1] == 0xFE) return Riga(new UnicodeEncoding(false, true), true, b);
-        if (b.Length >= 2 && b[0] == 0xFE && b[1] == 0xFF) return Riga(new UnicodeEncoding(true, true), true, b);
-        if (b.Length >= 3 && b[0] == 0xEF && b[1] == 0xBB && b[2] == 0xBF) return Riga(new UTF8Encoding(true), true, b);
-        try
+        var t = Codifiche.Leggi(percorso);
+        // l'ANSI si riscrive in UTF-8; UTF-8 e UTF-16 restano come sono, col BOM se c'era
+        Encoding codifica = t.Vecchia ? new UTF8Encoding(false) : t.Encoding switch
         {
-            var testo = new UTF8Encoding(false, true).GetString(b);
-            return new Formato(new UTF8Encoding(false), false, testo.Contains("\r\n"), false);
-        }
-        catch (DecoderFallbackException)
-        {
-            return new Formato(new UTF8Encoding(false), false, Encoding.Latin1.GetString(b).Contains("\r\n"), true);
-        }
+            UTF8Encoding => new UTF8Encoding(t.Bom),
+            UnicodeEncoding u => new UnicodeEncoding(u.CodePage == 1201, t.Bom),
+            UTF32Encoding => new UTF32Encoding(false, t.Bom),
+            var e => e,
+        };
+        return new Formato(codifica, t.Bom, t.Testo.Contains("\r\n"), t.Vecchia);
     }
-
-    static Formato Riga(Encoding e, bool bom, byte[] b) => new(e, bom, e.GetString(b).Contains("\r\n"), false);
 
     /// <summary>
     /// Riscrive il file col testo del lettore, nella sua codifica e con le sue fini riga. La bozza sta accanto e prende

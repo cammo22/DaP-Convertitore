@@ -345,6 +345,13 @@ public sealed class Ponte
                 if (p is not null && File.Exists(p)) Regia.ApriNelLettore(p);
                 return true;
             }
+            case "anteprimaTesto":
+            {
+                // il pannello a destra: il testo del file scelto nella coda, con la codifica in cui è scritto
+                var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
+                var t = await Task.Run(() => Codifiche.Leggi(v.Info.Percorso, Lettore.Contenuti.MaxTesto));
+                return new { testo = t.Testo, codifica = t.Codifica, bom = t.Bom, troncato = t.Troncato, peso = v.Info.Peso };
+            }
             case "predefinite":
             {
                 // la lista scelta nella pagina: si registrano solo quei tipi, e Windows (che le app predefinite le fa scegliere
