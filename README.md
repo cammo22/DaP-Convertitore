@@ -73,6 +73,8 @@ Con più file selezionati va tutto in un colpo: un video per volta sulla scheda 
 Le conversioni che uniscono (tante foto in **un PDF solo**, **unisci PDF**, **cartelle in uno ZIP**) mettono i
 file in ordine di nome, come li vedi in Esplora file.
 
+**L'anteprima dei testi.** Nella piastra scegli un file di testo nella coda (TXT, Markdown, registri, codice, CSV, JSON, sottotitoli…) e a destra ne vedi il contenuto con i numeri di riga; scorre liscio anche su un registro da 6 MB e più di centomila righe. **Ctrl+F** cerca e dice quanti risultati ci sono (Invio e Maiusc+Invio per il prossimo e il precedente), il tasto destro copia il testo scelto. In fondo c'è la codifica (UTF-8, UTF-16, Windows-1252…), CRLF o LF, righe e peso: i file UTF-16 («Unicode» del Blocco note) e gli ANSI con € e virgolette si leggono giusti.
+
 **Il nome**: `Vacanze.mov` diventa `Vacanze (convertito).mp4`, nella stessa cartella. Se c'è già,
 `(convertito 2)`. Non si sovrascrive mai niente, e se annulli non resta un file a metà. La parola fra
 parentesi si cambia nelle impostazioni.
@@ -217,7 +219,7 @@ AV1; in H.264 diventa SDR coi colori giusti. FFmpeg gira a priorità bassa: ment
 | **Documenti** DOCX, DOC, ODT, RTF, Pages… | PDF, DOCX, ODT, RTF, TXT, HTML | Microsoft Office se c'è, se no LibreOffice |
 | **Fogli** XLSX, XLS, ODS, Numbers | PDF, XLSX, ODS, CSV, JSON | Office/LibreOffice, MiniExcel |
 | **Presentazioni** PPTX, PPT, ODP, Keynote | PDF, PPTX, ODP | Office/LibreOffice |
-| **Testi** Markdown, TXT, HTML, registri e codice (LOG, INI, YAML, XML, PY…), con l'**anteprima a destra** (numeri di riga, Ctrl+F) | PDF impaginato, HTML, DOCX, TXT | WebView2 (il motore di Edge), Markdig |
+| **Testi** Markdown, TXT, HTML, registri e codice (LOG, INI, YAML, XML, PY…, anche senza estensione), con l'**anteprima a destra** (numeri di riga, Ctrl+F) | PDF impaginato, HTML, DOCX, TXT | WebView2 (il motore di Edge), Markdig |
 | **Dati** CSV, TSV, JSON | XLSX, CSV, JSON, TSV | il convertitore |
 | **Sottotitoli** SRT, VTT, ASS | SRT, VTT, ASS, TXT (solo le battute) | FFmpeg |
 | **Archivi** ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB, ISO | estrai qui, ZIP, 7Z, TAR.GZ, TAR.XZ | il `tar` di Windows |
