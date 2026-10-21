@@ -100,6 +100,9 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
   all'accesso (non su Home). Le prove non scrivono mai nel sistema: provano solo `Predefiniti.Xml`. `apriPredefinite()` (`ui/src/app/impostazioni.ts`) fa scegliere i gruppi, il comando
   `predefinite` salva `Impostazioni.GruppiPredefiniti`, richiama `ApriCon.Registra(exe, gruppi)` (solo quei gruppi finiscono
   nelle Capabilities, quindi nella pagina di Windows) e apre `ms-settings:defaultapps`. `incolla` legge `Clipboard.GetFileDropList`.
+- **Aggiornamenti** (dalla 1.8.1): `Aggiornamenti.cs` ha un ciclo solo per tutta l'app (`Avvia()` da `Programma.cs`): controlla all'avvio e ogni 4 ore
+  (20 minuti dopo un errore), manda `Trovata` a tutte le finestre (convertitore e lettore) e scarica in silenzio; il badge «Aggiornamento X disponibile»
+  installa col clic. Per provare il badge senza una release vera: `DAP_AGGIORNAMENTO_FINTO=9.9.9` (non installa niente).
 - **I pezzi della piastra** parlano fra loro tramite `ui` (`ui/src/app/stato.ts`: `ui.scegli()`, `ui.piede()`…), che
   `main.ts` collega all'avvio: così i moduli non si importano in tondo.
 - **Il Cestino a mano** (dalla 1.1.0): `Impostazioni.CestinoDaSolo`, spento di partenza (nome nuovo apposta: la
