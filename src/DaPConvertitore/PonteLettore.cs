@@ -45,7 +45,13 @@ public sealed class PonteLettore
         vista.CoreWebView2.WebMessageReceived += Ricevi;
     }
 
-    public void Chiudi() => risorse.Ferma();
+    Action<string>? avvisoAgg;
+
+    public void Chiudi()
+    {
+        if (avvisoAgg is not null) Aggiornamenti.Trovata -= avvisoAgg;
+        risorse.Ferma();
+    }
 
     /// <summary>Un altro file da Esplora file, mentre il lettore è già aperto.</summary>
     public void Apri(IReadOnlyList<string> file)
@@ -96,12 +102,12 @@ public sealed class PonteLettore
         switch (cmd)
         {
             case "stato":
-                pronta = true;
-                _ = Task.Run(async () =>
+                if (!pronta)
                 {
-                    var v = await Aggiornamenti.PreparaUnaVolta();
-                    if (v is not null) Manda("aggiornamento", new { versione = v });
-                });
+                    avvisoAgg = v => Manda("aggiornamento", new { versione = v });
+                    Aggiornamenti.Trovata += avvisoAgg;
+                }
+                pronta = true;
                 return Stato();
             case "vai":
             {
@@ -394,7 +400,7 @@ public sealed class PonteLettore
         file = Scheda(attuale),
         ffmpeg = strumenti.HaFfmpeg,
         office = strumenti.LibreOffice is not null || strumenti.Word,
-        aggiornamento = (string?)null,
+        aggiornamento = Aggiornamenti.Disponibile,
     };
 
     object Scheda(string p)

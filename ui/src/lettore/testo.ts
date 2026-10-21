@@ -3,6 +3,7 @@
 // l'indice, l'HTML com'è (senza script), il JSON ad albero, i sottotitoli battuta per battuta.
 import { chiedi } from '../ponte';
 import { h, clamp } from '../util';
+import { creaMinimappa } from '../app/minimappa-vista';
 import { attesa, conferma, errore, ic, memoria, type Contesto, type Tasto, type Vista } from './comune';
 
 export async function monta(c: Contesto): Promise<Vista> {
@@ -200,6 +201,9 @@ function codice(c: Contesto, testo: string, fam: Fam, troncato: boolean): Vista 
   const fogli = h('div.t-righe');
   const spazio = h('div.t-spazio', null, fogli);
   const scorre = h('div.t-scorre', null, spazio);
+  // la minimappa a destra, come in VS Code: il riquadro è quello che si vede, clic o trascinamento per scorrere
+  const mappa = creaMinimappa((centro) => { scorre.scrollTop = Math.max(0, centro * scorre.scrollHeight - scorre.clientHeight / 2); });
+  const corpoT = h('div.t-corpo', null, scorre, mappa.el);
   const cerca = h<HTMLInputElement>('input.t-cerca', { placeholder: 'Cerca…  (Invio: dopo)', spellcheck: false });
   const trovati = h('span.t-trovati');
   const cercaBox = h('div.t-cerca-box', null, h('span', { html: ic.cerca }), cerca, trovati);
@@ -215,7 +219,7 @@ function codice(c: Contesto, testo: string, fam: Fam, troncato: boolean): Vista 
     bModifica,
     bSalva,
     h('button.l-icona', { title: 'A capo (W)', html: ic.avvolgi, onclick: () => giraACapo() }));
-  const box = h(`div.t-codice.fam-${fam}${prosa ? '.prosa' : ''}`, null, sopra, scorre);
+  const box = h(`div.t-codice.fam-${fam}${prosa ? '.prosa' : ''}`, null, sopra, corpoT);
   c.palco.replaceChildren(box);
   let cercato = '';
   let colpi: number[] = [];
@@ -253,15 +257,27 @@ function codice(c: Contesto, testo: string, fam: Fam, troncato: boolean): Vista 
     fogli.innerHTML = html;
     fogli.style.transform = `translateY(${da * lh}px)`;
   }
-  scorre.addEventListener('scroll', () => { if (!a_capo) disegna(); }, { passive: true });
+  /** Il riquadro della minimappa: quanto del testo si vede, da dove. */
+  const aggiornaVista = () => {
+    const tot = Math.max(1, scorre.scrollHeight);
+    mappa.vista(scorre.scrollTop / tot, scorre.clientHeight / tot);
+  };
+  scorre.addEventListener('scroll', () => { if (!a_capo) disegna(); aggiornaVista(); }, { passive: true });
+  new ResizeObserver(aggiornaVista).observe(scorre);
   if (a_capo && n > 20000) a_capo = false;
+  const fontePiatta = { n, riga: (i: number, max: number) => grezze[i].slice(0, max), lung: (i: number) => grezze[i].length };
+  mappa.carica(fontePiatta, a_capo);
   disegna(true);
+  aggiornaVista();
 
   function giraACapo() {
     if (!a_capo && n > 20000) { c.hud('Troppo lungo per andare a capo'); return; }
     a_capo = !a_capo;
     memoria.scrivi('a-capo', a_capo);
+    mappa.carica(fontePiatta, a_capo);
+    mappa.segni(colpi, colpi[colpo] ?? -1);
     disegna(true);
+    aggiornaVista();
     c.hud(a_capo ? 'A capo' : 'Righe intere', ic.avvolgi);
   }
   function dimensione(d: number) {
@@ -288,6 +304,7 @@ function codice(c: Contesto, testo: string, fam: Fam, troncato: boolean): Vista 
       vaiAllaRiga(colpi[colpo]);
     }
     trovati.textContent = q ? (colpi.length ? `${colpo + 1}/${colpi.length}` : 'niente') : '';
+    mappa.segni(colpi, colpi[colpo] ?? -1);
     disegna(true);
   }
   cerca.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); trova(!e.shiftKey); } });
@@ -317,7 +334,7 @@ function codice(c: Contesto, testo: string, fam: Fam, troncato: boolean): Vista 
     if (!si && sporco() && !(await conferma('Tornare a leggere?', 'Le modifiche non salvate si perdono.', 'Torna a leggere', true))) return;
     modifica = si;
     box.classList.toggle('modifica', si);
-    scorre.hidden = si;
+    corpoT.hidden = si;
     cercaBox.hidden = si;
     if (si) {
       area = h<HTMLTextAreaElement>('textarea.t-edita', { spellcheck: false });

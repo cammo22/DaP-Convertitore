@@ -52,7 +52,7 @@ function disegnaBarra() {
       h('span#l-meta', null, metaBarra())),
     h('div.l-trascina'),
     s.fratelli.length > 1 ? h('span.l-pos', { title: 'Pag su / Pag giù per scorrere' }, `${s.indice + 1} / ${s.fratelli.length}`) : null,
-    s.aggiornamento ? h('button.l-chip-agg', { title: 'Installa la versione nuova e riapre', onclick: () => void chiedi('aggiorna') }, h('i'), `Nuova ${s.aggiornamento}`) : null,
+    s.aggiornamento ? h('button.l-chip-agg', { title: `Installa la ${s.aggiornamento} e riapre`, onclick: () => void chiedi('aggiorna') }, h('i'), `Aggiornamento ${s.aggiornamento} disponibile`) : null,
     h('div.l-azioni', null,
       ...(s.vista?.azioni ?? []).map((a) => h('button.l-icona', { title: a.titolo, html: a.icona, onclick: a.fai })),
       f.rapide.length ? h('button.l-icona.fai-subito', { title: 'Fai subito: le conversioni rapide (U)', html: ic.fulmine, onclick: (e: Event) => faiSubito(e.currentTarget as HTMLElement) }) : null,
@@ -360,7 +360,8 @@ async function avvia() {
   }
   ascolta('apri', (st: { file: Scheda }) => { s.fratelli = []; s.indice = -1; void mostra(st.file).then(caricaFratelli); });
   ascolta('aggiornamento', (a: { versione: string }) => { s.aggiornamento = a.versione; disegnaBarra(); });
-  const st = await chiedi<{ file: Scheda; ffmpeg: boolean; office: boolean }>('stato');
+  const st = await chiedi<{ file: Scheda; ffmpeg: boolean; office: boolean; aggiornamento?: string | null }>('stato');
+  s.aggiornamento = st.aggiornamento ?? s.aggiornamento;
   s.ffmpeg = ambiente.ffmpeg = st.ffmpeg;
   s.office = ambiente.office = st.office;
   await mostra(st.file);

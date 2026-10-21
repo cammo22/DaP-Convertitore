@@ -93,6 +93,7 @@ public static class Programma
         app.Exit += (_, _) => Aggiornamenti.AllaChiusura();
         Regia.Avvia(app);
         Regia.Gestisci(richiesta);
+        Aggiornamenti.Avvia(); // guarda le release in silenzio, all'avvio e poi ogni qualche ora
         if (primo) Istanza.Ascolta(r => app.Dispatcher.BeginInvoke(() => Regia.Gestisci(r)));
         _ = Task.Run(Lettore.Media.PulisciCache);
         app.Run();

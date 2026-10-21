@@ -1,4 +1,5 @@
-// Il pannello a destra, come in VS Code: il testo del file scelto nella coda, coi numeri di riga. Si disegnano solo
+// Il pannello a destra, come in VS Code: il testo del file scelto nella coda, coi numeri di riga e la minimappa a lato.
+// Per i file che non sono testo c'è la stessa colonna con le figurine (pagine, fotogrammi, onde: `colonna.ts`). Si disegnano solo
 // le righe che si vedono (anche un registro da 6 MB scorre liscio), Ctrl+F cerca con le evidenziature, il contatore
 // e le frecce. Si allarga e si stringe trascinando il bordo sinistro; la larghezza e se è aperto restano.
 import { chiedi } from '../ponte';
@@ -9,10 +10,12 @@ import { clac } from '../suoni';
 import { s } from './stato';
 import { corpo } from './scheletro';
 import { indicizza, cerca, rigaVideoDi, pezzoHtml, vicino, MAX_TROVATI, type Doc, type Trovati } from './righe';
+import { creaMinimappa } from './minimappa-vista';
+import { creaColonna } from './colonna';
 
 interface Letto { testo: string; codifica: string; bom: boolean; troncato: boolean; peso: number }
 
-/** Le categorie che si leggono come testo. */
+/** Le categorie che si leggono come testo (le altre hanno la colonna delle figurine). */
 const TESTUALI = new Set(['testo', 'dati', 'sottotitoli']);
 export const testuale = (f?: InfoFile) => !!f && !f.eDirectory && TESTUALI.has(f.categoria);
 
@@ -31,7 +34,7 @@ const ALTEZZA_MAX = 3e7;
 
 export const pannello = h('aside.anteprima');
 const maniglia = h('div.ap-maniglia', { title: 'Trascina per allargare · doppio clic: larghezza di partenza' });
-const linguetta = h('button.ap-linguetta', { title: 'Apri l\'anteprima del testo' }, h('span', { html: icone.pannello }), h('span.ap-linguetta-testo', null, 'ANTEPRIMA'));
+const linguetta = h('button.ap-linguetta', { title: 'Apri l\'anteprima' }, h('span', { html: icone.pannello }), h('span.ap-linguetta-testo', null, 'ANTEPRIMA'));
 corpo.append(pannello, linguetta);
 
 // ——— lo stato del pannello ———
@@ -46,10 +49,11 @@ let da = -1, a = -1;                    // le righe a video disegnate adesso
 
 // ——— i pezzi ———
 const nome = h('div.ap-nome');
+const bCerca = h('button.ap-btn', { title: 'Cerca (Ctrl+F)', html: icone.cerca, onclick: () => apriCerca() });
 const info = h('div.ap-info');
 const testa = h('div.ap-testa', null,
   h('div.ap-titolo', null, h('span', null, 'ANTEPRIMA'), h('span.ap-azioni', null,
-    h('button.ap-btn', { title: 'Cerca (Ctrl+F)', html: icone.cerca, onclick: () => apriCerca() }),
+    bCerca,
     h('button.ap-btn', { title: 'Apri nel lettore', html: icone.occhio, onclick: () => { const f = fileId ? s.file.get(fileId) : null; if (f) { clac(); void chiedi('guarda', { percorso: f.percorso }); } } }),
     h('button.ap-btn', { title: 'Chiudi l\'anteprima', html: icone.chiudi, onclick: () => apri(false) }))),
   nome);
@@ -67,7 +71,20 @@ const spazio = h('div.ap-spazio', null, fogli);
 const scorre = h('div.ap-scorre', { tabindex: '0' }, spazio);
 const avviso = h('div.ap-avviso');
 const piede = h('div.ap-piede');
-pannello.append(maniglia, testa, barraCerca, scorre, avviso, piede);
+
+// la minimappa: il riquadro è quello che si vede, il clic porta lì
+const mappa = creaMinimappa((centro) => {
+  if (!doc) return;
+  // il clic cade sulla miniatura (le righe lunghe vi occupano più righe): si torna alla riga a video
+  const visibili = scorre.clientHeight / ALTEZZA_RIGA;
+  scorre.scrollTop = Math.max(0, topDi(Math.max(0, Math.min(totale() - visibili, mappa.aRiga(centro) - visibili / 2))));
+  disegna();
+});
+const corpoTesto = h('div.ap-corpo', null, scorre, mappa.el);
+const colonna = creaColonna(() => { const f = fileId ? s.file.get(fileId) : null; if (f) { clac(); void chiedi('guarda', { percorso: f.percorso }); } }, () => piedeColonna());
+pannello.append(maniglia, testa, barraCerca, corpoTesto, colonna.el, avviso, piede);
+let modoColonna = false;                // il pannello mostra le figurine invece del testo
+new ResizeObserver(() => mappa.misura()).observe(mappa.el);
 
 // ————————————————————————— aprire, chiudere, allargare —————————————————————————
 
@@ -112,17 +129,48 @@ window.addEventListener('resize', () => applicaLarghezza(memo.larghezza()));
 /** Si chiama a ogni ridisegno della piastra: mostra (o nasconde) il pannello per il file scelto nella coda. */
 export function aggiornaAnteprima() {
   const f = s.fileAttivo ? s.file.get(s.fileAttivo) : undefined;
-  const c = s.stato.modo === 'finestra' && testuale(f);
+  const c = s.stato.modo === 'finestra' && !!f;
   const aperta = c && memo.aperta();
   corpo.classList.toggle('con-anteprima', aperta);
   corpo.classList.toggle('con-linguetta', c && !aperta);
   pannello.hidden = !aperta;
   linguetta.hidden = !(c && !aperta);
   if (aperta) applicaLarghezza(memo.larghezza());
-  if (!aperta || !f) return;
+  if (!aperta || !f) { if (!aperta) colonna.ferma(); return; }
+  const testo = testuale(f);
+  pannello.classList.toggle('senza-testo', !testo);
+  corpoTesto.hidden = !testo;
+  colonna.el.hidden = testo;
+  bCerca.hidden = !testo;
+  if (!testo) {
+    // niente testo: pagine, fotogrammi, onde o la figura sola
+    if (!barraCerca.hidden) chiudiCerca();
+    if (f.id === fileId && modoColonna) return;
+    modoColonna = true;
+    fileId = f.id;
+    chiesto = null;
+    doc = null;
+    nome.textContent = f.nome;
+    nome.title = f.percorso;
+    avviso.hidden = true;
+    piedeColonna();
+    colonna.mostra(f);
+    return;
+  }
+  if (modoColonna) { modoColonna = false; colonna.ferma(); fileId = null; }
   if (f.id === fileId && doc) { requestAnimationFrame(() => disegna()); return; }
   if (f.id === fileId && chiesto === f.id) return;
   void carica(f);
+}
+
+/** Il piede per i file che non sono testo: che cos'è, quanto pesa, e com'è fatto l'indice. */
+function piedeColonna() {
+  const f = fileId ? s.file.get(fileId) : undefined;
+  if (!f || !modoColonna) return;
+  piede.replaceChildren(
+    h('span.ap-chip', null, f.nomeCategoria),
+    h('span', null, colonna.descrizione()),
+    h('span', null, peso(f.peso)));
 }
 
 async function carica(f: InfoFile) {
@@ -134,6 +182,7 @@ async function carica(f: InfoFile) {
   doc = null;
   chiesto = f.id;
   fogli.replaceChildren();
+  mappa.carica(null);
   spazio.style.height = '0';
   info.textContent = '';
   piede.replaceChildren(h('span', null, 'Leggo…'));
@@ -166,6 +215,7 @@ function mostra(letto: Letto, d: Doc) {
     h('span', null, peso(letto.peso)),
     h('span.ap-dove'));
   scorre.style.setProperty('--cifre', String(String(righe).length));
+  mappa.carica(fonteDi(d), true);
   scorre.scrollTop = 0;
   scorre.scrollLeft = 0;
   cercato.q = '';
@@ -224,8 +274,31 @@ function disegna(forza = false) {
   }
   // le righe stanno dove devono: in scala si spostano a ogni scorrimento, se no stanno ferme
   fogli.style.transform = `translateY(${scorre.scrollTop - (fv - da) * ALTEZZA_RIGA}px)`;
+  const visibiliN = scorre.clientHeight / ALTEZZA_RIGA;
+  const dal = mappa.daRiga(fv);
+  mappa.vista(dal, n ? Math.max(0, mappa.daRiga(Math.min(n, fv + visibiliN)) - dal) : 1);
   const dove = piede.querySelector('.ap-dove');
   if (dove) dove.textContent = `riga ${numero(d.vRiga[Math.min(n - 1, Math.floor(fv))] + 1)}`;
+}
+
+// ————————————————————————— la minimappa —————————————————————————
+
+/** Il documento come lo vuole la minimappa: le righe a video, solo l'inizio di ciascuna. */
+function fonteDi(d: Doc) {
+  return { n: d.vRiga.length, riga: (i: number, max: number) => d.testo.slice(d.vDa[i], Math.min(d.vA[i], d.vDa[i] + max)) };
+}
+
+/** I risultati della ricerca come righe a video, per i segni dorati (si rifà solo se la ricerca è cambiata). */
+let segnato: Trovati | null = null;
+let righeSegnate: Int32Array = new Int32Array(0);
+function aggiornaSegni() {
+  if (!doc) { mappa.segni([], -1); return; }
+  if (segnato !== trovati) {
+    segnato = trovati;
+    righeSegnate = new Int32Array(trovati.pos.length);
+    for (let k = 0; k < trovati.pos.length; k++) righeSegnate[k] = rigaVideoDi(doc, trovati.pos[k]);
+  }
+  mappa.segni(righeSegnate, scelto >= 0 && scelto < righeSegnate.length ? righeSegnate[scelto] : -1);
 }
 
 // ————————————————————————— Ctrl+F —————————————————————————
@@ -295,6 +368,7 @@ function contatore() {
   conta.textContent = !campo.value ? '' : n ? `${numero(scelto + 1)} di ${numero(n)}${trovati.troppi ? '+' : ''}` : 'Nessun risultato';
   conta.classList.toggle('niente', !!campo.value && !n);
   bSu.disabled = bGiu.disabled = n === 0;
+  aggiornaSegni();
   campo.title = trovati.troppi ? `Mi fermo a ${numero(MAX_TROVATI)} risultati` : '';
 }
 
@@ -327,6 +401,7 @@ document.addEventListener('keydown', (e) => {
 
 // Il menu della piastra (Incolla, Aggiungi file) qui non serve: sul testo scelto si copia, o si cerca quello
 pannello.addEventListener('contextmenu', (e) => {
+  if (modoColonna) return;
   e.preventDefault();
   e.stopPropagation();
   document.querySelector('.menu-destro')?.remove();
@@ -349,5 +424,5 @@ pannello.addEventListener('contextmenu', (e) => {
 /** Un file tolto dalla coda: il suo testo non serve più. */
 export function dimenticaAnteprima(id?: string) {
   if (id) letti.delete(id); else letti.clear();
-  if (!id || id === fileId) { fileId = null; doc = null; }
+  if (!id || id === fileId) { fileId = null; doc = null; modoColonna = false; colonna.ferma(); mappa.carica(null); }
 }

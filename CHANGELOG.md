@@ -2,6 +2,51 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.9.1 — 21 ottobre 2026
+
+- **Video e brani si scorrono col cursore, come in Finder.** Nell'anteprima a destra non ci sono più solo le 12 figurine:
+  passa il cursore sulla figura grande (o sulla barra sotto) e il **fotogramma cambia in tempo reale** in base alla posizione.
+  Sui **brani** la figura è l'**onda di tutto il pezzo** con un cursore magenta che ci scorre sopra, e **si sente il suono
+  del punto dove sta il cursore**. Un **clic riproduce** da lì (video con l'audio, brani), un altro clic mette in pausa;
+  doppio clic apre il lettore. Dalla tastiera: sulla barra frecce ±5 s (Maiusc ±30 s), Home/Fine, Spazio o Invio per
+  riprodurre. Se la pagina non sa suonare quel video (certi codec) lo scrub passa a FFmpeg, un fotogramma per volta
+  (conta sempre l'ultimo posto dove sei); se non sa suonare il brano, il clic apre il lettore come prima.
+- **Passare da una parte all'altra senza intoppi.** Il clic su un file della coda non riporta più la lista in cima e non
+  perde il tasto messo a fuoco (prima ogni ridisegno li azzerava: con la tastiera non si andava avanti). Mentre si
+  converte, o a lavoro finito, scegliere un altro file cambia solo la selezione e l'anteprima: la piastra con le bobine
+  non si rifà più da capo. I file della coda ora si raggiungono con Tab e si scelgono con Invio o Spazio; **frecce su/giù**
+  passano da un file all'altro, **frecce destra/sinistra** fra categorie, formati e bottoni delle regolazioni.
+  **Invio** non fa più partire la conversione quando sei su un tasto o su un file (prima premere Invio su «Aggiungi file»
+  o su un formato convertiva); da qualunque punto si converte con **Ctrl+Invio**.
+- Dentro: `colonna.ts` (lo scrub), comandi `fonteAnteprima` e `scrubAnteprima`, `IndiceAnteprima.Fotogramma` e
+  `OndaIntera`; il convertitore ora serve i file all'anteprima da `https://dap.file/` come il lettore (`Risorse`);
+  `conservaVista` in `scheletro.ts`.
+
+## 1.9.0 — 21 ottobre 2026
+
+- **La minimappa, come in VS Code.** Nell'anteprima a destra dei testi (e nel lettore, sui TXT, Markdown, registri e codice) a
+  lato del testo c'è la sua **miniatura**: una riga ogni due pixel, un pixel per carattere. Il **riquadro** viola è quello che
+  vedi; **clic o trascinamento** ti portano lì. I risultati di Ctrl+F sono **segni dorati** sulla miniatura (quello scelto è
+  arancione). Le righe lunghe vanno a capo anche nella miniatura (una riga sola da 1 KB, o da sei milioni di caratteri, si
+  vede come un blocco, non come un filo), e un registro da 100.000 righe si schiaccia in 30 ms circa.
+- **Anteprima per tutti i file, non solo i testi.** Scegli un file qualunque nella coda e a destra c'è la stessa colonna con le
+  figurine cliccabili: le **pagine** di un PDF (fino a 400), **12 fotogrammi** di un video, **12 onde** di un brano; foto,
+  documenti, cartelle e il resto hanno una figura sola (l'anteprima o l'icona di Esplora file). Il clic sulla figurina la
+  porta in grande, le frecce e PagUp/PagGiù scorrono l'elenco, il clic sulla figura grande apre il lettore. Le figurine si
+  chiedono solo quando entrano in vista, una alla volta.
+- Dentro: `IndiceAnteprima.cs` (motore), comandi `indiceAnteprima` e `voceAnteprima`, `ui/src/app/minimappa.ts` (i conti,
+  senza finestre), `minimappa-vista.ts` (il disegno), `colonna.ts` (le figurine). Prove: `scripts/prova-minimappa.mjs`
+  (node, 10 prove) e `ProveIndice.cs` (5 prove che fanno davvero PDF, video, brano, foto e file qualunque).
+
+## 1.8.1 — 21 ottobre 2026
+
+- **Il controllo aggiornamenti non si ferma più all'avvio.** L'app guarda le release di GitHub appena si apre, poi ogni
+  4 ore finché resta aperta (e riprova dopo 20 minuti se eri offline). Non blocca niente e se non c'è rete sta zitta.
+- **Il badge in alto dice la versione.** «Aggiornamento 1.9.0 disponibile» compare appena la versione è trovata (prima
+  aspettava il download, e nel convertitore la scritta aveva perso il numero), sia nel convertitore sia nel lettore; un
+  clic la installa e riapre. Il lettore lo mostra anche se la versione era già stata trovata prima che lo aprissi.
+- Per provare il badge senza una release vera: `DAP_AGGIORNAMENTO_FINTO=9.9.9` avviando l'app (non installa niente).
+
 ## 1.8.0 — 21 ottobre 2026
 
 - **L'anteprima a destra, come in VS Code.** Scegli un testo nella coda (TXT, Markdown, registri, codice, CSV, JSON,

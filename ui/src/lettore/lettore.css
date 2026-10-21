@@ -387,7 +387,10 @@ kbd { display: inline-grid; place-items: center; min-width: 24px; height: 23px; 
 .t-cerca-box > span svg { width: 15px; height: 15px; color: var(--testo3); }
 .t-cerca { width: 200px; border: 0; outline: 0; background: none; font-weight: 600; font-size: 13px; }
 .t-trovati { font-size: 11.5px; color: var(--testo3); min-width: 40px; text-align: right; }
-.t-scorre { overflow: auto; position: relative; }
+.t-corpo { display: flex; min-height: 0; min-width: 0; }
+.t-corpo[hidden] { display: none; }
+.t-scorre { flex: 1; min-width: 0; overflow: auto; position: relative; }
+.t-corpo .mm { width: 110px; }
 .t-spazio { position: relative; min-width: min-content; }
 .t-righe { position: absolute; left: 0; top: 0; min-width: 100%; padding: 8px 0; font: 400 var(--corpo)/var(--riga) var(--mono); user-select: text; }
 .t-codice.a-capo .t-righe { position: relative; }

@@ -23,6 +23,8 @@ public sealed class Ponte
     readonly ConcurrentDictionary<string, VoceFile> file = new();
     readonly List<string> ordine = [];
     readonly SemaphoreSlim anteprime = new(3);
+    // i file per lo scrub dell'anteprima (video e brani suonati dalla pagina): su https://dap.file/, a gettone
+    readonly Risorse risorse;
     readonly Dictionary<string, List<string>> rapide = [];
     readonly DispatcherTimer timerRapide;
     readonly DispatcherTimer timerCarico;
@@ -50,6 +52,7 @@ public sealed class Ponte
         this.finestra = finestra;
         this.vista = vista;
         analisi = new Analisi(strumenti);
+        risorse = new Risorse(finestra.Dispatcher);
         Processi.Priorita = imp.AlMassimo ? ProcessPriorityClass.Normal : ProcessPriorityClass.BelowNormal;
         rilevazione = Task.Run(() => Hardware.Rileva(strumenti));
         Coda = new Coda(strumenti, () => hardware ?? rilevazione.GetAwaiter().GetResult(), () => new StampanteInAttesa(stampante.Task), imp.ScrittaPulita, () => imp.CestinoDaSolo);
@@ -66,16 +69,19 @@ public sealed class Ponte
     public void Collega(CoreWebView2Environment env)
     {
         stampante.TrySetResult(new Stampante(env, finestra));
+        risorse.Collega(vista.CoreWebView2, env);
         vista.CoreWebView2.WebMessageReceived += Ricevi;
     }
 
     public void Chiudi()
     {
         timerCarico.Stop();
+        risorse.Ferma();
+        if (avvisoAgg is not null) Aggiornamenti.Trovata -= avvisoAgg;
         monitor?.Dispose();
     }
 
-    string? versioneNuova;
+    Action<string>? avvisoAgg;
     CancellationTokenSource? stima;
 
     // ————————————————————————— richieste da fuori (riga di comando, altre istanze) —————————————————————————
@@ -156,6 +162,13 @@ public sealed class Ponte
         return info.Id;
     }
 
+    /// <summary>La durata dai dettagli del file; se l'analisi non è ancora finita (la colonna dell'anteprima la chiede subito) la aspetta un po'.</summary>
+    static async Task<double> DurataDi(VoceFile v)
+    {
+        for (var i = 0; i < 100 && v.Dettagli is null; i++) await Task.Delay(50);
+        return v.Dettagli is not null && v.Dettagli.TryGetValue("durata", out var x) && x is double d ? d : 0;
+    }
+
     // ————————————————————————— messaggi dall'interfaccia —————————————————————————
 
     async void Ricevi(object? _, CoreWebView2WebMessageReceivedEventArgs e)
@@ -193,11 +206,10 @@ public sealed class Ponte
         {
             case "stato":
                 if (!pronta)
-                    _ = Task.Run(async () =>
-                    {
-                        versioneNuova = await Aggiornamenti.PreparaUnaVolta();
-                        if (versioneNuova is not null) Manda("aggiornamento", new { versione = versioneNuova });
-                    });
+                {
+                    avvisoAgg = v => Manda("aggiornamento", new { versione = v });
+                    Aggiornamenti.Trovata += avvisoAgg;
+                }
                 pronta = true;
                 timerCarico.Start();
                 return new
@@ -209,7 +221,7 @@ public sealed class Ponte
                     impostazioni = imp,
                     apriConGruppi = ApriCon.Elenco().Select(g => new { g.Id, g.Nome, g.Esempi }),
                     regolaPredefiniti = new { supportata = Predefiniti.Supportata(), attiva = Predefiniti.Attiva(), diAltri = Predefiniti.DiAltri() },
-                    aggiornamento = versioneNuova,
+                    aggiornamento = Aggiornamenti.Disponibile,
                     modo = finestra.Modo,
                     file = Ordinati().Select(FileDto),
                     lavori = Coda.Tutti.Where(l => giro.Contains(l.Id)).Select(LavoroDto),
@@ -351,6 +363,49 @@ public sealed class Ponte
                 var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
                 var t = await Task.Run(() => Codifiche.Leggi(v.Info.Percorso, Lettore.Contenuti.MaxTesto));
                 return new { testo = t.Testo, codifica = t.Codifica, bom = t.Bom, troncato = t.Troncato, peso = v.Info.Peso };
+            }
+            case "indiceAnteprima":
+            {
+                // la colonna a destra per i file che non sono testo: com'è fatto l'indice (pagine, fotogrammi, onde, una figura sola)
+                var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
+                var i = await IndiceAnteprima.Descrivi(v.Info.Percorso, Catalogo.CategoriaDi(v.Info.Percorso), await DurataDi(v));
+                return new { tipo = i.Tipo, voci = i.Voci, totale = i.Totale, punti = Enumerable.Range(0, i.Voci).Select(n => IndiceAnteprima.Punto(i, n)).ToArray() };
+            }
+            case "fonteAnteprima":
+            {
+                // lo scrub: il file vero per il tag <video>/<audio> della pagina (gettone, mai il percorso)
+                var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
+                return new { url = File.Exists(v.Info.Percorso) ? risorse.Url(v.Info.Percorso) : null };
+            }
+            case "scrubAnteprima":
+            {
+                // il fotogramma del video a quel secondo, o l'onda intera del brano (quando la pagina non sa suonare il file)
+                var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
+                var c = Catalogo.CategoriaDi(v.Info.Percorso);
+                var durata = await DurataDi(v);
+                var lato = (uint)Math.Clamp((int?)a["lato"] ?? 480, 48, 1024);
+                await anteprime.WaitAsync();
+                try
+                {
+                    var r = c == Categoria.Video ? await IndiceAnteprima.Fotogramma(v.Info.Percorso, (double?)a["t"] ?? 0, durata, strumenti, lato)
+                        : c == Categoria.Audio ? await IndiceAnteprima.OndaIntera(v.Info.Percorso, durata, strumenti, lato) : null;
+                    return new { url = r?.DataUrl };
+                }
+                finally { anteprime.Release(); }
+            }
+            case "voceAnteprima":
+            {
+                var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
+                var c = Catalogo.CategoriaDi(v.Info.Percorso);
+                var i = await IndiceAnteprima.Descrivi(v.Info.Percorso, c, await DurataDi(v));
+                var lato = (uint)Math.Clamp((int?)a["lato"] ?? 160, 48, 1024);
+                await anteprime.WaitAsync();
+                try
+                {
+                    var r = await IndiceAnteprima.Voce(v.Info.Percorso, c, i, (int?)a["n"] ?? 0, strumenti, lato);
+                    return new { url = r?.DataUrl };
+                }
+                finally { anteprime.Release(); }
             }
             case "predefinite":
             {

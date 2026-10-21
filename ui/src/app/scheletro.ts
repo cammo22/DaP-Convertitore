@@ -28,3 +28,26 @@ export function mostraAvviso(testo: string) {
   banco.append(a);
   setTimeout(() => a.remove(), 5000);
 }
+
+/**
+ * Ridisegna un pezzo della piastra senza far perdere a chi lo usa il punto in cui era: lo scorrimento (del pezzo e della
+ * sua lista) e il tasto messo a fuoco con la tastiera tornano com'erano. Senza, ogni clic su un file in coda riportava
+ * la lista in cima e toglieva il fuoco: con la tastiera non si riusciva a passare da un file all'altro.
+ */
+export function conservaVista(c: HTMLElement, ridisegna: () => void) {
+  const lista = () => c.querySelector<HTMLElement>('.lista');
+  const sopra = c.scrollTop, sopraLista = lista()?.scrollTop ?? 0;
+  const fuoco = document.activeElement instanceof HTMLElement && c.contains(document.activeElement) ? document.activeElement : null;
+  const chiave = fuoco?.dataset.id;
+  const comandi = (): HTMLElement[] => [...c.querySelectorAll<HTMLElement>('button, input, select, [tabindex="0"]')];
+  const posto = fuoco ? comandi().indexOf(fuoco) : -1;
+  const quanti = comandi().length;
+  ridisegna();
+  c.scrollTop = sopra;
+  const l = lista();
+  if (l) l.scrollTop = sopraLista;
+  if (!fuoco) return;
+  const nuovo = (chiave ? c.querySelector<HTMLElement>(`[data-id="${CSS.escape(chiave)}"]`) : null)
+    ?? (posto >= 0 && comandi().length === quanti ? comandi()[posto] : null);
+  nuovo?.focus({ preventScroll: true });
+}
