@@ -23,6 +23,8 @@ public sealed class Ponte
     readonly ConcurrentDictionary<string, VoceFile> file = new();
     readonly List<string> ordine = [];
     readonly SemaphoreSlim anteprime = new(3);
+    // i file per lo scrub dell'anteprima (video e brani suonati dalla pagina): su https://dap.file/, a gettone
+    readonly Risorse risorse;
     readonly Dictionary<string, List<string>> rapide = [];
     readonly DispatcherTimer timerRapide;
     readonly DispatcherTimer timerCarico;
@@ -50,6 +52,7 @@ public sealed class Ponte
         this.finestra = finestra;
         this.vista = vista;
         analisi = new Analisi(strumenti);
+        risorse = new Risorse(finestra.Dispatcher);
         Processi.Priorita = imp.AlMassimo ? ProcessPriorityClass.Normal : ProcessPriorityClass.BelowNormal;
         rilevazione = Task.Run(() => Hardware.Rileva(strumenti));
         Coda = new Coda(strumenti, () => hardware ?? rilevazione.GetAwaiter().GetResult(), () => new StampanteInAttesa(stampante.Task), imp.ScrittaPulita, () => imp.CestinoDaSolo);
@@ -66,12 +69,14 @@ public sealed class Ponte
     public void Collega(CoreWebView2Environment env)
     {
         stampante.TrySetResult(new Stampante(env, finestra));
+        risorse.Collega(vista.CoreWebView2, env);
         vista.CoreWebView2.WebMessageReceived += Ricevi;
     }
 
     public void Chiudi()
     {
         timerCarico.Stop();
+        risorse.Ferma();
         if (avvisoAgg is not null) Aggiornamenti.Trovata -= avvisoAgg;
         monitor?.Dispose();
     }
@@ -365,6 +370,28 @@ public sealed class Ponte
                 var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
                 var i = await IndiceAnteprima.Descrivi(v.Info.Percorso, Catalogo.CategoriaDi(v.Info.Percorso), await DurataDi(v));
                 return new { tipo = i.Tipo, voci = i.Voci, totale = i.Totale, punti = Enumerable.Range(0, i.Voci).Select(n => IndiceAnteprima.Punto(i, n)).ToArray() };
+            }
+            case "fonteAnteprima":
+            {
+                // lo scrub: il file vero per il tag <video>/<audio> della pagina (gettone, mai il percorso)
+                var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
+                return new { url = File.Exists(v.Info.Percorso) ? risorse.Url(v.Info.Percorso) : null };
+            }
+            case "scrubAnteprima":
+            {
+                // il fotogramma del video a quel secondo, o l'onda intera del brano (quando la pagina non sa suonare il file)
+                var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
+                var c = Catalogo.CategoriaDi(v.Info.Percorso);
+                var durata = await DurataDi(v);
+                var lato = (uint)Math.Clamp((int?)a["lato"] ?? 480, 48, 1024);
+                await anteprime.WaitAsync();
+                try
+                {
+                    var r = c == Categoria.Video ? await IndiceAnteprima.Fotogramma(v.Info.Percorso, (double?)a["t"] ?? 0, durata, strumenti, lato)
+                        : c == Categoria.Audio ? await IndiceAnteprima.OndaIntera(v.Info.Percorso, durata, strumenti, lato) : null;
+                    return new { url = r?.DataUrl };
+                }
+                finally { anteprime.Release(); }
             }
             case "voceAnteprima":
             {

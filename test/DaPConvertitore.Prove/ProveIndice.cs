@@ -48,6 +48,26 @@ public class ProveIndice(Banco b)
     }
 
     [Fact]
+    public async Task LoScrubDelVideoDaIlFotogrammoDiOgniSecondo()
+    {
+        var v = b.Ffmpeg("scrub.mp4", "-f", "lavfi", "-i", "testsrc2=s=320x180:r=15:d=6", "-c:v", "libx264", "-pix_fmt", "yuv420p");
+        var inizio = await IndiceAnteprima.Fotogramma(v, 0.2, 6, b.Strumenti, 240);
+        var fine = await IndiceAnteprima.Fotogramma(v, 5.5, 6, b.Strumenti, 240);
+        var oltre = await IndiceAnteprima.Fotogramma(v, 99, 6, b.Strumenti, 240);    // fuori dal video: si ferma sull'ultimo
+        Assert.True(EImmagine(inizio) && EImmagine(fine) && EImmagine(oltre));
+        Assert.NotEqual(inizio!.Dati, fine!.Dati);
+    }
+
+    [Fact]
+    public async Task UnBranoHaUnOndaSolaPerTuttoIlPezzo()
+    {
+        var m = b.Ffmpeg("scrub.wav", "-f", "lavfi", "-i", "sine=f=440:d=4");
+        var onda = await IndiceAnteprima.OndaIntera(m, 4, b.Strumenti, 720);
+        Assert.True(EImmagine(onda));
+        Assert.Equal("image/png", onda!.Tipo);
+    }
+
+    [Fact]
     public async Task UnaFotoEUnDocumentoHannoUnaFigurinaSola()
     {
         var f = b.Ffmpeg("indice-foto.png", "-f", "lavfi", "-i", "testsrc2=s=400x300:d=1", "-frames:v", "1");

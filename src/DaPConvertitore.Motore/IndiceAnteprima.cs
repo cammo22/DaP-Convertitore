@@ -60,6 +60,38 @@ public static class IndiceAnteprima
         return await Anteprime.Fai(percorso, c, s, i.Totale, lato);
     }
 
+    /// <summary>Il fotogramma del video a quel secondo (per lo scrub quando la pagina non sa suonare il file).</summary>
+    public static async Task<Anteprima?> Fotogramma(string percorso, double t, double durata, Strumenti s, uint lato)
+    {
+        var fine = Path.Combine(Strumenti.CartellaTemporanea, $"scrub-{Guid.NewGuid():N}.jpg");
+        try
+        {
+            t = Math.Clamp(t, 0, Math.Max(0, durata - 0.3));    // l'ultimo fotogramma sta un po' prima della durata dichiarata
+            // -ss prima di -i salta al fotogramma chiave vicino: è lo scrub, non serve il fotogramma esatto
+            string[] args = ["-hide_banner", "-loglevel", "error", "-y", "-ss", t.ToString("0.###", CultureInfo.InvariantCulture), "-i", percorso, "-frames:v", "1",
+                             "-vf", $"scale='min({lato},iw)':-2", "-q:v", "5", "-update", "1", fine];
+            var r = await Processi.Esegui(s.Ffmpeg, args, CancellationToken.None, tieniUscita: false);
+            return r.Codice == 0 && File.Exists(fine) ? new Anteprima(await File.ReadAllBytesAsync(fine), "image/jpeg") : null;
+        }
+        catch (Exception e) { Registro.Scrivi($"Scrub di {Path.GetFileName(percorso)}: {e.Message}"); return null; }
+        finally { try { File.Delete(fine); } catch { } }
+    }
+
+    /// <summary>L'onda di tutto il brano, larga quanto la figura grande: il cursore ci scorre sopra.</summary>
+    public static async Task<Anteprima?> OndaIntera(string percorso, double durata, Strumenti s, uint larghezza)
+    {
+        var fine = Path.Combine(Strumenti.CartellaTemporanea, $"onda-{Guid.NewGuid():N}.png");
+        try
+        {
+            string[] args = ["-hide_banner", "-loglevel", "error", "-y", "-i", percorso, "-filter_complex",
+                             $"aformat=channel_layouts=mono,showwavespic=s={larghezza}x{Math.Max(48, larghezza / 3)}:colors=0xffd54a", "-frames:v", "1", fine];
+            var r = await Processi.Esegui(s.Ffmpeg, args, CancellationToken.None, tieniUscita: false);
+            return r.Codice == 0 && File.Exists(fine) ? new Anteprima(await File.ReadAllBytesAsync(fine), "image/png") : null;
+        }
+        catch (Exception e) { Registro.Scrivi($"Onda di {Path.GetFileName(percorso)}: {e.Message}"); return null; }
+        finally { try { File.Delete(fine); } catch { } }
+    }
+
     static async Task<Anteprima?> DelTempo(string percorso, Categoria c, Indice i, int n, Strumenti s, uint lato)
     {
         var inv = CultureInfo.InvariantCulture;

@@ -13,7 +13,7 @@ import { h, peso, durata, risoluzione } from './util';
 import { icone, iconaCategoria, coloreCategoria } from './icone';
 import { clac, accendiSuoni } from './suoni';
 import { s, ui, nomeCat, formato, fileDi, categoriePresenti, sceltaPer, eVideoVero } from './app/stato';
-import { app, testa, coda, banco, piede, corpo, logoSvg, mostraAvviso } from './app/scheletro';
+import { app, testa, coda, banco, piede, corpo, logoSvg, mostraAvviso, conservaVista } from './app/scheletro';
 import { regolazioni } from './app/pannelli';
 import { aggiornaPiano, pesoObiettivo } from './app/pannelli/video';
 import { conQualita, pesoVolutoFoto, QUALITA_PER_PESO } from './app/pannelli/immagine';
@@ -73,14 +73,30 @@ function metaDi(f: InfoFile): string {
   return p.join(' · ');
 }
 
-function disegnaCoda() {
+function disegnaCoda() { conservaVista(coda, disegnaCodaVera); }
+
+/** Sceglie un file della coda. Mentre si lavora o a lavoro finito si cambia solo la selezione e l'anteprima: la piastra in mezzo non si tocca. */
+function scegliFile(id: string) {
+  const f = s.file.get(id);
+  if (!f) return;
+  clac();
+  s.attiva = f.categoria;
+  s.fileAttivo = id;
+  s.piano = null;
+  if (s.vista === 'scegli') disegnaTutto();
+  else { disegnaCoda(); aggiornaAnteprima(); }
+}
+
+function disegnaCodaVera() {
   const tot = s.ordine.reduce((a, i) => a + (s.file.get(i)?.peso ?? 0), 0);
   const lista = h('div.lista');
   for (const id of s.ordine) {
     const f = s.file.get(id)!;
     const lav = [...s.lavori.values()].reverse().find((l) => l.fileId === id);
     const scheda = h(`div.scheda${s.fileAttivo === id ? '.attiva' : ''}${f.categoria !== s.attiva ? '.spenta' : ''}`,
-      { dataset: { id }, style: { '--tinta': coloreCategoria[f.categoria] }, onclick: () => { clac(); s.attiva = f.categoria; s.fileAttivo = id; s.piano = null; disegnaTutto(); } },
+      { dataset: { id }, tabindex: '0', role: 'option', 'aria-selected': String(s.fileAttivo === id), style: { '--tinta': coloreCategoria[f.categoria] },
+        onclick: () => scegliFile(id),
+        onkeydown: (e: KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); scegliFile(id); } } },
       h('div.figurina', null,
         f.anteprima ? h('img', { src: f.anteprima, alt: '' }) : h('span.icona-cat', { html: iconaCategoria[f.categoria] }),
         // senza estensione (LEGGIMI, LICENSE) non è una cartella: si dice FILE
@@ -138,7 +154,9 @@ function sistemaAttiva() {
 
 // ————————————————————————————————— banco: scegli —————————————————————————————————
 
-function disegnaScegli() {
+function disegnaScegli() { conservaVista(banco, disegnaScegliVera); }
+
+function disegnaScegliVera() {
   sistemaAttiva();
   if (!s.attiva) {
     banco.replaceChildren(h('div.benvenuto', null,
@@ -390,7 +408,26 @@ async function avvia() {
     if (e.key === 'Delete' && s.vista === 'scegli' && !nellAnteprima && !document.querySelector('.velo') && !(e.target instanceof HTMLInputElement)) {
       if (e.ctrlKey) svuota(); else if (s.fileAttivo) togli(s.fileAttivo);
     }
-    if (e.key === 'Enter' && s.vista === 'scegli' && !nellAnteprima && !document.querySelector('.velo') && !(e.target instanceof HTMLInputElement)) void converti();
+    // Invio converte solo se non sei su un tasto o su un file della coda (lì Invio sceglie); Ctrl+Invio converte da qualunque punto
+    const suUnComando = e.target instanceof Element && !!e.target.closest('button, a, select, textarea, input, [role="option"], [role="slider"]');
+    if (e.key === 'Enter' && (!suUnComando || (e.ctrlKey && !(e.target instanceof HTMLTextAreaElement))) && s.vista === 'scegli' && !nellAnteprima && !document.querySelector('.velo') && !(e.target instanceof HTMLInputElement && !e.ctrlKey)) void converti();
+  });
+  // le frecce passano da un file all'altro, da una categoria all'altra, da un formato all'altro (e il fuoco resta dov'è dopo il ridisegno)
+  app.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || !(e.target instanceof HTMLElement) || document.querySelector('.velo')) return;
+    const gruppo = e.target.closest<HTMLElement>('.cassette, .schede-cat, .bottoni, .lista');
+    if (!gruppo) return;
+    const dellaLista = gruppo.classList.contains('lista');
+    const voci = [...gruppo.querySelectorAll<HTMLElement>(dellaLista ? '.scheda' : 'button:not(:disabled)')];
+    const i = voci.indexOf(e.target);
+    if (i < 0) return;
+    const avanti = e.key === 'ArrowDown' || (!dellaLista && e.key === 'ArrowRight');
+    const indietro = e.key === 'ArrowUp' || (!dellaLista && e.key === 'ArrowLeft');
+    const j = avanti ? Math.min(voci.length - 1, i + 1) : indietro ? Math.max(0, i - 1) : e.key === 'Home' ? 0 : e.key === 'End' ? voci.length - 1 : -1;
+    if (j < 0) return;
+    e.preventDefault();
+    voci[j].focus();
+    if (dellaLista && j !== i) voci[j].click();
   });
   void chiedi('pronto');
 }

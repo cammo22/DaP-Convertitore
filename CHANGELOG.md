@@ -2,6 +2,26 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.9.1 — 21 ottobre 2026
+
+- **Video e brani si scorrono col cursore, come in Finder.** Nell'anteprima a destra non ci sono più solo le 12 figurine:
+  passa il cursore sulla figura grande (o sulla barra sotto) e il **fotogramma cambia in tempo reale** in base alla posizione.
+  Sui **brani** la figura è l'**onda di tutto il pezzo** con un cursore magenta che ci scorre sopra, e **si sente il suono
+  del punto dove sta il cursore**. Un **clic riproduce** da lì (video con l'audio, brani), un altro clic mette in pausa;
+  doppio clic apre il lettore. Dalla tastiera: sulla barra frecce ±5 s (Maiusc ±30 s), Home/Fine, Spazio o Invio per
+  riprodurre. Se la pagina non sa suonare quel video (certi codec) lo scrub passa a FFmpeg, un fotogramma per volta
+  (conta sempre l'ultimo posto dove sei); se non sa suonare il brano, il clic apre il lettore come prima.
+- **Passare da una parte all'altra senza intoppi.** Il clic su un file della coda non riporta più la lista in cima e non
+  perde il tasto messo a fuoco (prima ogni ridisegno li azzerava: con la tastiera non si andava avanti). Mentre si
+  converte, o a lavoro finito, scegliere un altro file cambia solo la selezione e l'anteprima: la piastra con le bobine
+  non si rifà più da capo. I file della coda ora si raggiungono con Tab e si scelgono con Invio o Spazio; **frecce su/giù**
+  passano da un file all'altro, **frecce destra/sinistra** fra categorie, formati e bottoni delle regolazioni.
+  **Invio** non fa più partire la conversione quando sei su un tasto o su un file (prima premere Invio su «Aggiungi file»
+  o su un formato convertiva); da qualunque punto si converte con **Ctrl+Invio**.
+- Dentro: `colonna.ts` (lo scrub), comandi `fonteAnteprima` e `scrubAnteprima`, `IndiceAnteprima.Fotogramma` e
+  `OndaIntera`; il convertitore ora serve i file all'anteprima da `https://dap.file/` come il lettore (`Risorse`);
+  `conservaVista` in `scheletro.ts`.
+
 ## 1.9.0 — 21 ottobre 2026
 
 - **La minimappa, come in VS Code.** Nell'anteprima a destra dei testi (e nel lettore, sui TXT, Markdown, registri e codice) a

@@ -171,6 +171,10 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
       if (c === 'video' || c === 'audio') return { tipo: 'tempo', voci: 12, totale: 240, punti: Array.from({ length: 12 }, (_, n) => 10 + n * 20) };
       return { tipo: 'singola', voci: 1, totale: 1, punti: [0] };
     }
+    case 'fonteAnteprima':
+      return { url: null };   // nel browser non c'è un file vero da suonare: lo scrub usa i fotogrammi finti
+    case 'scrubAnteprima':
+      return { url: quadro('#3b1d6e', '#ff3df2', `${Math.round(Number(args.t ?? 0))} s`) };
     case 'voceAnteprima':
       return { url: quadro('#3b1d6e', '#ff3df2', String(Number(args.n) + 1)) };
     default:
