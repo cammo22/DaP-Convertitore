@@ -40,7 +40,7 @@ function disegnaTesta() {
     ),
     h('div.trascina', { 'data-regione': 'trascina' }),
     h('div.chip-hw', null,
-      s.aggiornamento ? h('button.chip.agg', { title: 'Installa la versione nuova e riapre il convertitore', onclick: () => { clac(true); void chiedi('aggiorna', { installa: true }); } }, h('i.led.verde'), `Nuova  · riavvia`) : null,
+      s.aggiornamento ? h('button.chip.agg', { title: `Installa la ${s.aggiornamento} e riapre il convertitore`, onclick: () => { clac(true); void chiedi('aggiorna', { installa: true }); } }, h('i.led.verde'), `Aggiornamento ${s.aggiornamento} disponibile`) : null,
       hw?.acceleratore ? h('span.chip.gpu', { title: hw.gpu.map((g) => g.nome).join(' · ') }, h('i.led.verde'), hw.acceleratore) : h('span.chip', null, h('i.led'), 'Solo CPU'),
       hw ? h('span.chip', { title: hw.cpu }, h('i.led.ambra'), `${cpuCorta(hw.cpu)} · ${hw.thread} thread`) : h('span.chip', null, h('i.led.lampeggia'), 'Guardo la macchina…'),
     ),

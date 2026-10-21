@@ -2,6 +2,15 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 1.8.1 — 21 ottobre 2026
+
+- **Il controllo aggiornamenti non si ferma più all'avvio.** L'app guarda le release di GitHub appena si apre, poi ogni
+  4 ore finché resta aperta (e riprova dopo 20 minuti se eri offline). Non blocca niente e se non c'è rete sta zitta.
+- **Il badge in alto dice la versione.** «Aggiornamento 1.9.0 disponibile» compare appena la versione è trovata (prima
+  aspettava il download, e nel convertitore la scritta aveva perso il numero), sia nel convertitore sia nel lettore; un
+  clic la installa e riapre. Il lettore lo mostra anche se la versione era già stata trovata prima che lo aprissi.
+- Per provare il badge senza una release vera: `DAP_AGGIORNAMENTO_FINTO=9.9.9` avviando l'app (non installa niente).
+
 ## 1.8.0 — 21 ottobre 2026
 
 - **L'anteprima a destra, come in VS Code.** Scegli un testo nella coda (TXT, Markdown, registri, codice, CSV, JSON,
