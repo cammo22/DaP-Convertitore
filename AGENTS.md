@@ -2,7 +2,7 @@
 
 Tasto destro su un file → **DaP Convertitore** → il file convertito finisce accanto all'originale come
 `nome (convertito).ext`. App Windows installabile, stile DaProd (viola notte, oro, magenta; Orbitron, Rajdhani, DSEG7).
-Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
+Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (completo). Cosa è cambiato: `CHANGELOG.md`.
 
 - **Si scrive in italiano parlato**: commenti, CHANGELOG, README, interfaccia. Nomi tecnici in inglese dove serve.
 - **Niente `&&` nei comandi** (PowerShell 5.1), uno per riga. Commit a nome `cammo22 <dapprod22@gmail.com>`.

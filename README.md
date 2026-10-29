@@ -1,401 +1,71 @@
-<!-- discord-card -->
-<p align="center">
-  <a href="https://discord.gg/Njs52aacwq"><img src=".github/discord-card.svg" alt="Entra nella community DaProd su Discord" width="720"></a>
-</p>
-
 <div align="center">
 
-# DaP Convertitore
+<img src="risorse/schermate/banner.png" alt="DaP Convertitore — tasto destro, fatto." width="100%">
 
-**Tasto destro su un file → DaP Convertitore. Fatto.**
+<br><br>
 
-Video, audio, foto, PDF, documenti, archivi: qualsiasi file, nel formato che vuoi, **tutto sul tuo PC**.
-
-<br>
-
-<!-- la vetrina: come la scheda di un negozio -->
-<table>
-<tr>
-<td align="center" width="170"><img src="risorse/icona-256.png" width="120" alt=""><br><sub><b>DaProd</b></sub></td>
-<td align="left">
-
-### DaP Convertitore
-<sub>Utilità · Video, audio, foto e documenti · Windows</sub>
+[![Scarica per Windows](https://img.shields.io/badge/%E2%AC%87%20%20SCARICA%20PER%20WINDOWS-ffd54a?style=for-the-badge&labelColor=ffd54a&color=ffd54a&logoColor=07060d)](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe)
+[![Portatile](https://img.shields.io/badge/VERSIONE%20PORTATILE-ZIP-35e8ff?style=for-the-badge&labelColor=1a1428)](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Portable.zip)
+![Linux](https://img.shields.io/badge/LINUX-IN%20ARRIVO-5a5570?style=for-the-badge&labelColor=1a1428)
+![macOS](https://img.shields.io/badge/MACOS-IN%20ARRIVO-5a5570?style=for-the-badge&labelColor=1a1428)
 
 [![versione](https://img.shields.io/github/v/release/cammo22/DaP-Convertitore?label=versione&color=ffd54a&labelColor=1a1428&style=flat-square)](https://github.com/cammo22/DaP-Convertitore/releases/latest)
-[![NVENC](https://img.shields.io/badge/NVIDIA-NVENC%20%C2%B7%20AV1-5dffb4?labelColor=1a1428&style=flat-square)](#la-scheda-video)
-![locale](https://img.shields.io/badge/100%25-locale%20%C2%B7%20offline-35e8ff?labelColor=1a1428&style=flat-square)
-[![licenza](https://img.shields.io/badge/licenza-MIT-a19db0?labelColor=1a1428&style=flat-square)](LICENSE)
+![offline](https://img.shields.io/badge/100%25-offline-5dffb4?labelColor=1a1428&style=flat-square)
+![gratis](https://img.shields.io/badge/gratis-e%20senza%20pubblicit%C3%A0-ff3df2?labelColor=1a1428&style=flat-square)
 [![Discord](https://img.shields.io/badge/Discord-DaProd-5865F2?logo=discord&logoColor=white&style=flat-square)](https://discord.gg/Njs52aacwq)
 
-<a href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe"><img src="https://img.shields.io/badge/%E2%AC%87%20OTTIENI-per%20Windows%2010%20%C2%B7%2011-ffd54a?style=for-the-badge&labelColor=1a1428" alt="Ottieni per Windows"></a>
-<a href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Portable.zip"><img src="https://img.shields.io/badge/portatile-.zip-ff3df2?style=for-the-badge&labelColor=1a1428" alt="Portatile"></a>
+</div>
 
-<sub>Si installa per il tuo utente, senza amministratore, e si aggiorna da solo.</sub>
+<br>
 
-</td>
-</tr>
-</table>
+## Cosa fa
 
 <table>
 <tr>
-<td align="center"><b>🪟 Windows</b><br><sub>10 · 11</sub><br><a href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe"><b>Scarica</b></a></td>
-<td align="center"><b>🐧 Linux</b><br><sub>Flatpak</sub><br><sub><i>in arrivo</i></sub></td>
-<td align="center"><b>🍎 macOS</b><br><sub>Apple Silicon · Intel</sub><br><sub><i>in arrivo</i></sub></td>
-<td align="center"><b>💾 Peso</b><br><sub>circa 190 MB</sub><br><sub>c'è dentro tutto</sub></td>
-<td align="center"><b>🌍 Lingua</b><br><sub>italiano</sub><br><sub>parlato</sub></td>
+<td align="center" width="25%"><h3>🖱️</h3><b>Tasto destro</b><br><sub>su qualsiasi file e scegli il formato</sub></td>
+<td align="center" width="25%"><h3>🎬</h3><b>Tutto si converte</b><br><sub>video, audio, foto, PDF, documenti, archivi</sub></td>
+<td align="center" width="25%"><h3>👁️</h3><b>Guarda e ascolta</b><br><sub>un lettore per tutto, anche dentro gli archivi</sub></td>
+<td align="center" width="25%"><h3>🔒</h3><b>Resta sul tuo PC</b><br><sub>niente cloud, niente account</sub></td>
 </tr>
 </table>
 
 <br>
 
-<!-- i pulsanti rapidi -->
-<a href="#installare"><img src="https://img.shields.io/badge/Installare-ffd54a?style=flat-square&labelColor=1a1428" alt=""></a>
-<a href="#come-si-usa"><img src="https://img.shields.io/badge/Come%20si%20usa-35e8ff?style=flat-square&labelColor=1a1428" alt=""></a>
-<a href="#il-lettore"><img src="https://img.shields.io/badge/Il%20lettore-5dffb4?style=flat-square&labelColor=1a1428" alt=""></a>
-<a href="#lavatar-sul-desktop"><img src="https://img.shields.io/badge/L'avatar-ff3df2?style=flat-square&labelColor=1a1428" alt=""></a>
-<a href="#gli-archivi-7-zip-dentro"><img src="https://img.shields.io/badge/Gli%20archivi-ffb23d?style=flat-square&labelColor=1a1428" alt=""></a>
-<a href="#cosa-converte"><img src="https://img.shields.io/badge/Cosa%20converte-ff4d6d?style=flat-square&labelColor=1a1428" alt=""></a>
-<a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Novit%C3%A0-a19db0?style=flat-square&labelColor=1a1428" alt=""></a>
-<a href="TERZE-PARTI.md"><img src="https://img.shields.io/badge/Terze%20parti-6f6b7d?style=flat-square&labelColor=1a1428" alt=""></a>
-
-</div>
-
----
-
-<div align="center">
-
-## Anteprime
-
-<img src="risorse/schermate/home.png" width="820" alt="La home: da dove cominci, gli ultimi file convertiti, come sta il PC">
+<p align="center">
+  <img src="risorse/schermate/home.png" alt="La home" width="49%">
+  <img src="risorse/schermate/lettore-video.png" alt="Il lettore, con l'anteprima del video" width="49%">
+</p>
+<p align="center">
+  <img src="risorse/schermate/lettore-archivio.png" alt="Dentro un archivio, con le miniature" width="49%">
+  <img src="risorse/schermate/compressione.png" alt="Lo slider della compressione" width="49%">
+</p>
 
 <br>
 
-| | | |
-| --- | --- | --- |
-| <img src="risorse/schermate/scegli.png" alt="La piastra"> | <img src="risorse/schermate/compressione.png" alt="Lo slider della compressione"> | <img src="risorse/schermate/lettore-archivio.png" alt="Dentro un archivio, con le miniature"> |
-| <img src="risorse/schermate/lettore-video.png" alt="Il cinema: l'anteprima sulla linea del tempo"> | <img src="risorse/schermate/lettore-musica.png" alt="Il giradischi con la scaletta"> | <img src="risorse/schermate/impostazioni.png" alt="Le impostazioni e Aggiusta tutto"> |
+## Anche l'avatar
 
-</div>
+Un piccolo **oggetto DaProd** (una musicassetta, un VHS, un CD…) che vive sul desktop. **Ci trascini sopra un file** e lui lo apre, lo converte o lo comprime: la musica parte subito. Gira la rotella per farlo più grande o più piccolo. Si accende da **Impostazioni → Avatar**.
 
-## Cosa c'è di nuovo
+<p align="center"><img src="risorse/schermate/avatar.png" alt="L'avatar sul desktop" width="60%"></p>
 
-- **L'avatar fa il lettore di musica**: trascini un MP3 sull'avatar e parte, con il suo piccolo player, senza aprire l'app. **Converti** e **Comprimi** aprono la mini interfaccia accanto all'avatar, con tutte le scelte; **si ingrandisce** fermando il cursore e girando la rotella.
-- **Archivi con password** (aprire e cifrare), **miniature dentro gli archivi**, slider della compressione, 7-Zip dentro.
-- **L'anteprima fluida sul video**, la scaletta di musica e video, i popup in vetro, le novità nella barra in alto.
-- Tutto il resto, versione per versione, è nel [CHANGELOG](CHANGELOG.md).
+<br>
 
-## Cosa sa fare
-
-<table>
-<tr>
-<td width="33%" valign="top"><b>🎬 Video</b><br>MP4, MKV, WEBM, MOV, GIF. <b>Il peso su misura</b> (10 MB per Discord, 100 MB per WhatsApp) con la scheda video: NVENC, AMF, Quick Sync.</td>
-<td width="33%" valign="top"><b>🎵 Musica</b><br>MP3, M4A, OPUS, FLAC, WAV… volume uniforme, mono. Il giradischi con la scaletta e l'onda.</td>
-<td width="33%" valign="top"><b>🖼 Foto</b><br>JPG, PNG, WEBP, AVIF, HEIC e RAW dell'iPhone e delle reflex. Ritocco e peso su misura.</td>
-</tr>
-<tr>
-<td valign="top"><b>📄 PDF e documenti</b><br>Word, fogli, presentazioni, PDF in testo (anche scansioni, con l'OCR).</td>
-<td valign="top"><b>🗜 Archivi</b><br>ZIP, 7Z, RAR, TAR, ISO… con 7-Zip dentro, password e miniature.</td>
-<td valign="top"><b>🎞 Il lettore</b><br>Apre ogni tipo di file: video, musica, foto, PDF, codice, 3D, tabelle.</td>
-</tr>
-</table>
-
-## Informazioni
+## Installare: 3 passi
 
 | | |
-| --- | --- |
-| **Sviluppatore** | DaProd · DaProdProduzioni |
-| **Categoria** | Utilità · Multimedia |
-| **Piattaforme** | Windows 10 e 11 (64 bit) · Linux e macOS in arrivo |
-| **Prezzo** | gratis, codice aperto (MIT) |
-| **Privacy** | tutto in locale: niente account, niente invii |
-| **Novità** | [CHANGELOG](CHANGELOG.md) |
-| **Programmi di altri dentro** | [TERZE-PARTI](TERZE-PARTI.md) |
+| :-: | --- |
+| **1** | Premi **Scarica per Windows** qui sopra. |
+| **2** | Apri il file scaricato: si installa da solo. |
+| **3** | Tasto destro su un file → **DaP Convertitore**. |
 
----
+> Windows può dire «Windows ha protetto il PC»: l'installatore non ha ancora la firma a pagamento. Premi **Ulteriori informazioni → Esegui comunque**.
 
-## Installare
-
-1. Scarica **[DaPConvertitore-win-Setup.exe](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe)**.
-2. Doppio clic. Si installa da solo per il tuo utente, **senza chiedere la password di amministratore**, e
-   mette la voce nel tasto destro e il lettore in «Apri con».
-   Se Windows SmartScreen avvisa (l'app non è firmata): *Ulteriori informazioni → Esegui comunque*.
-3. Fine. Gli aggiornamenti arrivano da soli: si scarica solo la differenza.
-
-Non vuoi installare niente? C'è anche **[DaPConvertitore-win-Portable.zip](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Portable.zip)**: scompatti e parte (senza tasto destro).
-Per toglierlo: *Impostazioni → App → DaP Convertitore → Disinstalla*, e la voce sparisce anche dal menu.
-
-## Come si usa
-
-**Tasto destro** su uno o più file → **DaP Convertitore ›**:
-
-- in cima **Apri nel convertitore…** apre la piastra coi file scelti, con tutte le regolazioni;
-- sotto ci sono le conversioni al volo del tipo di file (MP4, Metà peso, Solo l'audio, JPG, Pagine in JPG,
-  Estrai qui…): partono subito in una finestrella in basso a destra con le bobine che girano, e alla fine arriva
-  la notifica di Windows con **Apri** e **Mostra nella cartella**.
-
-Preferisci il menu di Windows 10, tutto a un clic? *Impostazioni → Tasto destro → Menu classico ovunque*
-(e lo stesso interruttore lo rimette com'era). Lì c'è anche **Riavvia Esplora file**, che serve quando una voce
-non compare: Esplora file legge il menu solo quando parte.
-
-> **Il tasto destro nuovo di Windows 11** vuole un comando firmato: alla prima apertura il convertitore propone
-> **Attiva**, e Windows chiede il permesso **una volta sola** (serve a fidarsi del certificato di DaProd; dopo,
-> aggiornamenti compresi, non chiede più niente). Sulle versioni più nuove di Windows 11 le voci delle app possono
-> stare sotto **«Estensioni app»**: da *Impostazioni → Personalizzazione → Menu contestuale* le porti in cima.
-> Le stesse voci ci sono anche nel menu classico (Maiusc + tasto destro, o «Mostra altre opzioni»), in
-> **Invia a → DaP Convertitore**, e puoi trascinare i file dentro la finestra.
-
-Con più file selezionati va tutto in un colpo: un video per volta sulla scheda video, il resto in parallelo.
-Le conversioni che uniscono (tante foto in **un PDF solo**, **unisci PDF**, **cartelle in uno ZIP**) mettono i
-file in ordine di nome, come li vedi in Esplora file.
-
-**L'anteprima dei testi.** Nella piastra scegli un file di testo nella coda (TXT, Markdown, registri, codice, CSV, JSON, sottotitoli…) e a destra ne vedi il contenuto con i numeri di riga; scorre liscio anche su un registro da 6 MB e più di centomila righe. **Ctrl+F** cerca e dice quanti risultati ci sono (Invio e Maiusc+Invio per il prossimo e il precedente), il tasto destro copia il testo scelto. A lato del testo c'è la **minimappa** (la miniatura scorrevole, col riquadro di quello che vedi e i risultati della ricerca in oro; clic o trascinamento per scorrere). **Anche i file che non sono testo** hanno la loro colonna: le pagine di un PDF, i fotogrammi di un video, le onde di un brano, la figura per foto e documenti, tutte cliccabili. Su **video** e **brani** la figura si scorre col cursore, come in Finder: il fotogramma cambia in tempo reale, e sul brano si sente il punto dove sei; un clic riproduce, un altro mette in pausa. In fondo c'è la codifica (UTF-8, UTF-16, Windows-1252…), CRLF o LF, righe e peso: i file UTF-16 («Unicode» del Blocco note) e gli ANSI con € e virgolette si leggono giusti.
-
-**Il nome**: `Vacanze.mov` diventa `Vacanze (convertito).mp4`, nella stessa cartella. Se c'è già,
-`(convertito 2)`. Non si sovrascrive mai niente, e se annulli non resta un file a metà. La parola fra
-parentesi si cambia nelle impostazioni.
-
-**L'originale nel Cestino**: l'originale resta dov'è. Se non ti serve più, accanto al risultato c'è il
-**cestino**: il primo clic chiede «sicuro?», il secondo lo manda nel **Cestino di Windows** (da dove lo ripeschi).
-Con più file c'è **ORIGINALI NEL CESTINO** per tutti insieme. Se preferisci che lo faccia da solo:
-*Impostazioni → L'originale nel Cestino da solo* (vale quando il convertito ne prende il posto: MOV → MP4,
-PNG → JPG, DOCX → PDF…; mai quando ne tiri fuori un pezzo, l'audio, il testo, le pagine). Su chiavette e dischi
-di rete Windows il Cestino non ce l'ha: lì l'originale resta, e la piastra dice perché.
-
-| La piastra mentre lavora | Fatto: quanto pesava, quanto pesa |
-| --- | --- |
-| ![In lavorazione](risorse/schermate/lavoro.png) | ![Fatto](risorse/schermate/fatto.png) |
-
-| Prima e dopo, col divisore da trascinare | La finestrella del menu rapido |
-| --- | --- |
-| ![Confronto](risorse/schermate/confronto.png) | ![Rapido](risorse/schermate/rapido.png) |
-
-## Il lettore
-
-Doppio clic su un file (o *Apri con → DaP Convertitore*, o l'**occhio** accanto a un file nella piastra) e si
-apre il lettore: nero, senza cornice, leggero. Ogni tipo di file ha la sua pagina.
-
-| | |
-| --- | --- |
-| ![Il cinema](risorse/schermate/lettore-video.png) | ![Il giradischi](risorse/schermate/lettore-musica.png) |
-| ![Il tavolo luminoso](risorse/schermate/lettore-foto.png) | ![Il codice](risorse/schermate/lettore-codice.png) |
-
-- **Video · il cinema.** I comandi di vetro spariscono quando guardi, la luce del video si allarga intorno
-  (come le TV con l'ambilight, B la spegne). **Riprende da dove eri rimasto**, alla fine propone l'episodio dopo
-  della cartella, sottotitoli dentro il video o accanto (`Film.srt`, `Film.it.srt`), tracce audio, velocità,
-  un fotogramma alla volta, **passando il cursore sulla linea del tempo vedi il fotogramma di quel punto, fluido come in QuickTime** (e trascinando il video segue il cursore), la **scaletta** dei video della cartella (E), **S salva il fotogramma in PNG**, la finestrella sempre sopra. Quello che WebView2 non
-  suona da sé (AVI, WMV, MKV con dentro codec strani, AC3…) lo **traduce FFmpeg al volo** con la scheda video,
-  e si scorre lo stesso dove vuoi. HEVC e 4K vanno col decoder della scheda.
-- **Musica · il giradischi.** Il disco gira con la copertina come etichetta, il braccio avanza col brano, la
-  **forma d'onda** si scorre col mouse, sotto balla l'**analizzatore di spettro**. Suona **solo il brano che hai aperto**: con **Di seguito** (tasto T) suonano anche gli altri della cartella, uno dopo l'altro; la scaletta (L) sta chiusa finché non la apri. WMA, APE, ALAC e compagnia diventano FLAC in cache, senza perdere niente.
-- **Foto · il tavolo luminoso.** La rotella zooma dove c'è il mouse, si trascina, doppio clic per il 100%, la
-  mappa in basso quando sei dentro. ← → passano alla foto dopo (già pronta), **S presentazione**, R gira,
-  B sfondo scuro/scacchi/chiaro, Ctrl+C copia l'immagine, W la mette come sfondo del desktop, **D ritocca**:
-  si disegna e si scrive sopra la foto (vedi sotto). In *Proprietà* i
-  dati dello scatto (fotocamera, obiettivo, f/, tempo, ISO, posizione) e l'**istogramma**. HEIC, RAW, TIFF, PSD
-  passano dal motore di Windows.
-- **PDF · la scrivania.** I fogli con la loro ombra, le miniature a lato, il numero di pagina sul display a sette
-  segmenti; le pagine le disegna Windows alla risoluzione vera dello schermo, più nitide quando zoomi.
-- **Documenti.** Word si legge subito da sé (titoli, grassetti, tabelle, foto); con Office o LibreOffice c'è
-  l'**impaginato vero**. Le presentazioni impaginate, o diapositiva per diapositiva coi testi.
-- **Fogli** (Excel, CSV, ODS) come in un foglio di calcolo, con le linguette dei fogli e il filtro; **codice** e
-  testi coi colori e i numeri di riga anche da centomila righe, **Markdown** impaginato con l'indice, **JSON** ad
-  albero, **pagine web** senza far girare i loro script, **sottotitoli** battuta per battuta.
-- **Archivi** (ZIP, 7Z, RAR, ISO…) si guardano dentro senza estrarli, con **Estrai qui**; **caratteri** (TTF,
-  OTF, WOFF) col campionario e **Installa** solo per te; **modelli 3D** (GLB, GLTF, STL, OBJ, PLY, 3MF) che girano
-  su un piano; tutto il resto **byte per byte**, con la firma del file e l'impronta SHA-256.
-
-**Testi e archivi.** Un TXT o un Markdown si legge come un libro. **Modifica** (F2) lo trasforma in un campo di
-scrittura, e **Salva** (Ctrl+S) lo riscrive nel file con la sua codifica e le sue fini riga. Dentro un archivio
-(ZIP, 7Z…) scegli cartelle e file (clic, Ctrl per più) e li **trascini fuori dalla finestra**, nella cartella di
-Esplora file o sul desktop: escono come file veri, dove li lasci. Sulla zona in alto escono accanto all'archivio. Nella piastra, **Ctrl+Canc** (o il tasto *svuota*) svuota la coda; **Canc** toglie il file scelto.
-
-**Incollare.** Nella piastra, tasto destro → **Incolla** (o Ctrl+V) aggiunge i file copiati in Esplora file.
-![Le impostazioni: il tasto Aggiusta tutto](risorse/schermate/impostazioni.png)
-
-In **Impostazioni** il tasto **Aggiusta tutto** mette a posto in un colpo il tasto destro, «Apri con» e le app predefinite, e dice per ogni passo com'è andata (e quanti tipi di file si aprono davvero col lettore). «Scegli i tipi» è la lista dei tipi con un interruttore ciascuno. I blocchi di codice dei Markdown hanno il loro tasto **Copia**.
-
-**Ritoccare una foto.** Nel lettore **D** (o la matita in alto) apre la barra del ritocco: penna, evidenziatore, freccia,
-riquadro, ovale e **testo** (clic dove scrivere, Invio per fissarlo), otto colori più uno a scelta, lo spessore, annulla e
-rifai (Ctrl Z, Ctrl Y). Lo strumento **Ritaglia** tiene solo il rettangolo scelto. Due tasti: **Salva le modifiche** scrive i segni sulla foto e *sostituisce il file* (dopo una
-conferma; nelle JPG restano i dati dello scatto), **Copia** mette la foto ritoccata negli appunti *senza* salvare niente. I
-formati che non si riscrivono (HEIC, BMP, GIF…) salvano accanto, in PNG, e l'originale non si tocca.
-
-**Piccole modifiche sul file vero, senza ricodificare.** **R** gira (**Maiusc R** a sinistra, **M** specchia le
-foto), e **Salva nel file** (Ctrl S) riscrive il file: nelle JPG cambia solo l'orientamento, nei video MP4 e MOV
-la rotazione dentro il file (copiando i flussi, pochi secondi anche per 20 GB), nei PNG i pixel, nei PDF la pagina.
-Nei video **Z** e **X** segnano inizio e fine di un pezzo e **Salva il pezzo** lo mette accanto, senza perdite.
-Il fulmine (**U**, «Fai subito») apre le conversioni rapide del file senza lasciare il lettore. Dove il formato non
-tiene la rotazione (GIF, WEBP, HEIC, AVI…) il lettore lo dice.
-
-Sempre: **Pag ↑ / Pag ↓** il file prima e dopo, **F11** schermo intero, **I** proprietà, **Canc** nel Cestino,
-**Ctrl+E** lo apre nel convertitore, **?** tutti i tasti della pagina in cui sei. Trascina un file nella
-finestra e lo apre.
-
-**Icone e anteprime in Esplora file.** Ogni tipo ha la sua icona (magenta i video, verde la musica, ciano le foto,
-rossa il PDF, oro i modelli 3D…) e nelle viste a icone grandi si vede il contenuto vero: la **foto**, il
-**fotogramma del video** con la pellicola, il tasto play e la durata, la **forma d'onda** della musica (come i vocali
-di WhatsApp, con la durata), il **modello 3D** su uno sfondo da studio, la prima pagina del **PDF** e dei documenti,
-il testo e il codice colorato, le tabelle, i caratteri («Aa» nel carattere stesso), il contenuto dei file ZIP. Dove
-Windows ne ha già una buona (Word con Office, per dire) resta la sua. Le anteprime vengono disegnate dall'exe
-(`--miniatura`), lanciato da una piccola DLL (`menu\DaPMiniature.cpp`) registrata come «provider di miniature»; per
-guardarne una a occhio: `DaPConvertitore.exe --miniatura-png file 256 uscita.png`.
-
-**Al posto di Foto e Lettore multimediale.** Il lettore si mette in *Apri con* di Windows per tutti i tipi che
-conosce, senza prendersi niente da solo. Per aprire col doppio clic: *Impostazioni → App predefinite* nel
-convertitore porta dritto alla pagina di Windows, dove scegli tu tipo per tipo (o *Apri con → Scegli un'altra
-app → Sempre*).
-
-## Lo slider del peso
-
-Vale per i video e per le foto (JPG, WEBP, AVIF, JXL, HEIC). Il video deve stare in **10 MB per Discord**, **100 MB per WhatsApp**, **4 GB per la chiavetta FAT32**? Tiri il
-fader (o premi il preset) e il display a sette segmenti dice il peso. Il convertitore fa il conto:
-
-- toglie l'audio dal totale e trova il bitrate del video;
-- se i bit per pixel non bastano per una resa decente, **scende di risoluzione da solo** (4K → 1080p → 720p…) e
-  te lo dice;
-- la **lancetta della qualità** si muove mentre tiri: *Come l'originale*, *Ottima*, *Buona*, *Si vede, ma va*,
-  *Bassa*, *Da buttare*. Lo sai prima di premere;
-- alla fine controlla il file: se ha sforato anche di un byte, **lo rifà più stretto da solo**. Ci sta di
-  sicuro.
-
-I pesi si contano come li conta Esplora file (1 KB = 1024 byte): il numero che vedi è quello che ritrovi.
-Per le foto il display dice a che qualità ci si arriva e se la foto va rimpicciolita per starci: il peso non è
-un'indovinata, il motore codifica davvero la foto (JPG e HEIC interi; WEBP, AVIF e JXL su un pezzo al centro, e allora
-è una stima). Se invece del peso ti interessa la qualità c'è il modo **QUALITÀ**. E quando il video può passare così com'è
-(un MKV in H.264 che deve diventare MP4) c'è **VELOCE**: cambia solo la scatola, in pochi secondi e senza
-perdere niente.
-
-## L'avatar sul desktop
+<br>
 
 <div align="center">
-<img src="risorse/schermate/avatar.png" width="820" alt="Gli oggetti dell'avatar: musicassetta, VHS, floppy, CD, vinile, bobina, MiniDisc, cartuccia, tutti con la scritta DaProd">
-</div>
 
-Un oggetto piccolo che sta in un angolo del desktop (**Impostazioni → Avatar**, spento di partenza): una **musicassetta** DaProd che ogni tanto fa un
-saluto o un giro e, ogni qualche minuto, **si trasforma** in un VHS, un floppy, un CD, un vinile, una bobina, un MiniDisc o una cartuccia, in una pioggia di
-scintille oro e magenta. Non dà fastidio: niente suoni, fermo quando hai un video, un gioco o una presentazione a schermo intero. Lo sposti col mouse
-(tasto destro per il menu, doppio clic per aprire il convertitore).
+**[Guida completa](docs/GUIDA.md)** · **[Novità](CHANGELOG.md)** · **[Discord](https://discord.gg/Njs52aacwq)** · Licenza [MIT](LICENSE) · [Software di terzi](TERZE-PARTI.md)
 
-**Ci trascini sopra dei file.** La **musica** parte subito, con il suo piccolo player attaccato all'avatar (play, pausa, avanti, indietro, barra) e **senza aprire l'app**;
-il tasto ↗ la apre nel lettore intero. Per **tutto il resto** compare «Cosa vuoi farne?»: **Apri** (nel lettore), **Converti** o **Comprimi**: questi due aprono la **mini
-interfaccia** accanto all'avatar, la stessa del convertitore, con tutte le scelte (non parte niente da solo), e in cima c'è sempre **Apri nell'app intera**.
-Per **ingrandirlo o rimpicciolirlo**: lascia il cursore fermo sopra l'avatar, aspetta che l'anello si carichi e giri la rotella.
-Funziona offline: gli oggetti 3D sono stati creati una volta (con Meshy) e nel programma ci sono solo le immagini animate (`scripts/avatar` rifà tutto dai modelli).
+<sub>Fatto da <b>DaProd</b></sub>
 
-## Gli archivi: 7-Zip dentro
-
-| Dentro l'archivio, con le miniature | Lo slider della compressione |
-| --- | --- |
-| ![Un 7z aperto nel lettore](risorse/schermate/lettore-archivio.png) | ![Lo slider della compressione](risorse/schermate/compressione.png) |
-
-Tutti gli archivi passano da **7-Zip** (`motori\7zip`, viaggia con il programma): ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB, ISO si aprono e si guardano dentro senza estrarre, coi nomi giusti anche con le accentate, e dentro l'archivio le **foto, i video e i PDF hanno la loro miniatura**.
-Per comprimere c'è lo **slider della compressione** (da *Nessuna*, che archivia soltanto, a *Massima*): vale per ZIP, 7Z, TAR.GZ e TAR.XZ, anche partendo da un archivio già fatto. Uno ZIP debole, ricompresso al massimo, pesa meno e dentro c'è la stessa roba (l'originale non si tocca). Gli archivi con la **password** si aprono (il lettore la chiede e dice se è sbagliata) e si possono **cifrare** comprimendo in ZIP (AES-256) o 7Z (cifrato anche l'elenco dei file); la password resta in memoria, non finisce nel registro e non si salva.
-
-## La scheda video
-
-All'avvio il convertitore **prova davvero** gli encoder (tre fotogrammi neri ciascuno): così un driver vecchio
-o una scheda spenta non si scoprono a metà di un film.
-
-| | H.264 | H.265 | AV1 |
-| --- | --- | --- | --- |
-| **NVIDIA** (NVENC) | ✓ | ✓ | ✓ RTX 40 e dopo |
-| **AMD** (AMF) | ✓ | ✓ | ✓ RX 7000 e dopo |
-| **Intel** (Quick Sync) | ✓ | ✓ | ✓ Arc |
-| **CPU** | x264 | x265 | SVT-AV1 |
-
-In alto vedi quale lavora (per esempio **RTX 4060 · NVENC**). Mentre converte, tre strumenti a lancetta
-mostrano **CPU**, **encoder** e **decoder** della scheda: sono gli stessi contatori di Gestione attività. Se
-la scheda si rifiuta si riprova con meno pretese, e poi con la CPU. Il video HDR resta HDR a 10 bit in H.265 e
-AV1; in H.264 diventa SDR coi colori giusti. FFmpeg gira a priorità bassa: mentre converte il PC resta usabile
-(nelle impostazioni c'è **Spingi al massimo**).
-
-## Cosa converte
-
-| Da | A | Chi lavora |
-| --- | --- | --- |
-| **Video** MP4, MOV, MKV, WEBM, AVI, WMV, M2TS/MTS, FLV, 3GP… | MP4, MKV, WEBM, MOV, GIF, MP3/WAV (solo l'audio), SRT (i sottotitoli dentro) | FFmpeg + scheda video |
-| **Audio** MP3, WAV, FLAC, M4A, OGG, OPUS, WMA, AIFF, APE… | MP3, M4A, OPUS, OGG, FLAC, WAV, AIFF, WMA · volume uniforme, mono | FFmpeg |
-| **Foto** JPG, PNG, **HEIC** (iPhone), **RAW** (Canon, Nikon, Sony, DNG…), WEBP, AVIF, JXL, TIFF, PSD, SVG, TGA, EXR… | JPG, PNG, WEBP, AVIF, JXL, HEIC, TIFF, BMP, GIF, **ICO** (tutte le misure), **PDF**, **TXT (OCR)** | motore immagini di Windows (WIC) + FFmpeg |
-| **PDF** | pagine in JPG/PNG, TXT (anche scansioni, con l'OCR di Windows), DOCX, **unisci** | Windows.Data.Pdf, PdfPig, PDFsharp, LibreOffice/Word |
-| **Documenti** DOCX, DOC, ODT, RTF, Pages… | PDF, DOCX, ODT, RTF, TXT, HTML | Microsoft Office se c'è, se no LibreOffice |
-| **Fogli** XLSX, XLS, ODS, Numbers | PDF, XLSX, ODS, CSV, JSON | Office/LibreOffice, MiniExcel |
-| **Presentazioni** PPTX, PPT, ODP, Keynote | PDF, PPTX, ODP | Office/LibreOffice |
-| **Testi** Markdown, TXT, HTML, registri e codice (LOG, INI, YAML, XML, PY…, anche senza estensione), con l'**anteprima a destra** (numeri di riga, Ctrl+F) | PDF impaginato, HTML, DOCX, TXT | WebView2 (il motore di Edge), Markdig |
-| **Dati** CSV, TSV, JSON | XLSX, CSV, JSON, TSV | il convertitore |
-| **Sottotitoli** SRT, VTT, ASS | SRT, VTT, ASS, TXT (solo le battute) | FFmpeg |
-| **Archivi** ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB, ISO | estrai qui, ZIP, 7Z, TAR.GZ, TAR.XZ, col livello di compressione che scegli | **7-Zip** (dentro il programma) |
-| **Cartelle** e qualsiasi altro file | ZIP, 7Z | 7-Zip |
-
-Le foto si girano da sole come le vede il telefono (orientamento EXIF); la posizione GPS e gli altri dati
-nascosti non passano, la data del file sì. Con lo slider del **peso** la qualità scende finché la foto ci sta, e se
-non basta la foto si rimpicciolisce. Il CSV esce col punto e virgola e il BOM, come lo vuole Excel in Italia.
-
-Per documenti, fogli e presentazioni serve **[LibreOffice](https://it.libreoffice.org/download/download/)**
-(gratis) o Microsoft Office: se non ci sono, quei formati sono spenti e il convertitore te lo dice.
-
-## Requisiti
-
-- Windows 11, o Windows 10 aggiornato (WebView2 su Windows 11 c'è già; su Windows 10 lo installa Edge).
-- Per HEIC e RAW: le *Estensioni immagini HEIF* e *Raw Image Extension* di Microsoft (su Windows 11 di
-  solito ci sono). Per **scrivere** HEIC servono le *Estensioni video HEVC*.
-- Per l'OCR: una lingua di Windows col riconoscimento del testo (l'italiano va benissimo).
-- 64 bit. L'installer pesa circa 170 MB perché dentro c'è FFmpeg con tutti i codec.
-
-## Come è fatto
-
-| Pezzo | Con cosa |
-| --- | --- |
-| App | **.NET 10** + WPF, finestra senza cornice con gli angoli di Windows 11; dentro, l'interfaccia in **WebView2** |
-| Interfaccia | TypeScript senza framework (Vite), canvas per bobine e strumenti a lancetta, Orbitron, Rajdhani e DSEG7 |
-| Motore | `src/DaPConvertitore.Motore`: catalogo dei formati, piano del video, coda dei lavori, un motore per famiglia |
-| Video e audio | **FFmpeg 9.0** con NVENC/AMF/Quick Sync, x264, x265, SVT-AV1, libvpx, libaom, LAME, Opus |
-| Windows | WIC (HEIC, RAW, orientamento), Windows.Data.Pdf, Windows.Media.Ocr, contatori "GPU Engine", notifiche, barra delle applicazioni |
-| Lettore | una finestra WPF per volta con la sua pagina (`ui/lettore.html`, una vista per tipo caricata solo quando serve); i file arrivano da `https://dap.file/`, che non esiste in rete: risponde l'app (`Risorse.cs`), a pezzi come vuole il tag `<video>`, e solo per i file aperti. Il video che WebView2 non suona lo traduce FFmpeg in MP4 a frammenti messi in fila nel **Media Source** della pagina; il 3D con **three.js** |
-| Tasto destro di Windows 11 | `menu/DaPMenu.cpp`: un comando **IExplorerCommand** col sottomenu, in una DLL nativa (compilata con **Zig**, niente Visual Studio), registrati da un pacchetto MSIX **sparse** (`menu/AppxManifest.xml`, solo manifest e icone) firmato col certificato di DaProd; le voci la DLL le legge da `menu.tsv`, che l'app scrive dal Catalogo |
-| Menu classico | registro in HKCU (`SystemFileAssociations\.ext\shell` + sottomenu `ExtendedSubCommandsKey`), protocollo `dap-convertitore:` per i bottoni delle notifiche, istanza unica con named pipe (Esplora file lancia un processo per file) |
-| Installer | **Velopack**: per utente, senza amministratore, aggiornamenti delta dalle release di GitHub |
-
-```powershell
-.\scripts\prendi-ffmpeg.ps1        # FFmpeg in motori\ffmpeg (una volta)
-.\scripts\compila.ps1              # menu di Windows 11 (Zig + makeappx, scaricati da soli) + interfaccia + app (Debug)
-dotnet test test\DaPConvertitore.Prove
-.\scripts\pacchetto.ps1            # Setup.exe e portatile in Releases\
-```
-
-Per provare l'interfaccia nel browser senza Windows: `npm run dev` in `ui\` (risponde un finto motore).
-
-### Pubblicare una versione
-
-Si alza `<Version>` in `Directory.Build.props`, si scrive la voce nel `CHANGELOG.md` e si unisce su `main`:
-GitHub Actions (`.github/workflows/rilascio.yml`) fa le prove, compila, impacchetta e pubblica la release da
-sola, con le note prese dal CHANGELOG.
-
-### ✅ Le prove
-
-`dotnet test` converte davvero: FFmpeg disegna video, foto e suoni di prova in `test\.out`, e la coda dell'app
-li trasforma in tutti i formati. Controlla che il video col peso ci stia davvero, che AV1 e HEVC escano
-giusti, che la foto stia sotto il peso massimo, che un PDF di una pagina dia un file e non una cartella, che
-l'OCR legga, che gli archivi tengano i nomi con le accentate, che il CSV italiano dia i numeri giusti, e che
-annullare non lasci niente a metà. Per il lettore: che ogni file trovi la sua pagina, che la forma d'onda segua
-la musica, che il video tradotto esca a frammenti, che Word e gli archivi si leggano senza programmi esterni.
-
-### 📁 Dove sta cosa
-
-- `src/DaPConvertitore.Motore/` — `Catalogo.cs` (cosa si converte in cosa: lo leggono interfaccia e menu),
-  `PianoVideo.cs` (il conto dello slider), `Video.cs`, `Audio.cs`, `Immagini.cs`, `Pdf.cs`, `Office.cs`,
-  `Testo.cs`, `Dati.cs`, `Sottotitoli.cs`, `Archivi.cs`, `Coda.cs`, `MenuContestuale.cs`, `ApriCon.cs`,
-  `Hardware.cs`, `Monitor.cs`; `Lettore/` per il lettore (`Vista.cs` che pagina per che file, `Media.cs` tracce,
-  forma d'onda e flusso tradotto, `Carte.cs` PDF e Word, `Contenuti.cs` testi, tabelle, archivi, foto).
-- `src/DaPConvertitore/` — l'app: `Programma.cs` (avvio, Velopack, istanza unica), `Regia.cs` (chi apre cosa),
-  `Finestra.cs` e `Ponte.cs` (il convertitore), `FinestraLettore.cs`, `PonteLettore.cs` e `Risorse.cs` (il
-  lettore), `Stampante.cs` (HTML → PDF), `Notifiche.cs`, `Aggiornamenti.cs`.
-- `ui/` — l'interfaccia: `src/main.ts` coordina la piastra e i pezzi stanno in `src/app/` (`stato.ts`, `scheletro.ts`,
-  `controlli.ts`, `pannelli/` video e foto, `lavoro.ts`, `risultati.ts`, `impostazioni.ts`, `rapido.ts`); `src/lettore/` è il lettore. `test/` — le prove.
-  `scripts/` — FFmpeg, compilazione, pacchetto, icona, foto dell'app vera (`schermo.mjs`).
-
----
-
-<div align="center">
-<sub>Fatto da <b>DaProd</b> · i programmi di altri dentro l'installer sono in <a href="TERZE-PARTI.md">TERZE-PARTI.md</a></sub>
 </div>

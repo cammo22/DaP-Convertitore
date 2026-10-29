@@ -97,11 +97,6 @@ public sealed class FinestraAvatar : Window
     bool trascinando;
     MenuAvatar? menu;
     MiniPlayer? player;
-    readonly Canvas strato = new() { IsHitTestVisible = false };
-    readonly System.Windows.Shapes.Ellipse anello = new() { Width = 26, Height = 26, StrokeThickness = 3.5, Stroke = Brushes.Gold, Visibility = Visibility.Collapsed, RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new RotateTransform(-90) };
-    readonly System.Windows.Shapes.Ellipse fondoAnello = new() { Width = 26, Height = 26, StrokeThickness = 3.5, Stroke = new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)), Visibility = Visibility.Collapsed };
-    readonly System.Windows.Shapes.Ellipse punto = new() { Width = 12, Height = 12, Fill = Brushes.Gold, Visibility = Visibility.Collapsed, Effect = new DropShadowEffect { Color = Colors.Gold, BlurRadius = 10, ShadowDepth = 0 } };
-    DateTime fermoDa; Point ultimoPunto; bool rotellaPronta;
     public event Action? Spostato;
 
     public FinestraAvatar()
@@ -119,8 +114,6 @@ public sealed class FinestraAvatar : Window
         var radice = new Grid { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)) };
         radice.Children.Add(alone);
         radice.Children.Add(figura);
-        strato.Children.Add(fondoAnello); strato.Children.Add(anello); strato.Children.Add(punto);
-        radice.Children.Add(strato);
         Content = radice;
 
         var imp = Impostazioni.Comune;
@@ -149,10 +142,8 @@ public sealed class FinestraAvatar : Window
             ContentRendered += (_, _) => Chiedi([.. prova.Split('|').Where(p => File.Exists(p) || Directory.Exists(p))]);
         Closed += (_, _) => { orologio.Stop(); menu?.Close(); player?.Close(); };
         LocationChanged += (_, _) => Spostato?.Invoke();
-        // come in DaProd Video: col cursore fermo sopra l'avatar si carica un anello (1 secondo); quando è pieno la rotella cambia la misura
-        MouseMove += (_, e) => Cursore(e.GetPosition(this));
-        MouseLeave += (_, _) => SpegniAnello();
-        MouseWheel += (_, e) => { if (rotellaPronta) { Misura(scala + (e.Delta > 0 ? 0.1 : -0.1)); fermoDa = DateTime.Now; e.Handled = true; } };
+        // la rotella sopra l'avatar lo ingrandisce o lo rimpicciolisce: niente blocchi né attese
+        MouseWheel += (_, e) => { Misura(scala + (e.Delta > 0 ? 0.1 : -0.1)); e.Handled = true; };
 
         MouseLeftButtonDown += (_, e) =>
         {
@@ -244,52 +235,7 @@ public sealed class FinestraAvatar : Window
 
     void Alone(bool su) => alone.BeginAnimation(OpacityProperty, new DoubleAnimation(su ? 1 : 0, TimeSpan.FromMilliseconds(180)));
 
-    // ————————————————————————— la misura: cursore fermo + rotella —————————————————————————
-
-    const double AttesaMs = 1000;
-
-    void Cursore(Point p)
-    {
-        if (trascinando) { SpegniAnello(); return; }
-        if (!anello.IsVisible && !punto.IsVisible || (p - ultimoPunto).Length > 5)
-        {
-            // si ricomincia da capo
-            ultimoPunto = p; fermoDa = DateTime.Now; rotellaPronta = false;
-            punto.Visibility = Visibility.Collapsed;
-            fondoAnello.Visibility = anello.Visibility = Visibility.Visible;
-            Canvas.SetLeft(anello, Math.Min(p.X + 12, Width - 30)); Canvas.SetTop(anello, Math.Min(p.Y + 12, Height - 30));
-            Canvas.SetLeft(fondoAnello, Canvas.GetLeft(anello)); Canvas.SetTop(fondoAnello, Canvas.GetTop(anello));
-            Canvas.SetLeft(punto, Canvas.GetLeft(anello) + 7); Canvas.SetTop(punto, Canvas.GetTop(anello) + 7);
-            anello.StrokeDashArray = [0, 100];
-            if (caricamento is null) { caricamento = new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Render, (_, _) => Carica(), Dispatcher); }
-            caricamento.Start();
-        }
-    }
-
-    DispatcherTimer? caricamento;
-
-    void Carica()
-    {
-        var f = Math.Clamp((DateTime.Now - fermoDa).TotalMilliseconds / AttesaMs, 0, 1);
-        if (f >= 1 && !rotellaPronta)
-        {
-            rotellaPronta = true;
-            anello.Visibility = fondoAnello.Visibility = Visibility.Collapsed;
-            punto.Visibility = Visibility.Visible;     // il punto dorato: ora la rotella cambia la misura
-            caricamento?.Stop();
-            return;
-        }
-        // l'anello si riempie: i tratti sono in multipli dello spessore
-        var giro = Math.PI * 26 / anello.StrokeThickness;
-        anello.StrokeDashArray = [f * giro, giro];
-    }
-
-    void SpegniAnello()
-    {
-        caricamento?.Stop();
-        anello.Visibility = fondoAnello.Visibility = punto.Visibility = Visibility.Collapsed;
-        rotellaPronta = false;
-    }
+    // ————————————————————————— la misura: la rotella —————————————————————————
 
     void Misura(double nuova)
     {
