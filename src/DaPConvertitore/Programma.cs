@@ -67,11 +67,11 @@ public static class Programma
             })
             // la DLL del menu di Windows 11 sta aperta in un dllhost: si ferma, se no la cartella non si sostituisce
             .OnBeforeUpdateFastCallback(_ => Menu11.FermaSurrogato())
-            .OnBeforeUninstallFastCallback(_ => { MenuContestuale.Rimuovi(); ApriCon.Rimuovi(); Menu11.Rimuovi().GetAwaiter().GetResult(); })
+            .OnBeforeUninstallFastCallback(_ => { MenuContestuale.Rimuovi(); ApriCon.Rimuovi(); Menu11.Rimuovi().GetAwaiter().GetResult(); ToglieAvvioAvatar(); })
             .Run();
 
         if (args.Contains("--registra")) { Registra(); RegistraWindows11(); RegistraApriCon(); return; }
-        if (args.Contains("--rimuovi")) { MenuContestuale.Rimuovi(); ApriCon.Rimuovi(); Menu11.Rimuovi().GetAwaiter().GetResult(); return; }
+        if (args.Contains("--rimuovi")) { MenuContestuale.Rimuovi(); ApriCon.Rimuovi(); Menu11.Rimuovi().GetAwaiter().GetResult(); ToglieAvvioAvatar(); return; }
         // solo «Apri con», senza toccare i menu del tasto destro (per le prove)
         if (args.Contains("--apricon")) { RegistraApriCon(); return; }
         if (args.Contains("--togli-apricon")) { ApriCon.Rimuovi(); return; }
@@ -103,6 +103,17 @@ public static class Programma
         if (primo) Istanza.Ascolta(r => app.Dispatcher.BeginInvoke(() => Regia.Gestisci(r)));
         _ = Task.Run(Lettore.Media.PulisciCache);
         app.Run();
+    }
+
+    /// <summary>Disinstallando, l'avatar non deve più partire con Windows (la voce «Run» dell'utente).</summary>
+    static void ToglieAvvioAvatar()
+    {
+        try
+        {
+            using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
+            k?.DeleteValue("DaPConvertitoreAvatar", false);
+        }
+        catch { /* niente da togliere */ }
     }
 
     static void Registra()

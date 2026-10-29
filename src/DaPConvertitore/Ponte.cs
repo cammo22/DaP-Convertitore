@@ -477,6 +477,10 @@ public sealed class Ponte
             }
             case "aggiustaTutto":
                 return await AggiustaTutto();
+            case "disconnetti":
+                // dopo la regola delle app predefinite: l'accesso nuovo la applica (la pagina chiede conferma prima)
+                Process.Start(new ProcessStartInfo("shutdown", "/l") { CreateNoWindow = true, UseShellExecute = false });
+                return true;
             case "togliTutto":
             {
                 // le voci del sistema tolte tutte insieme (la regola delle app predefinite, se c'è, ha il suo tasto)
@@ -664,7 +668,7 @@ public sealed class Ponte
     object RegolaPredefiniti()
     {
         var (fatti, tutti) = Predefiniti.Conta(GruppiDaAprire());
-        return new { supportata = Predefiniti.Supportata(), attiva = Predefiniti.Attiva(), diAltri = Predefiniti.DiAltri(), impostati = fatti, totale = tutti };
+        return new { supportata = Predefiniti.Supportata(), attiva = Predefiniti.Attiva(), diAltri = Predefiniti.DiAltri(), impostati = fatti, totale = tutti, inAttesa = Predefiniti.InAttesaDiAccesso() };
     }
 
     /// <summary>Scrive la regola di Windows per i gruppi dati (chiede il permesso di amministratore, una volta). Restituisce l'esito: ok, negato, gia, errore, pagina.</summary>
@@ -731,6 +735,15 @@ public sealed class Ponte
         var gruppi = GruppiDaAprire();
         var (fatti, totale) = Predefiniti.Conta(gruppi);
         if (Predefiniti.Attiva() && totale > 0 && fatti == totale) Passo("App predefinite", "gia", $"{fatti} tipi su {totale} già col lettore");
+        else if (Predefiniti.StessaRegola(gruppi) && Predefiniti.InAttesaDiAccesso())
+            Passo("App predefinite", "gia", "La regola è già pronta: Windows la applica quando ti disconnetti e riaccedi.");
+        else if (Predefiniti.Attiva() && Predefiniti.StessaRegola(gruppi) && fatti > 0)
+        {
+            // la regola c'è, c'è stato un accesso, e Windows ne ha applicata una parte: riscriverla non cambia niente (e chiederebbe di nuovo
+            // il permesso). I tipi che mancano li ha scelti a mano qualcuno: si cambiano dalla pagina di Windows, con un clic ciascuno.
+            Process.Start(new ProcessStartInfo($"ms-settings:defaultapps?registeredAppUser={Uri.EscapeDataString(ApriCon.NomeApp)}") { UseShellExecute = true });
+            Passo("App predefinite", "pagina", $"{fatti} tipi su {totale} ora si aprono col lettore; gli altri Windows li tiene a chi li aveva scelti: ho aperto la pagina, dove basta un clic.");
+        }
         else
         {
             imp.GruppiPredefiniti = gruppi;

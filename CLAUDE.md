@@ -14,6 +14,9 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
   Il numero sale di 0.0.1 (di 0.1 per le cose grosse, come il lettore nella 1.1.0).
 - **Le prove si fanno girare**: `dotnet test test\DaPConvertitore.Prove` (converte davvero, in `test\.out`).
   Prima di pubblicare si apre l'app vera e si rifà il gesto: `scripts\compila.ps1`, poi l'exe in `bin\Debug`.
+- **La prova dell'interfaccia vera** (dalla 2.2.5): `node scripts\prova-interfaccia.mjs` avvia l'app con i dati in una cartella temporanea, la guida
+  da WebView2 (debug remoto, porta 9334) e controlla barra, home, impostazioni, simbolo dell'avatar, novità e che non ci siano errori in
+  console. L'app non deve essere già aperta (istanza unica). Non fa foto: stampa «ok» o «MALE» per ogni controllo.
 - **Il `ui\dist` vecchio vince sul sorgente**: `scripts\compila.ps1` rifà sempre prima l'interfaccia.
 
 ## Com'è fatta

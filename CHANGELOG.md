@@ -2,6 +2,17 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.2.5 — 29 ottobre 2026
+
+- **App predefinite: ora si capisce cosa succede.** Windows applica la regola «apri tutto con DaProd» solo **all'accesso**: finché non ti
+  disconnetti e riaccedi, i tipi non cambiano (per questo il conteggio sembrava fermo). Ora le Impostazioni e la home dicono «Regola pronta:
+  Windows la applica al prossimo accesso», con un riquadro e il tasto **Disconnettiti ora** (chiede conferma). **«Aggiusta tutto» non
+  richiede più il permesso di amministratore** se la regola è già pronta e uguale; e se dopo il riaccesso restano tipi di altri programmi,
+  apre la pagina di Windows dove si cambiano con un clic.
+- **Disinstallando, l'avatar non parte più con Windows** (prima la voce di avvio restava).
+- **Una prova automatica dell'interfaccia** (`node scripts\prova-interfaccia.mjs`): apre l'app vera, la guida e controlla barra, home, impostazioni,
+  simbolo dell'avatar, novità e che non ci siano errori in console. Tolto l'ultimo errore che trovava (la favicon mancante).
+
 ## 2.2.4 — 29 ottobre 2026
 
 - **Il player della musica sull'avatar è rifatto.** In alto una tessera con le barrette dell'equalizzatore che ballano, il titolo e «Brano 2 di 5»;
