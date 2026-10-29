@@ -31,6 +31,8 @@ public sealed class Impostazioni
     public bool AvatarAvvio { get; set; }
     /// <summary>L'oggetto di adesso (cassetta, vhs…) e dove l'hai lasciato.</summary>
     public string? AvatarOggetto { get; set; }
+    /// <summary>Quanto è grande l'avatar (1 = normale; si cambia fermando il cursore sopra e girando la rotella).</summary>
+    public double? AvatarScala { get; set; }
     public double? AvatarX { get; set; }
     public double? AvatarY { get; set; }
     /// <summary>L'ultima versione di cui si sono viste le novità: dopo un aggiornamento le novità si aprono da sole, una volta.</summary>

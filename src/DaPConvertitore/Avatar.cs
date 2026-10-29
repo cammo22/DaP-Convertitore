@@ -81,6 +81,7 @@ public sealed class FoglioAvatar
 public sealed class FinestraAvatar : Window
 {
     const double Dimensione = 150;
+    double scala = 1;
     readonly Image figura = new() { Stretch = Stretch.Uniform, IsHitTestVisible = false, SnapsToDevicePixels = false };
     readonly Border alone = new() { CornerRadius = new CornerRadius(26), Opacity = 0, IsHitTestVisible = false,
         Background = new RadialGradientBrush(Color.FromArgb(120, 255, 61, 242), Colors.Transparent) };
@@ -95,6 +96,13 @@ public sealed class FinestraAvatar : Window
     DateTime prossimoMovimento, prossimaTrasformazione;
     bool trascinando;
     MenuAvatar? menu;
+    MiniPlayer? player;
+    readonly Canvas strato = new() { IsHitTestVisible = false };
+    readonly System.Windows.Shapes.Ellipse anello = new() { Width = 26, Height = 26, StrokeThickness = 3.5, Stroke = Brushes.Gold, Visibility = Visibility.Collapsed, RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new RotateTransform(-90) };
+    readonly System.Windows.Shapes.Ellipse fondoAnello = new() { Width = 26, Height = 26, StrokeThickness = 3.5, Stroke = new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)), Visibility = Visibility.Collapsed };
+    readonly System.Windows.Shapes.Ellipse punto = new() { Width = 12, Height = 12, Fill = Brushes.Gold, Visibility = Visibility.Collapsed, Effect = new DropShadowEffect { Color = Colors.Gold, BlurRadius = 10, ShadowDepth = 0 } };
+    DateTime fermoDa; Point ultimoPunto; bool rotellaPronta;
+    public event Action? Spostato;
 
     public FinestraAvatar()
     {
@@ -106,22 +114,25 @@ public sealed class FinestraAvatar : Window
         ResizeMode = ResizeMode.NoResize;
         ShowActivated = false;
         AllowDrop = true;
-        Width = Height = Dimensione;
         Title = "DaP Convertitore · avatar";
         // un velo quasi invisibile: i pixel trasparenti sarebbero «bucati» e non prenderebbero né il mouse né i file
         var radice = new Grid { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)) };
         radice.Children.Add(alone);
         radice.Children.Add(figura);
+        strato.Children.Add(fondoAnello); strato.Children.Add(anello); strato.Children.Add(punto);
+        radice.Children.Add(strato);
         Content = radice;
 
         var imp = Impostazioni.Comune;
+        scala = Math.Clamp(imp.AvatarScala ?? 1, 0.6, 2.2);
+        Width = Height = Dimensione * scala;
         var oggetti = FoglioAvatar.Disponibili();
         if (oggetti.Count == 0) throw new InvalidOperationException("Niente immagini dell'avatar (cartella avatar accanto all'exe).");
         foglio = FoglioAvatar.Carica(imp.AvatarOggetto is { } o && oggetti.Contains(o) ? o : oggetti[0]) ?? throw new InvalidOperationException("Immagini dell'avatar illeggibili.");
         Suona("idle", true);
         var area = SystemParameters.WorkArea;
-        Left = imp.AvatarX is { } x && x > area.Left - Dimensione && x < area.Right ? x : area.Right - Dimensione - 24;
-        Top = imp.AvatarY is { } y && y > area.Top - Dimensione && y < area.Bottom ? y : area.Bottom - Dimensione - 24;
+        Left = imp.AvatarX is { } x && x > area.Left - Width && x < area.Right ? x : area.Right - Width - 24;
+        Top = imp.AvatarY is { } y && y > area.Top - Height && y < area.Bottom ? y : area.Bottom - Height - 24;
 
         orologio = new DispatcherTimer(DispatcherPriority.Render, Dispatcher) { Interval = TimeSpan.FromMilliseconds(1000.0 / foglio.Fps) };
         orologio.Tick += (_, _) => Avanti();
@@ -130,10 +141,18 @@ public sealed class FinestraAvatar : Window
         // per le prove: DAP_AVATAR_TRASFORMA=1 si trasforma subito (e poi di nuovo ogni 4 secondi)
         if (Environment.GetEnvironmentVariable("DAP_AVATAR_TRASFORMA") == "1")
             ContentRendered += (_, _) => { var t = new DispatcherTimer(TimeSpan.FromSeconds(4), DispatcherPriority.Normal, (_, _) => Trasforma(), Dispatcher); t.Start(); };
+        // per le prove: DAP_AVATAR_COMPATTO=percorso apre subito la mini interfaccia come dopo «Comprimi»
+        if (Environment.GetEnvironmentVariable("DAP_AVATAR_COMPATTO") is { Length: > 0 } cp && File.Exists(cp))
+            ContentRendered += (_, _) => Regia.Gestisci(new Richiesta(null, [cp], true, false, true, "video.mp4", "meta"));
         // per le prove e le foto: DAP_AVATAR_PROVA=percorso apre subito il fumetto come dopo un trascinamento
         if (Environment.GetEnvironmentVariable("DAP_AVATAR_PROVA") is { Length: > 0 } prova)
             ContentRendered += (_, _) => Chiedi([.. prova.Split('|').Where(p => File.Exists(p) || Directory.Exists(p))]);
-        Closed += (_, _) => { orologio.Stop(); menu?.Close(); };
+        Closed += (_, _) => { orologio.Stop(); menu?.Close(); player?.Close(); };
+        LocationChanged += (_, _) => Spostato?.Invoke();
+        // come in DaProd Video: col cursore fermo sopra l'avatar si carica un anello (1 secondo); quando è pieno la rotella cambia la misura
+        MouseMove += (_, e) => Cursore(e.GetPosition(this));
+        MouseLeave += (_, _) => SpegniAnello();
+        MouseWheel += (_, e) => { if (rotellaPronta) { Misura(scala + (e.Delta > 0 ? 0.1 : -0.1)); fermoDa = DateTime.Now; e.Handled = true; } };
 
         MouseLeftButtonDown += (_, e) =>
         {
@@ -225,6 +244,65 @@ public sealed class FinestraAvatar : Window
 
     void Alone(bool su) => alone.BeginAnimation(OpacityProperty, new DoubleAnimation(su ? 1 : 0, TimeSpan.FromMilliseconds(180)));
 
+    // ————————————————————————— la misura: cursore fermo + rotella —————————————————————————
+
+    const double AttesaMs = 1000;
+
+    void Cursore(Point p)
+    {
+        if (trascinando) { SpegniAnello(); return; }
+        if (!anello.IsVisible && !punto.IsVisible || (p - ultimoPunto).Length > 5)
+        {
+            // si ricomincia da capo
+            ultimoPunto = p; fermoDa = DateTime.Now; rotellaPronta = false;
+            punto.Visibility = Visibility.Collapsed;
+            fondoAnello.Visibility = anello.Visibility = Visibility.Visible;
+            Canvas.SetLeft(anello, Math.Min(p.X + 12, Width - 30)); Canvas.SetTop(anello, Math.Min(p.Y + 12, Height - 30));
+            Canvas.SetLeft(fondoAnello, Canvas.GetLeft(anello)); Canvas.SetTop(fondoAnello, Canvas.GetTop(anello));
+            Canvas.SetLeft(punto, Canvas.GetLeft(anello) + 7); Canvas.SetTop(punto, Canvas.GetTop(anello) + 7);
+            anello.StrokeDashArray = [0, 100];
+            if (caricamento is null) { caricamento = new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Render, (_, _) => Carica(), Dispatcher); }
+            caricamento.Start();
+        }
+    }
+
+    DispatcherTimer? caricamento;
+
+    void Carica()
+    {
+        var f = Math.Clamp((DateTime.Now - fermoDa).TotalMilliseconds / AttesaMs, 0, 1);
+        if (f >= 1 && !rotellaPronta)
+        {
+            rotellaPronta = true;
+            anello.Visibility = fondoAnello.Visibility = Visibility.Collapsed;
+            punto.Visibility = Visibility.Visible;     // il punto dorato: ora la rotella cambia la misura
+            caricamento?.Stop();
+            return;
+        }
+        // l'anello si riempie: i tratti sono in multipli dello spessore
+        var giro = Math.PI * 26 / anello.StrokeThickness;
+        anello.StrokeDashArray = [f * giro, giro];
+    }
+
+    void SpegniAnello()
+    {
+        caricamento?.Stop();
+        anello.Visibility = fondoAnello.Visibility = punto.Visibility = Visibility.Collapsed;
+        rotellaPronta = false;
+    }
+
+    void Misura(double nuova)
+    {
+        nuova = Math.Round(Math.Clamp(nuova, 0.6, 2.2), 2);
+        if (nuova == scala) return;
+        var cx = Left + Width / 2; var cy = Top + Height / 2;
+        scala = nuova;
+        Width = Height = Dimensione * scala;
+        Left = cx - Width / 2; Top = cy - Height / 2;
+        var imp = Impostazioni.Comune; imp.AvatarScala = scala; imp.AvatarX = Left; imp.AvatarY = Top; imp.Salva();
+        Spostato?.Invoke();
+    }
+
     // ————————————————————————— posizione e menu —————————————————————————
 
     void Salva()
@@ -251,10 +329,29 @@ public sealed class FinestraAvatar : Window
     void Chiedi(IReadOnlyList<string> file)
     {
         if (file.Count == 0) return;
+        // solo musica: parte subito, col suo piccolo player sull'avatar, senza aprire l'app (foto e video si aprono come sempre)
+        if (file.All(f => File.Exists(f) && Catalogo.CategoriaDi(f) == Categoria.Audio)) { RiproduciMusica(file); return; }
+        ApriFumetto(file);
+    }
+
+    /// <summary>«Cosa vuoi farne?»: apri, converti, comprimi.</summary>
+    public void ApriFumetto(IReadOnlyList<string> file)
+    {
         menu?.Close();
         menu = new MenuAvatar(file, this);
         menu.Closed += (_, _) => menu = null;
         menu.Show();
+    }
+
+    /// <summary>Fa partire la musica sul piccolo player attaccato all'avatar.</summary>
+    public void RiproduciMusica(IReadOnlyList<string> brani)
+    {
+        menu?.Close();
+        player?.Close();
+        player = new MiniPlayer(brani, this);
+        player.Closed += (_, _) => { player = null; this.Suona("idle", true); };
+        player.StatoCambiato += (inRiproduzione) => this.Suona(inRiproduzione ? "attento" : "idle", true);
+        player.Show();
     }
 
     /// <summary>Dove sta l'avatar (per mettere il menu accanto).</summary>
@@ -285,7 +382,7 @@ public sealed class MenuAvatar : Window
         var gruppi = file.Select(Catalogo.CategoriaDi).Distinct().ToList();
         var uno = gruppi.Count == 1 ? gruppi[0] : (Categoria?)null;
         var nome = file.Count == 1 ? Path.GetFileName(file[0].TrimEnd('\\')) : $"{file.Count} file";
-        var (comprimi, comprimiNota) = Compressione(uno);
+        var (formatoComprimi, presetComprimi, comprimiNota) = Compressione(uno);
 
         var pila = new StackPanel { Margin = new Thickness(14, 12, 14, 14), MinWidth = 250, MaxWidth = 330 };
         pila.Children.Add(new TextBlock { Text = "COSA VUOI FARNE?", Foreground = Pennello("#ffd54a"), FontWeight = FontWeights.Bold, FontSize = 11.5, FontFamily = new FontFamily("Orbitron, Segoe UI"), Margin = new Thickness(0, 0, 0, 2) });
@@ -296,8 +393,12 @@ public sealed class MenuAvatar : Window
             if (apribile) Regia.Gestisci(new Richiesta(null, file.Where(File.Exists).ToList(), false, true));
             else Programma.Mostra(file[0]);
         }));
-        pila.Children.Add(Voce("Converti", "scegli il formato nella finestra", "#ff3df2", () => Regia.Gestisci(new Richiesta(null, file, true))));
-        pila.Children.Add(Voce("Comprimi", comprimiNota, "#5dffb4", () => Regia.Gestisci(new Richiesta(comprimi, file, false))));
+        // la mini interfaccia è quella del convertitore, stretta, accanto all'avatar: si decide tutto lì (niente parte da solo)
+        pila.Children.Add(Voce("Converti", "mini interfaccia: scegli formato e opzioni", "#ff3df2", () => Regia.Gestisci(new Richiesta(null, file, true, false, true))));
+        pila.Children.Add(Voce("Comprimi", comprimiNota, "#5dffb4", () => Regia.Gestisci(new Richiesta(null, file, true, false, true, formatoComprimi, presetComprimi))));
+        var intera = new TextBlock { Text = "Apri nell'app intera", Foreground = Pennello("#a19db0"), FontSize = 12, Cursor = Cursors.Hand, Margin = new Thickness(4, 2, 0, 0), TextDecorations = TextDecorations.Underline };
+        intera.MouseLeftButtonUp += (_, _) => { Close(); Regia.Gestisci(new Richiesta(null, file, true)); };
+        pila.Children.Add(intera);
 
         Content = new Border
         {
@@ -328,14 +429,14 @@ public sealed class MenuAvatar : Window
     }
 
     /// <summary>Cosa vuol dire «comprimire» per questo tipo di file: l'azione rapida e come si dice.</summary>
-    static (string Azione, string Nota) Compressione(Categoria? c) => c switch
+    static (string Formato, string? Preset, string Nota) Compressione(Categoria? c) => c switch
     {
-        Categoria.Video => ("video-meta", "metà peso, H.265"),
-        Categoria.Immagine => ("img-piccola", "più piccola, 1920 px"),
-        Categoria.Audio => ("audio-mp3", "MP3, più leggero"),
-        Categoria.Archivio => ("arch-7z", "ricomprimi in 7Z, più piccolo"),
-        Categoria.Cartella => ("cartella-7z", "in un 7Z, il più piccolo"),
-        _ => ("altro-7z", "in un 7Z"),
+        Categoria.Video => ("video.mp4", "meta", "parte da metà peso, H.265: scegli tu"),
+        Categoria.Immagine => ("img.jpg", "piccola", "parte da più piccola, 1920 px: scegli tu"),
+        Categoria.Audio => ("audio.mp3", null, "MP3, più leggero: scegli tu"),
+        Categoria.Archivio => ("arch.7z", null, "ricomprimi in 7Z, più piccolo: scegli tu"),
+        Categoria.Cartella => ("cartella.7z", null, "in un 7Z, il più piccolo: scegli tu"),
+        _ => ("altro.7z", null, "in un 7Z: scegli tu"),
     };
 
     static SolidColorBrush Pennello(string colore) => (SolidColorBrush)new BrushConverter().ConvertFromString(colore)!;
@@ -382,5 +483,137 @@ public sealed class MenuAvatar : Window
         su.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Color.FromArgb(46, 255, 213, 74)), "b"));
         t.Triggers.Add(su);
         return t;
+    }
+}
+
+
+/// <summary>
+/// Il piccolo player attaccato all'avatar: la musica trascinata sull'avatar parte subito, senza aprire l'app (foto e video si
+/// aprono come sempre). Tasti: precedente, play/pausa, successivo, «apri nell'app», «⋯» (apri/converti/comprimi) e chiudi.
+/// Vetro scuro come i popup di DaProd; segue l'avatar quando lo sposti.
+/// </summary>
+public sealed class MiniPlayer : Window
+{
+    readonly MediaPlayer mp = new();
+    readonly IReadOnlyList<string> brani;
+    readonly FinestraAvatar avatar;
+    readonly TextBlock titolo = new() { Foreground = Brushes.White, FontWeight = FontWeights.Bold, FontSize = 13.5, TextTrimming = TextTrimming.CharacterEllipsis };
+    readonly TextBlock tempo = new() { Foreground = new SolidColorBrush(Color.FromRgb(0xa1, 0x9d, 0xb0)), FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Right };
+    readonly Border riempimento = new() { Background = new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)), CornerRadius = new CornerRadius(3), HorizontalAlignment = HorizontalAlignment.Left, Width = 0 };
+    readonly Border barra = new() { Height = 6, CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), Cursor = Cursors.Hand, Margin = new Thickness(0, 6, 0, 4) };
+    readonly Button bPlay;
+    readonly DispatcherTimer orologio;
+    int i;
+    bool suona;
+    public event Action<bool>? StatoCambiato;
+
+    public MiniPlayer(IReadOnlyList<string> brani, FinestraAvatar avatar)
+    {
+        this.brani = brani; this.avatar = avatar;
+        WindowStyle = WindowStyle.None; AllowsTransparency = true; Background = Brushes.Transparent;
+        Topmost = true; ShowInTaskbar = false; ShowActivated = false; ResizeMode = ResizeMode.NoResize;
+        SizeToContent = SizeToContent.Height; Width = 330;
+
+        bPlay = Tasto("⏸", "Pausa", () => Gira());
+        barra.Child = riempimento;
+        barra.MouseLeftButtonDown += (_, e) => { var f = e.GetPosition(barra).X / Math.Max(1, barra.ActualWidth); if (mp.NaturalDuration.HasTimeSpan) mp.Position = TimeSpan.FromSeconds(mp.NaturalDuration.TimeSpan.TotalSeconds * Math.Clamp(f, 0, 1)); };
+
+        var tasti = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
+        if (brani.Count > 1) tasti.Children.Add(Tasto("⏮", "Precedente", () => Vai(i - 1)));
+        tasti.Children.Add(bPlay);
+        if (brani.Count > 1) tasti.Children.Add(Tasto("⏭", "Successivo", () => Vai(i + 1)));
+        var destra = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        destra.Children.Add(Tasto("↗", "Apri nell'app (con tutto il lettore)", () => { mp.Pause(); Regia.Gestisci(new Richiesta(null, [brani[i]], false, true)); Close(); }, true));
+        destra.Children.Add(Tasto("⋯", "Apri, converti, comprimi", () => avatar.ApriFumetto(brani)));
+        destra.Children.Add(Tasto("✕", "Chiudi", () => Close()));
+        var riga = new Grid();
+        riga.Children.Add(tasti);
+        riga.Children.Add(destra);
+
+        var pila = new StackPanel { Margin = new Thickness(14, 10, 14, 10) };
+        pila.Children.Add(titolo);
+        pila.Children.Add(barra);
+        pila.Children.Add(tempo);
+        pila.Children.Add(riga);
+        Content = new Border
+        {
+            CornerRadius = new CornerRadius(16), Margin = new Thickness(14), Child = pila,
+            Background = new SolidColorBrush(Color.FromArgb(214, 18, 16, 26)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(46, 255, 255, 255)), BorderThickness = new Thickness(1),
+            Effect = new DropShadowEffect { BlurRadius = 26, ShadowDepth = 8, Opacity = 0.5, Direction = 270 },
+        };
+
+        mp.MediaEnded += (_, _) => { if (i + 1 < brani.Count) Vai(i + 1); else Ferma(); };
+        mp.MediaFailed += (_, _) =>
+        {
+            // un formato che Windows non suona da solo (OGG, OPUS…): lo suona il lettore dell'app
+            Regia.Gestisci(new Richiesta(null, [brani[i]], false, true));
+            Close();
+        };
+        orologio = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Normal, (_, _) => Aggiorna(), Dispatcher);
+        Loaded += (_, _) => { Posiziona(); Vai(0); orologio.Start(); };
+        avatar.Spostato += Posiziona;
+        Closed += (_, _) => { avatar.Spostato -= Posiziona; orologio.Stop(); mp.Stop(); mp.Close(); StatoCambiato?.Invoke(false); };
+        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); else if (e.Key == Key.Space) Gira(); };
+    }
+
+    Button Tasto(string glifo, string tip, Action fai, bool oro = false)
+    {
+        var b = new Button
+        {
+            Content = new TextBlock { Text = glifo, FontFamily = new FontFamily("Segoe UI Symbol"), FontSize = 15, Foreground = oro ? new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)) : Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+            Width = 34, Height = 30, Margin = new Thickness(0, 0, 4, 0), ToolTip = tip, Cursor = Cursors.Hand, Focusable = false, BorderThickness = new Thickness(0),
+            Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
+        };
+        var t = new ControlTemplate(typeof(Button));
+        var bordo = new FrameworkElementFactory(typeof(Border)) { Name = "b" };
+        bordo.SetValue(Border.CornerRadiusProperty, new CornerRadius(9));
+        bordo.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding("Background") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        bordo.AppendChild(new FrameworkElementFactory(typeof(ContentPresenter)));
+        t.VisualTree = bordo;
+        var su = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+        su.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Color.FromArgb(60, 255, 213, 74)), "b"));
+        t.Triggers.Add(su);
+        b.Template = t;
+        b.Click += (_, _) => fai();
+        return b;
+    }
+
+    void Posiziona()
+    {
+        var a = avatar.Area; var area = SystemParameters.WorkArea;
+        Left = Math.Clamp(a.Left + a.Width / 2 - Width / 2, area.Left, area.Right - Width);
+        var sotto = a.Bottom - 10;
+        Top = sotto + ActualHeight <= area.Bottom ? sotto : Math.Max(area.Top, a.Top - ActualHeight + 10);
+    }
+
+    void Vai(int n)
+    {
+        i = (n + brani.Count) % brani.Count;
+        titolo.Text = System.IO.Path.GetFileNameWithoutExtension(brani[i]);
+        mp.Open(new Uri(brani[i]));
+        mp.Play();
+        Stato(true);
+    }
+
+    void Gira() { if (suona) { mp.Pause(); Stato(false); } else { mp.Play(); Stato(true); } }
+    void Ferma() { mp.Stop(); Stato(false); }
+
+    void Stato(bool si)
+    {
+        suona = si;
+        ((TextBlock)bPlay.Content).Text = si ? "⏸" : "▶";
+        bPlay.ToolTip = si ? "Pausa" : "Suona";
+        StatoCambiato?.Invoke(si);
+    }
+
+    static string Tm(TimeSpan t) => $"{(int)t.TotalMinutes}:{t.Seconds:00}";
+
+    void Aggiorna()
+    {
+        if (!mp.NaturalDuration.HasTimeSpan) { tempo.Text = Tm(mp.Position); return; }
+        var tot = mp.NaturalDuration.TimeSpan;
+        tempo.Text = $"{Tm(mp.Position)} / {Tm(tot)}" + (brani.Count > 1 ? $"  ·  {i + 1} di {brani.Count}" : "");
+        riempimento.Width = tot.TotalSeconds > 0 ? barra.ActualWidth * Math.Clamp(mp.Position.TotalSeconds / tot.TotalSeconds, 0, 1) : 0;
     }
 }

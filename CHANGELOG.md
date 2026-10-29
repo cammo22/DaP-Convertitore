@@ -2,6 +2,24 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.3.0 — 29 ottobre 2026
+
+- **La musica sull'avatar.** Trascini uno o più brani sull'avatar e **partono subito**, con il loro piccolo player attaccato all'avatar
+  (play e pausa, precedente e successivo, barra per saltare, tempo): **l'app non si apre**. L'avatar balla finché suona. Nel player ci
+  sono **↗ Apri nell'app** (col lettore intero), **⋯** (apri, converti, comprimi) e la X. I formati che Windows non suona da solo (OGG,
+  OPUS…) passano da soli al lettore. **Foto e video si aprono come sempre.**
+- **La mini interfaccia per Converti e Comprimi.** Niente parte più da solo: **Converti** e **Comprimi** aprono accanto all'avatar la
+  stessa interfaccia del convertitore, stretta, senza la lista dei file: scegli il formato e tutte le opzioni come sempre.
+  «Comprimi» arriva con la scelta già impostata (video a metà peso in H.265, foto a 1920 px, archivi in 7Z) e **decidi tu**. In cima
+  c'è sempre **Apri nell'app intera**, che è la cosa che conta di più; nel fumetto c'è anche il link «Apri nell'app intera».
+- **L'avatar si ingrandisce e si rimpicciolisce.** Come in DaProd Video: ci passi sopra e **lasci il cursore fermo**: si carica un anello
+  (un secondo) e diventa un punto dorato; da lì **la rotella** cambia la misura (da molto piccolo a più del doppio). Se muovi il cursore
+  si ricomincia. La misura si ricorda.
+- **Il README come la scheda di un negozio**: vetrina con **Ottieni** (download diretto), portatile, Windows / Linux / macOS a colpo
+  d'occhio, pulsanti rapidi, anteprime, novità, «cosa sa fare» e informazioni; Linux e macOS risultano «in arrivo».
+- Dentro: `MiniPlayer` e il ridimensionamento in `Avatar.cs`; la richiesta «compatta» (`Richiesta.Compatto/Scelta/Preset`), `Finestra.Compatta`,
+  il comando `finestra completa` e `#app.compatto` nell'interfaccia.
+
 ## 2.2.0 — 29 ottobre 2026
 
 - **L'avatar sul desktop.** Un oggetto piccolo (una **musicassetta** DaProd, un **VHS**, un **floppy**, un **CD**, un **vinile**…) che sta

@@ -147,6 +147,9 @@ export interface Stato {
   apriConGruppi: { id: string; nome: string; esempi: string }[];
   /** La regola di Windows con le associazioni: se questo Windows la applica, se c'è la nostra, se ce n'è una di altri. */
   regolaPredefiniti: RegolaPredefiniti;
+  /** La mini interfaccia accanto all'avatar, e la scelta già fatta da lì («Comprimi»). */
+  compatto?: boolean;
+  scelta?: { formato: string; preset?: string | null } | null;
 }
 
 /** La regola delle app predefinite di Windows e quanti tipi hanno davvero il lettore come programma (UserChoice). */

@@ -84,6 +84,9 @@ public static class Regia
 
     public static bool AvatarAcceso => avatar is not null;
 
+    /// <summary>Dov'è l'avatar sullo schermo (per mettergli accanto la mini interfaccia).</summary>
+    public static Rect? AreaAvatar => avatar?.Area;
+
     static void ForseFine()
     {
         if (convertitore is null && lettori.Count == 0 && daGuardare.Count == 0 && avatar is null) app.Shutdown();

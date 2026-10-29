@@ -107,6 +107,24 @@ public sealed class Finestra : Window
         WindowStartupLocation = WindowStartupLocation.Manual;
     }
 
+    /// <summary>La mini interfaccia: la finestra del convertitore, stretta, accanto all'avatar (o dove c'è posto). «Completa» la riporta grande.</summary>
+    public void Compatta(Rect? avatar)
+    {
+        Modo = "finestra";
+        var lavoro = SystemParameters.WorkArea;
+        WindowState = WindowState.Normal;
+        ResizeMode = ResizeMode.CanResize;
+        MinWidth = 400; MinHeight = 440;
+        Width = Math.Min(440, lavoro.Width - 40);
+        Height = Math.Min(560, lavoro.Height - 40);
+        var a = avatar ?? new Rect(lavoro.Right - 150, lavoro.Bottom - 150, 150, 150);
+        // a sinistra dell'avatar, con il fondo allineato al suo; se non c'è posto, a destra
+        Left = a.Left - Width - 12 >= lavoro.Left ? a.Left - Width - 12 : Math.Min(a.Right + 12, lavoro.Right - Width);
+        Top = Math.Clamp(a.Bottom - Height, lavoro.Top, lavoro.Bottom - Height);
+        vista.Margin = new Thickness(4);
+        WindowStartupLocation = WindowStartupLocation.Manual;
+    }
+
     public void Massimizza() => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
     /// <summary>La barra delle applicazioni fa da barra d'avanzamento, come quando copi i file.</summary>

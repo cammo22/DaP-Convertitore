@@ -686,3 +686,16 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .novita-testo code { font-size: 12.5px; color: var(--oro); }
 .novita-stato { color: var(--verde); font-size: 13px; }
 .btn-fin.nov svg { color: var(--oro); }
+
+/* la mini interfaccia accanto all'avatar: la stessa del convertitore, senza la lista dei file e senza l'anteprima */
+#app.compatto .corpo { grid-template-columns: minmax(0, 1fr) !important; }
+#app.compatto .coda, #app.compatto .anteprima, #app.compatto .ap-linguetta, #app.compatto .chip-hw .gpu, #app.compatto .chip-hw .chip:not(.agg) { display: none !important; }
+.compatto-testa { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; margin-bottom: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.045); border: 1px solid var(--bordo); }
+.compatto-testa b { display: block; font: 800 15px var(--marchio); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.compatto-testa small { color: var(--testo3); font-size: 12px; }
+.compatto-testa .tasto svg { width: 16px; height: 16px; margin-right: 6px; }
+
+/* più piccola e rapida: la stessa interfaccia, rimpicciolita (Cammo: «troppo grande, andava bene piccolina») */
+#app.compatto .banco { zoom: 0.74; }
+#app.compatto .piede { zoom: 0.82; }
+#app.compatto .testa { zoom: 0.85; }
