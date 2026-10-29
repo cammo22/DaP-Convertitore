@@ -29,6 +29,11 @@ public sealed class Impostazioni
     public bool AvatarAttivo { get; set; }
     /// <summary>L'avatar parte con Windows (da solo, senza aprire finestre).</summary>
     public bool AvatarAvvio { get; set; }
+    /// <summary>Ogni tanto l'avatar si trasforma da solo in un altro. Spento, resta il personaggio scelto (dal tasto destro sull'avatar).</summary>
+    public bool AvatarCambioAuto { get; set; } = true;
+    /// <summary>Dove hai lasciato il cronometro (si sposta da solo, senza l'avatar).</summary>
+    public double? CronometroX { get; set; }
+    public double? CronometroY { get; set; }
     /// <summary>L'oggetto di adesso (cassetta, vhs…) e dove l'hai lasciato.</summary>
     public string? AvatarOggetto { get; set; }
     /// <summary>Quanto è grande l'avatar (1 = normale; si cambia fermando il cursore sopra e girando la rotella).</summary>

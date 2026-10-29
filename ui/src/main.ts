@@ -48,12 +48,30 @@ function disegnaTesta() {
     ),
     h('div.finestra', null,
       h('button.btn-fin.nov', { title: 'Novità e aggiornamenti', onclick: () => void apriNovita(), html: icone.novita }),
+      h(`button.btn-fin.av${s.stato.impostazioni.avatarAttivo ? '.su' : ''}`, { title: s.stato.impostazioni.avatarAttivo ? "Spegni l'avatar" : "Accendi l'avatar", onclick: () => accendiAvatar(!s.stato.impostazioni.avatarAttivo), html: icone.avatar }),
       h('button.btn-fin', { title: 'Impostazioni', onclick: () => apriImpostazioni() , html: icone.ingranaggio }),
       h('button.btn-fin', { title: 'Riduci', onclick: () => chiedi('finestra', { azione: 'riduci' }), html: icone.riduci }),
       s.stato.modo === 'finestra' ? h('button.btn-fin', { title: 'Ingrandisci', onclick: () => chiedi('finestra', { azione: 'massimizza' }), html: icone.ingrandisci }) : null,
       h('button.btn-fin.chiudi', { title: 'Chiudi', onclick: () => chiedi('finestra', { azione: 'chiudi' }), html: icone.chiudi }),
     ),
   );
+}
+
+/** «Indietro» nella mini interfaccia: i suoi file escono dalla lista, riappare il fumetto «Cosa vuoi farne?», e la finestra si chiude se è vuota. */
+async function tornaIndietro() {
+  clac();
+  const r = await chiedi<{ ids: string[] }>('indietro');
+  for (const id of r.ids) { s.file.delete(id); s.ordine = s.ordine.filter((x) => x !== id); void chiedi('togli', { id }); }
+  if (s.ordine.length === 0) void chiedi('finestra', { azione: 'chiudi' });
+  else void chiedi('finestra', { azione: 'completa' });
+}
+
+/** Il simbolo accanto alle novità: accende e spegne l'avatar sul desktop (come l'interruttore nelle Impostazioni). */
+function accendiAvatar(si: boolean) {
+  clac();
+  s.stato.impostazioni.avatarAttivo = si;
+  void chiedi('impostazioni', { avatarAttivo: si });
+  disegnaTesta();
 }
 
 // ————————————————————————————————— coda (sinistra) —————————————————————————————————
@@ -210,7 +228,9 @@ function disegnaScegliVera() {
   const testaCompatta = app.classList.contains('compatto')
     ? h('div.compatto-testa', null,
         h('div', null, h('b', null, nomiFile.length > 1 ? `${nomiFile.length} file` : (nomiFile[0] ?? '')), h('small', null, 'mini interfaccia: scegli tutto qui')),
-        h('button.tasto', { title: 'Apre la finestra intera, con la lista dei file e l\'anteprima', onclick: () => { clac(); void chiedi('finestra', { azione: 'completa' }); } }, h('span', { html: icone.ingrandisci }), 'Apri nell\'app intera'))
+        h('div.compatto-tasti', null,
+          h('button.tasto', { title: 'Torna a «Cosa vuoi farne?»', onclick: () => void tornaIndietro() }, h('span', { html: icone.freccia, style: 'display:inline-block;transform:scaleX(-1)' }), 'Indietro'),
+          h('button.tasto', { title: 'Apre la finestra intera, con la lista dei file e l\'anteprima', onclick: () => { clac(); void chiedi('finestra', { azione: 'completa' }); } }, h('span', { html: icone.ingrandisci }), 'Apri nell\'app intera')))
     : null;
   banco.replaceChildren(
     ...[testaCompatta, invitoMenu11()].filter((x): x is HTMLElement => !!x),
@@ -381,6 +401,11 @@ async function avvia() {
     strumenti.cpu?.valore(c.cpu / 100);
     strumenti.enc?.valore(c.encoder / 100);
     strumenti.dec?.valore(c.decoder / 100);
+  });
+  ascolta('avatar', (d: { si: boolean }) => {
+    s.stato.impostazioni.avatarAttivo = d.si;
+    disegnaTesta();
+    if (document.querySelector('.velo.impostazioni')) apriImpostazioni();
   });
   ascolta('compatto', (d: { si: boolean; scelta?: { formato: string; preset?: string | null } | null }) => {
     app.classList.toggle('compatto', d.si);

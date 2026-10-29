@@ -2,6 +2,21 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.2.4 — 29 ottobre 2026
+
+- **Il player della musica sull'avatar è rifatto.** In alto una tessera con le barrette dell'equalizzatore che ballano, il titolo e «Brano 2 di 5»;
+  la barra è oro e magenta con una manopola e **si trascina**; i comandi (apri nell'app, indietro, play, avanti, converti o comprimi) stanno
+  tutti su una riga, al centro, con icone disegnate. Quando apri «Cosa vuoi farne?» il player si **nasconde** (la musica va avanti) e
+  riappare quando torni indietro; a fine ultimo brano **si chiude da solo**.
+- **Il tasto destro sull'avatar fa di più.** **Cronometro**: parte subito, è una finestra a parte che **sposti dove vuoi** (l'avatar non
+  si muove, e il posto si ricorda); il tasto **Giro** segna il tempo e riparte da zero, e dice se è stato **più veloce o più lento** del
+  giro prima (con ★ per il migliore, conteggio e totale). **Scegli il personaggio…**: le figurine di tutti gli oggetti e un interruttore per
+  **bloccare il cambio automatico** (anche nelle Impostazioni): spento, l'avatar resta quello scelto.
+- **L'avatar ti guarda.** Quando passi il cursore sopra si gira verso di te, e torna dritto appena esci.
+- **«Indietro»** nel fumetto «Cosa vuoi farne?» e nella mini interfaccia (riapre il fumetto).
+- **Nelle Impostazioni la X e il titolo restano sempre in vista** quando scorri.
+- **Un simbolo accanto alle novità, nella barra in alto, accende e spegne l'avatar** (oro se acceso, barrato se spento).
+
 ## 2.2.3 — 29 ottobre 2026
 
 - **Il player della musica sull'avatar è più bello.** I comandi (indietro, **play/pausa grande e tondo**, avanti) stanno **al centro**;

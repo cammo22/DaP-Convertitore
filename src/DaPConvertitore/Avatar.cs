@@ -95,9 +95,16 @@ public sealed class FinestraAvatar : Window
     string? dopoLaUscita;           // l'oggetto in cui ci si trasforma quando l'uscita è finita
     DateTime prossimoMovimento, prossimaTrasformazione;
     bool trascinando;
+    bool segue, rientro;            // il cursore è sopra: l'avatar si gira verso di lui (poi torna al centro)
+    double angolo;                  // quanto è girato, in radianti (0 = di fronte)
     MenuAvatar? menu;
     MiniPlayer? player;
+    Cronometro? cronometro;
+    ScegliPersonaggio? scelta;
     public event Action? Spostato;
+    /// <summary>L'avatar è diventato un altro oggetto.</summary>
+    public event Action? Trasformato;
+    public string? Oggetto => foglio?.Nome;
 
     public FinestraAvatar()
     {
@@ -140,7 +147,7 @@ public sealed class FinestraAvatar : Window
         // per le prove e le foto: DAP_AVATAR_PROVA=percorso apre subito il fumetto come dopo un trascinamento
         if (Environment.GetEnvironmentVariable("DAP_AVATAR_PROVA") is { Length: > 0 } prova)
             ContentRendered += (_, _) => Chiedi([.. prova.Split('|').Where(p => File.Exists(p) || Directory.Exists(p))]);
-        Closed += (_, _) => { orologio.Stop(); menu?.Close(); player?.Close(); };
+        Closed += (_, _) => { orologio.Stop(); menu?.Close(); player?.Close(); cronometro?.Close(); scelta?.Close(); };
         LocationChanged += (_, _) => Spostato?.Invoke();
         // la rotella sopra l'avatar lo ingrandisce o lo rimpicciolisce: niente blocchi né attese
         MouseWheel += (_, e) => { Misura(scala + (e.Delta > 0 ? 0.1 : -0.1)); e.Handled = true; };
@@ -154,6 +161,9 @@ public sealed class FinestraAvatar : Window
             Salva();
         };
         MouseRightButtonUp += (_, e) => { ApriMenu(); e.Handled = true; };
+        // col cursore sopra l'avatar si gira a guardarlo; appena esce, torna dritto
+        MouseMove += (_, _) => { if (!segue && animazione == "idle" && player is null && menu is null && foglio?.Ha("gira") == true) { segue = true; rientro = false; animazione = "gira"; ciclo = true; alFinire = null; } };
+        MouseLeave += (_, _) => { if (segue) { segue = false; rientro = true; } };
         DragEnter += (_, e) => { e.Effects = DragDropEffects.Copy; e.Handled = true; Suona("attento", true); Alone(true); };
         DragOver += (_, e) => { e.Effects = DragDropEffects.Copy; e.Handled = true; };
         DragLeave += (_, _) => { Alone(false); Suona("idle", true); };
@@ -169,6 +179,7 @@ public sealed class FinestraAvatar : Window
 
     void Suona(string nome, bool inCiclo, Action? finito = null)
     {
+        segue = rientro = false; angolo = 0;      // un'altra animazione vale più dello sguardo
         if (foglio is null || !foglio.Ha(nome)) { if (nome != "idle" && foglio?.Ha("idle") == true) Suona("idle", true); return; }
         animazione = nome; frame = 0; ciclo = inCiclo; alFinire = finito;
         figura.Source = foglio.Fotogramma(nome, 0);
@@ -177,6 +188,7 @@ public sealed class FinestraAvatar : Window
     void Avanti()
     {
         if (foglio is null) return;
+        if (segue || rientro) { Segui(); return; }
         if (!foglio.Ha(animazione)) { Suona("idle", true); return; }
         var n = foglio.Quanti(animazione);
         frame++;
@@ -194,6 +206,28 @@ public sealed class FinestraAvatar : Window
         }
     }
 
+    const double Sguardo = 0.75;
+
+    /// <summary>Un passo dello sguardo: l'angolo cerca il cursore (o il centro) e si sceglie il fotogramma del «giro» che gli somiglia.</summary>
+    void Segui()
+    {
+        var voglio = 0.0;
+        if (segue)
+        {
+            var x = Mouse.GetPosition(this).X;
+            voglio = Math.Clamp((x - Width / 2) / (Width / 2), -1, 1) * Sguardo;
+        }
+        angolo += (voglio - angolo) * 0.3;
+        if (rientro && Math.Abs(angolo) < 0.04) { rientro = false; Suona("idle", true); return; }
+        var n = foglio!.Quanti("gira");
+        if (n < 2) { segue = rientro = false; Suona("idle", true); return; }
+        // il giro completo gira come una smoothstep: dall'angolo si risale al suo istante
+        var giro = Math.PI * 2;
+        var e = Math.Clamp((angolo >= 0 ? angolo : giro + angolo) / giro, 0, 1);
+        var t = 0.5 - Math.Sin(Math.Asin(Math.Clamp(1 - 2 * e, -1, 1)) / 3);
+        figura.Source = foglio.Fotogramma("gira", (int)Math.Round(t * (n - 1)));
+    }
+
     /// <summary>Fra un movimento e l'altro passa del tempo, e mai due uguali di fila: non deve stancare.</summary>
     void Pianifica()
     {
@@ -203,7 +237,7 @@ public sealed class FinestraAvatar : Window
 
     void Movimento()
     {
-        if (DateTime.Now >= prossimaTrasformazione && Trasforma()) return;
+        if (DateTime.Now >= prossimaTrasformazione && Impostazioni.Comune.AvatarCambioAuto && Trasforma()) return;
         Suona(caso.Next(3) == 0 ? "gira" : "saluta", false, () => Suona("idle", true));
     }
 
@@ -217,7 +251,7 @@ public sealed class FinestraAvatar : Window
         Suona("esci", false, () =>
         {
             var nuovo = FoglioAvatar.Carica(dopoLaUscita!);
-            if (nuovo is not null) { foglio = nuovo; var imp = Impostazioni.Comune; imp.AvatarOggetto = nuovo.Nome; imp.Salva(); }
+            if (nuovo is not null) { foglio = nuovo; var imp = Impostazioni.Comune; imp.AvatarOggetto = nuovo.Nome; imp.Salva(); Trasformato?.Invoke(); }
             Suona(foglio.Ha("entra") ? "entra" : "idle", false, () => Suona("idle", true));
         });
         return true;
@@ -264,6 +298,13 @@ public sealed class FinestraAvatar : Window
         MenuItem Voce(string testo, Action fai) { var v = new MenuItem { Header = testo }; v.Click += (_, _) => fai(); return v; }
         m.Items.Add(Voce("Saluta", () => Suona("saluta", false, () => Suona("idle", true))));
         if (FoglioAvatar.Disponibili().Count > 1) m.Items.Add(Voce("Trasformati", () => Trasforma()));
+        m.Items.Add(new Separator());
+        m.Items.Add(Voce(cronometro is null ? "Cronometro" : "Chiudi il cronometro", AlternaCronometro));
+        m.Items.Add(Voce("Scegli il personaggio…", ApriScelta));
+        var auto = new MenuItem { Header = "Cambio automatico", IsCheckable = true, IsChecked = Impostazioni.Comune.AvatarCambioAuto };
+        auto.Click += (_, _) => { var imp = Impostazioni.Comune; imp.AvatarCambioAuto = auto.IsChecked; imp.Salva(); };
+        m.Items.Add(auto);
+        m.Items.Add(new Separator());
         m.Items.Add(Voce("Apri DaP Convertitore", () => Regia.Gestisci(new Richiesta(null, [], true))));
         m.Items.Add(new Separator());
         m.Items.Add(Voce("Nascondi l'avatar", () => Regia.Avatar(false)));
@@ -285,20 +326,43 @@ public sealed class FinestraAvatar : Window
     {
         menu?.Close();
         menu = new MenuAvatar(file, this);
-        menu.Closed += (_, _) => menu = null;
+        // il player (se c'è) si nasconde, ma la musica va avanti; quando si torna indietro riappare
+        player?.Hide();
+        menu.Closed += (_, _) => { menu = null; player?.Show(); };
         menu.Show();
     }
 
     /// <summary>Fa partire la musica sul piccolo player attaccato all'avatar.</summary>
     public void RiproduciMusica(IReadOnlyList<string> brani)
     {
-        menu?.Close();
         player?.Close();
+        menu?.Close();
         player = new MiniPlayer(brani, this);
         player.Closed += (_, _) => { player = null; this.Suona("idle", true); };
         player.StatoCambiato += (inRiproduzione) => this.Suona(inRiproduzione ? "attento" : "idle", true);
         player.Show();
     }
+
+    /// <summary>Il cronometro dal tasto destro: se c'è lo chiude, se no lo apre e lo fa partire.</summary>
+    public void AlternaCronometro()
+    {
+        if (cronometro is not null) { cronometro.Close(); return; }
+        cronometro = new Cronometro(this);
+        cronometro.Closed += (_, _) => cronometro = null;
+        cronometro.Show();
+    }
+
+    /// <summary>La finestra con le figurine di tutti i personaggi e l'interruttore del cambio automatico.</summary>
+    public void ApriScelta()
+    {
+        if (scelta is not null) { scelta.Activate(); return; }
+        scelta = new ScegliPersonaggio(this);
+        scelta.Closed += (_, _) => scelta = null;
+        scelta.Show();
+    }
+
+    /// <summary>Si trasforma nel personaggio scelto (con le scintille).</summary>
+    public void Cambia(string oggetto) { if (oggetto != foglio?.Nome) Trasforma(oggetto); }
 
     /// <summary>Dove sta l'avatar (per mettere il menu accanto).</summary>
     public Rect Area => new(Left, Top, Width, Height);
@@ -331,7 +395,14 @@ public sealed class MenuAvatar : Window
         var (formatoComprimi, presetComprimi, comprimiNota) = Compressione(uno);
 
         var pila = new StackPanel { Margin = new Thickness(14, 12, 14, 14), MinWidth = 250, MaxWidth = 330 };
-        pila.Children.Add(new TextBlock { Text = "COSA VUOI FARNE?", Foreground = Pennello("#ffd54a"), FontWeight = FontWeights.Bold, FontSize = 11.5, FontFamily = new FontFamily("Orbitron, Segoe UI"), Margin = new Thickness(0, 0, 0, 2) });
+        var indietro = new TextBlock { Text = "← Indietro", Foreground = Pennello("#a19db0"), FontSize = 12, Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+        indietro.MouseEnter += (_, _) => indietro.Foreground = Pennello("#ffd54a");
+        indietro.MouseLeave += (_, _) => indietro.Foreground = Pennello("#a19db0");
+        indietro.MouseLeftButtonUp += (_, _) => Close();     // se il fumetto veniva dal player, il player è ancora lì sotto
+        var testa = new Grid { Margin = new Thickness(0, 0, 0, 2) };
+        testa.Children.Add(new TextBlock { Text = "COSA VUOI FARNE?", Foreground = Pennello("#ffd54a"), FontWeight = FontWeights.Bold, FontSize = 11.5, FontFamily = new FontFamily("Orbitron, Segoe UI"), VerticalAlignment = VerticalAlignment.Center });
+        testa.Children.Add(indietro);
+        pila.Children.Add(testa);
         pila.Children.Add(new TextBlock { Text = nome, Foreground = Pennello("#a19db0"), FontSize = 12.5, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 0, 0, 10) });
         var apribile = file.Any(File.Exists);
         pila.Children.Add(Voce("Apri", apribile ? "nel lettore, senza convertire" : "mostra la cartella", "#35e8ff", () =>
@@ -443,11 +514,40 @@ public sealed class MiniPlayer : Window
     readonly MediaPlayer mp = new();
     readonly IReadOnlyList<string> brani;
     readonly FinestraAvatar avatar;
-    readonly TextBlock titolo = new() { Foreground = Brushes.White, FontWeight = FontWeights.Bold, FontSize = 13.5, TextTrimming = TextTrimming.CharacterEllipsis };
-    readonly TextBlock tempo = new() { Foreground = new SolidColorBrush(Color.FromRgb(0xa1, 0x9d, 0xb0)), FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Left };
-    readonly TextBlock durata = new() { Foreground = new SolidColorBrush(Color.FromRgb(0xa1, 0x9d, 0xb0)), FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Right };
-    readonly Border riempimento = new() { Background = new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)), CornerRadius = new CornerRadius(3), HorizontalAlignment = HorizontalAlignment.Left, Width = 0 };
-    readonly Border barra = new() { Height = 6, CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), Cursor = Cursors.Hand, Margin = new Thickness(0, 8, 0, 5) };
+    // le icone sono disegnate qui (su una griglia 24×24), non prese dai caratteri del sistema
+    const string IcPlay = "M8 5v14l11-7z", IcPausa = "M7 5h3.6v14H7zM13.4 5H17v14h-3.6z";
+    const string IcIndietro = "M18 6v12L8.5 12zM5.5 6h2.2v12H5.5z", IcAvanti = "M6 6v12l9.5-6zM16.3 6h2.2v12h-2.2z";
+    const string IcApri = "M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4";
+    const string IcConverti = "M20 11A8 8 0 0 0 5.6 6.4L3 9M3 4v5h5M4 13a8 8 0 0 0 14.4 4.6L21 15M21 20v-5h-5";
+    const string IcChiudi = "M6 6l12 12M18 6L6 18";
+
+    static UIElement Icona(string disegno, Brush colore, double misura, bool piena)
+    {
+        var d = new System.Windows.Shapes.Path { Data = Geometry.Parse(disegno), SnapsToDevicePixels = false };
+        if (piena) { d.Fill = colore; d.Stroke = colore; d.StrokeThickness = 1.2; d.StrokeLineJoin = PenLineJoin.Round; }
+        else { d.Stroke = colore; d.StrokeThickness = 1.9; d.StrokeStartLineCap = d.StrokeEndLineCap = PenLineCap.Round; d.StrokeLineJoin = PenLineJoin.Round; }
+        var tela = new Canvas { Width = 24, Height = 24 };
+        tela.Children.Add(d);
+        return new Viewbox { Width = misura, Height = misura, Child = tela, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+    }
+
+    static SolidColorBrush Col(string c) => (SolidColorBrush)new BrushConverter().ConvertFromString(c)!;
+    readonly TextBlock titolo = new() { Foreground = Brushes.White, FontWeight = FontWeights.Bold, FontSize = 15, TextTrimming = TextTrimming.CharacterEllipsis };
+    readonly TextBlock sotto = new() { Foreground = Col("#a19db0"), FontSize = 12, Margin = new Thickness(0, 1, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
+    readonly TextBlock tempo = new() { Foreground = Col("#cfc9de"), FontSize = 12, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Left };
+    readonly TextBlock durata = new() { Foreground = Col("#a19db0"), FontSize = 12, HorizontalAlignment = HorizontalAlignment.Right };
+    readonly Border riempimento = new()
+    {
+        Background = new LinearGradientBrush(Color.FromRgb(0xff, 0xd5, 0x4a), Color.FromRgb(0xff, 0x3d, 0xf2), 0),
+        Height = 6, CornerRadius = new CornerRadius(3), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Width = 0, IsHitTestVisible = false,
+    };
+    readonly System.Windows.Shapes.Ellipse manopola = new()
+    {
+        Width = 14, Height = 14, Fill = Col("#fff3c4"), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false,
+        Effect = new DropShadowEffect { BlurRadius = 10, ShadowDepth = 0, Color = Color.FromRgb(0xff, 0xd5, 0x4a), Opacity = 0.9 },
+    };
+    readonly Grid barra = new() { Height = 22, Background = Brushes.Transparent, Cursor = Cursors.Hand, Margin = new Thickness(0, 12, 0, 0) };
+    readonly List<Border> equalizzatore = [];
     readonly Button bPlay;
     readonly DispatcherTimer orologio;
     int i;
@@ -459,30 +559,65 @@ public sealed class MiniPlayer : Window
         this.brani = brani; this.avatar = avatar;
         WindowStyle = WindowStyle.None; AllowsTransparency = true; Background = Brushes.Transparent;
         Topmost = true; ShowInTaskbar = false; ShowActivated = false; ResizeMode = ResizeMode.NoResize;
-        SizeToContent = SizeToContent.Height; Width = 330;
+        SizeToContent = SizeToContent.Height; Width = 372;
 
-        bPlay = Tasto("⏸", "Pausa", () => Gira(), lato: 46, tondo: true, pieno: true);
-        barra.Child = riempimento;
-        barra.MouseLeftButtonDown += (_, e) => { var f = e.GetPosition(barra).X / Math.Max(1, barra.ActualWidth); if (mp.NaturalDuration.HasTimeSpan) mp.Position = TimeSpan.FromSeconds(mp.NaturalDuration.TimeSpan.TotalSeconds * Math.Clamp(f, 0, 1)); };
+        bPlay = Tasto(null, "Pausa", () => Gira(), lato: 52, tondo: true, pieno: true, ico: IcPausa, piena: true);
 
-        // i comandi del brano stanno al centro; apri/altro/chiudi sono piccoli in alto a destra
-        var tasti = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 2) };
-        if (brani.Count > 1) tasti.Children.Add(Tasto("⏮", "Precedente", () => Vai(i - 1), lato: 36, tondo: true));
-        tasti.Children.Add(bPlay);
-        if (brani.Count > 1) tasti.Children.Add(Tasto("⏭", "Successivo", () => Vai(i + 1), lato: 36, tondo: true));
-        var angolo = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
-        angolo.Children.Add(Tasto("↗", "Apri nell'app (con tutto il lettore)", () => { mp.Pause(); Regia.Gestisci(new Richiesta(null, [brani[i]], false, true)); Close(); }, true, 26, true));
-        angolo.Children.Add(Tasto("⋯", "Apri, converti, comprimi", () => avatar.ApriFumetto(brani), lato: 26, tondo: true));
-        angolo.Children.Add(Tasto("✕", "Chiudi", () => Close(), lato: 26, tondo: true));
-        titolo.Margin = new Thickness(0, 4, 100, 0);
+        // la barra: una guida sottile, il riempimento oro → magenta e una manopola; si clicca e si trascina
+        barra.Children.Add(new Border { Height = 6, CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromArgb(46, 255, 255, 255)), VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false });
+        barra.Children.Add(riempimento);
+        barra.Children.Add(manopola);
+        void Cerca(MouseEventArgs e)
+        {
+            if (!mp.NaturalDuration.HasTimeSpan) return;
+            var f = Math.Clamp(e.GetPosition(barra).X / Math.Max(1, barra.ActualWidth), 0, 1);
+            mp.Position = TimeSpan.FromSeconds(mp.NaturalDuration.TimeSpan.TotalSeconds * f);
+            Aggiorna();
+        }
+        barra.MouseLeftButtonDown += (_, e) => { barra.CaptureMouse(); Cerca(e); };
+        barra.MouseMove += (_, e) => { if (barra.IsMouseCaptured) Cerca(e); };
+        barra.MouseLeftButtonUp += (_, _) => barra.ReleaseMouseCapture();
+
+        // in alto: l'icona con le barrette che ballano, il titolo (intero, per quanto ci sta) e la X
+        var tessera = new Border
+        {
+            Width = 46, Height = 46, CornerRadius = new CornerRadius(14), VerticalAlignment = VerticalAlignment.Center,
+            Background = new LinearGradientBrush(Color.FromArgb(120, 0xff, 0x3d, 0xf2), Color.FromArgb(150, 0x5a, 0x2b, 0xbf), 45),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), BorderThickness = new Thickness(1),
+        };
+        var barrette = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Height = 22 };
+        for (var k = 0; k < 4; k++)
+        {
+            var br = new Border { Width = 4, Height = 5, CornerRadius = new CornerRadius(2), Background = Col("#ffd54a"), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(k == 0 ? 0 : 3, 0, 0, 0) };
+            equalizzatore.Add(br); barrette.Children.Add(br);
+        }
+        tessera.Child = barrette;
+        var chiudi = Tasto(null, "Chiudi", () => Close(), lato: 28, tondo: true, ico: IcChiudi);
+        chiudi.VerticalAlignment = VerticalAlignment.Top; chiudi.Margin = new Thickness(0);
+        var nomi = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(13, 0, 10, 0) };
+        nomi.Children.Add(titolo);
+        nomi.Children.Add(sotto);
         var testa = new Grid();
-        testa.Children.Add(titolo);
-        testa.Children.Add(angolo);
-        var tempi = new Grid();
+        testa.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        testa.ColumnDefinitions.Add(new ColumnDefinition());
+        testa.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        testa.Children.Add(tessera);
+        Grid.SetColumn(nomi, 1); testa.Children.Add(nomi);
+        Grid.SetColumn(chiudi, 2); testa.Children.Add(chiudi);
+
+        var tempi = new Grid { Margin = new Thickness(0, 2, 0, 0) };
         tempi.Children.Add(tempo);
         tempi.Children.Add(durata);
 
-        var pila = new StackPanel { Margin = new Thickness(16, 12, 16, 12) };
+        // i comandi tutti sulla stessa riga e centrati: apri nell'app · indietro · play · avanti · altro
+        var tasti = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 10, 0, 0) };
+        tasti.Children.Add(Tasto(null, "Apri nell'app (con tutto il lettore)", () => { mp.Pause(); Regia.Gestisci(new Richiesta(null, [brani[i]], false, true)); Close(); }, true, 38, true, ico: IcApri));
+        if (brani.Count > 1) tasti.Children.Add(Tasto(null, "Precedente", () => Vai(i - 1), lato: 42, tondo: true, ico: IcIndietro, piena: true));
+        tasti.Children.Add(bPlay);
+        if (brani.Count > 1) tasti.Children.Add(Tasto(null, "Successivo", () => Vai(i + 1), lato: 42, tondo: true, ico: IcAvanti, piena: true));
+        tasti.Children.Add(Tasto(null, "Converti o comprimi…", () => avatar.ApriFumetto(brani), true, 38, true, ico: IcConverti));
+
+        var pila = new StackPanel { Margin = new Thickness(18, 16, 18, 14) };
         pila.Children.Add(testa);
         pila.Children.Add(barra);
         pila.Children.Add(tempi);
@@ -495,25 +630,26 @@ public sealed class MiniPlayer : Window
             Effect = new DropShadowEffect { BlurRadius = 26, ShadowDepth = 8, Opacity = 0.5, Direction = 270 },
         };
 
-        mp.MediaEnded += (_, _) => { if (i + 1 < brani.Count) Vai(i + 1); else Ferma(); };
+        mp.MediaEnded += (_, _) => { if (i + 1 < brani.Count) Vai(i + 1); else Close(); };     // finito l'ultimo brano, il player si chiude da solo
         mp.MediaFailed += (_, _) =>
         {
             // un formato che Windows non suona da solo (OGG, OPUS…): lo suona il lettore dell'app
             Regia.Gestisci(new Richiesta(null, [brani[i]], false, true));
             Close();
         };
-        orologio = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Normal, (_, _) => Aggiorna(), Dispatcher);
+        orologio = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Normal, (_, _) => Aggiorna(), Dispatcher);
         Loaded += (_, _) => { Posiziona(); Vai(0); orologio.Start(); };
         avatar.Spostato += Posiziona;
         Closed += (_, _) => { avatar.Spostato -= Posiziona; orologio.Stop(); mp.Stop(); mp.Close(); StatoCambiato?.Invoke(false); };
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); else if (e.Key == Key.Space) Gira(); };
     }
 
-    Button Tasto(string glifo, string tip, Action fai, bool oro = false, double lato = 34, bool tondo = false, bool pieno = false)
+    Button Tasto(string? glifo, string tip, Action fai, bool oro = false, double lato = 34, bool tondo = false, bool pieno = false, string? ico = null, bool piena = false)
     {
+        var colore = pieno ? Col("#09080d") : oro ? Col("#ffd54a") : Brushes.White;
         var b = new Button
         {
-            Content = new TextBlock { Text = glifo, FontFamily = new FontFamily("Segoe UI Symbol"), FontSize = lato >= 40 ? 19 : lato <= 26 ? 12 : 15, Foreground = pieno ? new SolidColorBrush(Color.FromRgb(0x09, 0x08, 0x0d)) : oro ? new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)) : Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+            Content = ico is not null ? Icona(ico, colore, lato >= 50 ? 26 : lato >= 40 ? 19 : lato >= 36 ? 18 : 14, piena) : new TextBlock { Text = glifo ?? "", FontFamily = new FontFamily("Segoe UI Symbol"), FontSize = lato >= 40 ? 19 : lato <= 26 ? 12 : 15, Foreground = pieno ? new SolidColorBrush(Color.FromRgb(0x09, 0x08, 0x0d)) : oro ? new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)) : Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
             Width = lato, Height = tondo ? lato : 30, Margin = new Thickness(tondo ? 5 : 0, 0, tondo ? 5 : 4, 0), ToolTip = tip, Cursor = Cursors.Hand, Focusable = false, BorderThickness = new Thickness(0),
             Background = pieno ? new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)) : new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
         };
@@ -543,6 +679,8 @@ public sealed class MiniPlayer : Window
     {
         i = (n + brani.Count) % brani.Count;
         titolo.Text = System.IO.Path.GetFileNameWithoutExtension(brani[i]);
+        titolo.ToolTip = titolo.Text;
+        sotto.Text = brani.Count > 1 ? $"Brano {i + 1} di {brani.Count}" : "Musica";
         mp.Open(new Uri(brani[i]));
         mp.Play();
         Stato(true);
@@ -554,8 +692,14 @@ public sealed class MiniPlayer : Window
     void Stato(bool si)
     {
         suona = si;
-        ((TextBlock)bPlay.Content).Text = si ? "⏸" : "▶";
+        bPlay.Content = Icona(si ? IcPausa : IcPlay, Col("#09080d"), 26, true);
         bPlay.ToolTip = si ? "Pausa" : "Suona";
+        var caso = new Random();
+        foreach (var br in equalizzatore)
+        {
+            if (si) br.BeginAnimation(HeightProperty, new DoubleAnimation(4, 8 + caso.Next(8, 15), TimeSpan.FromMilliseconds(260 + caso.Next(0, 340))) { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever, EasingFunction = new SineEase() });
+            else { br.BeginAnimation(HeightProperty, null); br.Height = 5; }
+        }
         StatoCambiato?.Invoke(si);
     }
 
@@ -566,7 +710,9 @@ public sealed class MiniPlayer : Window
         if (!mp.NaturalDuration.HasTimeSpan) { tempo.Text = Tm(mp.Position); return; }
         var tot = mp.NaturalDuration.TimeSpan;
         tempo.Text = Tm(mp.Position);
-        durata.Text = (brani.Count > 1 ? $"{i + 1} di {brani.Count}  ·  " : "") + Tm(tot);
-        riempimento.Width = tot.TotalSeconds > 0 ? barra.ActualWidth * Math.Clamp(mp.Position.TotalSeconds / tot.TotalSeconds, 0, 1) : 0;
+        durata.Text = Tm(tot);
+        var largo = tot.TotalSeconds > 0 ? barra.ActualWidth * Math.Clamp(mp.Position.TotalSeconds / tot.TotalSeconds, 0, 1) : 0;
+        riempimento.Width = largo;
+        manopola.Margin = new Thickness(Math.Max(0, largo - 7), 0, 0, 0);
     }
 }

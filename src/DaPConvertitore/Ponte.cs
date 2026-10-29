@@ -78,13 +78,16 @@ public sealed class Ponte
         timerCarico.Stop();
         risorse.Ferma();
         if (avvisoAgg is not null) Aggiornamenti.Trovata -= avvisoAgg;
+        if (avvisoAvatar is not null) Regia.AvatarCambiato -= avvisoAvatar;
         monitor?.Dispose();
     }
 
     Action<string>? avvisoAgg;
+    Action<bool>? avvisoAvatar;
     /// <summary>La mini interfaccia accanto all'avatar e la scelta già fatta da lì: l'interfaccia le legge in «stato» o le riceve come eventi.</summary>
     bool compatto;
     object? sceltaIniziale;
+    List<string> idCompatti = [], percorsiCompatti = [];
     CancellationTokenSource? stima;
 
     // ————————————————————————— richieste da fuori (riga di comando, altre istanze) —————————————————————————
@@ -95,6 +98,8 @@ public sealed class Ponte
         if (r.Compatto)
         {
             compatto = true;
+            idCompatti = [.. ids];
+            percorsiCompatti = [.. r.Percorsi];
             sceltaIniziale = r.Scelta is null ? null : new { formato = r.Scelta, preset = r.Preset };
             finestra.Compatta(Regia.AreaAvatar);
             Manda("compatto", new { si = true, scelta = sceltaIniziale });
@@ -218,6 +223,8 @@ public sealed class Ponte
                 {
                     avvisoAgg = v => Manda("aggiornamento", new { versione = v });
                     Aggiornamenti.Trovata += avvisoAgg;
+                    avvisoAvatar = si => Manda("avatar", new { si });
+                    Regia.AvatarCambiato += avvisoAvatar;
                 }
                 pronta = true;
                 timerCarico.Start();
@@ -334,6 +341,10 @@ public sealed class Ponte
                 var pos = a["posizione"]?.GetValue<double>() ?? 0.35;
                 return await Confronto.Fai(l, pos, strumenti);
             }
+            case "indietro":
+                // dalla mini interfaccia al fumetto «Cosa vuoi farne?»: la pagina toglie dalla lista i file di questa richiesta
+                Regia.Fumetto(percorsiCompatti);
+                return new { ids = idCompatti, percorsi = percorsiCompatti };
             case "finestra":
                 switch ((string?)a["azione"])
                 {
@@ -358,6 +369,7 @@ public sealed class Ponte
                 if (a["apriCartella"] is { } ac) imp.ApriCartella = ac.GetValue<bool>();
                 if (a["cestinoDaSolo"] is { } ce) imp.CestinoDaSolo = ce.GetValue<bool>();
                 if (a["avatarAttivo"] is { } av) Regia.Avatar(av.GetValue<bool>());
+                if (a["avatarCambioAuto"] is { } ca) imp.AvatarCambioAuto = ca.GetValue<bool>();
                 if (a["avatarAvvio"] is { } aa) { imp.AvatarAvvio = aa.GetValue<bool>(); AvatarAvvioAutomatico(imp.AvatarAvvio); }
                 if (a["apriCon"] is { } ap)
                 {
