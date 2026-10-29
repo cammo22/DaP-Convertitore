@@ -6,6 +6,7 @@ $ErrorActionPreference = "Stop"
 $radice = Resolve-Path (Join-Path $PSScriptRoot "..")
 
 if (-not (Test-Path (Join-Path $radice "motori\ffmpeg\ffmpeg.exe"))) { & (Join-Path $PSScriptRoot "prendi-ffmpeg.ps1") }
+if (-not (Test-Path (Join-Path $radice "motori\7zip\7z.exe"))) { & (Join-Path $PSScriptRoot "prendi-7zip.ps1") }
 # il menu di Windows 11 (DLL + pacchetto firmato) in menu\out
 & (Join-Path $PSScriptRoot "compila-menu.ps1")
 

@@ -20,14 +20,14 @@ public static class Trascinamento
         Pulisci();
         var dest = Path.Combine(Cartella, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dest);
-        var argomenti = new List<string> { "-xf", Path.GetFullPath(archivio), "-C", dest };
-        argomenti.AddRange(voci.Select(v => v.Replace('\\', '/')));
-        var r = await Processi.Esegui(s.Tar, argomenti, CancellationToken.None, tieniUscita: false, silenzioso: true);
+        string? errore = null;
+        try { await SetteZip.Estrai(s, archivio, dest, voci, CancellationToken.None); }
+        catch (ErroreConversione e) { errore = e.Dettaglio ?? e.Message; }
         var percorsi = PercorsiInUscita(dest, voci).Where(p => File.Exists(p) || Directory.Exists(p)).ToList();
         if (percorsi.Count == 0)
         {
             try { Directory.Delete(dest, true); } catch { }
-            throw new ErroreConversione("Non ho estratto niente: forse le voci scelte non ci sono più.", r.Errori);
+            throw new ErroreConversione("Non ho estratto niente: forse le voci scelte non ci sono più.", errore);
         }
         return percorsi;
     }

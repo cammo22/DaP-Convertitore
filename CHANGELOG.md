@@ -2,6 +2,32 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.0.0 — 29 ottobre 2026
+
+- **Gli archivi ora li apre 7-Zip, quello vero.** Dentro il programma c'è 7-Zip: ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB e ISO si guardano
+  dentro e si estraggono senza intoppi, **anche con le accentate nei nomi** (prima un 7z con «è» o «à» non si riusciva a estrarre dal lettore)
+  e anche i `.tar.gz`. «Estrai qui» e il trascinamento fuori dall'archivio estraggono una volta sola, nel posto giusto.
+  Gli archivi con la password (7Z, ZIP, RAR cifrati) li riconosce e te lo dice; inserire la password arriverà dopo.
+- **Le miniature dentro gli archivi.** Aprendo un archivio nel lettore, le foto, i video e i PDF che ci sono dentro hanno la loro
+  figurina (si chiede solo quando la riga si vede, e solo per file non enormi).
+- **Lo slider della compressione.** Scegliendo ZIP, 7Z, TAR.GZ o TAR.XZ c'è una slider da *Nessuna* (archivia soltanto) a *Massima*.
+  Vale anche per un archivio che hai già: uno ZIP debole, ricompresso al massimo (ZIP o 7Z), pesa meno con dentro le stesse cose; l'originale non si tocca.
+- **La musica suona solo il brano che apri.** Prima, aprendo una canzone in una cartella con altre, partivano anche tutte le altre. Adesso
+  si ferma a fine brano; il tasto **Di seguito** (T) fa suonare anche gli altri uno dopo l'altro. La scaletta a destra resta chiusa finché non la
+  apri (L), non si riapre da sola al prossimo avvio, ha il suo tasto «Di seguito», si scorre con le frecce su e giù e non schiaccia più il player.
+- **Impostazioni più semplici: un tasto «Aggiusta tutto».** Mette a posto in un colpo il tasto destro (classico e di Windows 11), il menu
+  «Apri con» e le app predefinite, e per ogni passo dice com'è andata. Dice anche quanti tipi di file si aprono davvero col lettore
+  (prima era un'incognita). Spariscono «Menu classico ovunque», «Riavvia Esplora file» e le righe doppie: su Windows 11 resta un solo
+  interruttore, **Mostra tutti i menu del tasto destro** (poi chiede di riavviare Esplora file). **I suoni sono spenti di partenza**
+  (anche per chi li aveva accesi), si riaccendono da Impostazioni.
+- **La home.** Restano la colonna a sinistra, il logo che gira e il riassunto; in più: le sei strade (video, musica, foto, PDF,
+  documenti, archivi: il selettore si apre già sul tipo giusto), «apri un file nel lettore», gli **ultimi file convertiti** con quanto pesavano
+  e quanto pesano (e un tasto per guardarli o mostrarli nella cartella) e **come sta il PC** (scheda video, 7-Zip, Word o LibreOffice,
+  sistema, versione).
+- Dentro: `SetteZip.cs`, `MiniatureArchivio.cs`, `Storico.cs`, `ui/src/app/home.ts`, `ui/src/app/pannelli/archivio.ts`,
+  `scripts/prendi-7zip.ps1` (la CI prende 7-Zip da sola). `System.Security.Cryptography.Pkcs` aggiornato (la 8.0.1 aveva due vulnerabilità note).
+  Il numero salta a 2.0.0 perché il motore degli archivi è tutto nuovo e questa è la base per Linux e Mac.
+
 ## 1.9.1 — 21 ottobre 2026
 
 - **Video e brani si scorrono col cursore, come in Finder.** Nell'anteprima a destra non ci sono più solo le 12 figurine:

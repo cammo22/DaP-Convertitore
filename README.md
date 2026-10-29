@@ -111,8 +111,7 @@ apre il lettore: nero, senza cornice, leggero. Ogni tipo di file ha la sua pagin
   suona da sé (AVI, WMV, MKV con dentro codec strani, AC3…) lo **traduce FFmpeg al volo** con la scheda video,
   e si scorre lo stesso dove vuoi. HEVC e 4K vanno col decoder della scheda.
 - **Musica · il giradischi.** Il disco gira con la copertina come etichetta, il braccio avanza col brano, la
-  **forma d'onda** si scorre col mouse, sotto balla l'**analizzatore di spettro**; la scaletta della cartella, un
-  brano dopo l'altro. WMA, APE, ALAC e compagnia diventano FLAC in cache, senza perdere niente.
+  **forma d'onda** si scorre col mouse, sotto balla l'**analizzatore di spettro**. Suona **solo il brano che hai aperto**: con **Di seguito** (tasto T) suonano anche gli altri della cartella, uno dopo l'altro; la scaletta (L) sta chiusa finché non la apri. WMA, APE, ALAC e compagnia diventano FLAC in cache, senza perdere niente.
 - **Foto · il tavolo luminoso.** La rotella zooma dove c'è il mouse, si trascina, doppio clic per il 100%, la
   mappa in basso quando sei dentro. ← → passano alla foto dopo (già pronta), **S presentazione**, R gira,
   B sfondo scuro/scacchi/chiaro, Ctrl+C copia l'immagine, W la mette come sfondo del desktop, **D ritocca**:
@@ -136,8 +135,7 @@ scrittura, e **Salva** (Ctrl+S) lo riscrive nel file con la sua codifica e le su
 Esplora file o sul desktop: escono come file veri, dove li lasci. Sulla zona in alto escono accanto all'archivio. Nella piastra, **Ctrl+Canc** (o il tasto *svuota*) svuota la coda; **Canc** toglie il file scelto.
 
 **Incollare.** Nella piastra, tasto destro → **Incolla** (o Ctrl+V) aggiunge i file copiati in Esplora file.
-**App predefinite** apre una lista dei tipi con un interruttore ciascuno: con OK si registrano quelli accesi e si
-arriva alla pagina di Windows, dove basta un clic. I blocchi di codice dei Markdown hanno il loro tasto **Copia**.
+In **Impostazioni** il tasto **Aggiusta tutto** mette a posto in un colpo il tasto destro, «Apri con» e le app predefinite, e dice per ogni passo com'è andata (e quanti tipi di file si aprono davvero col lettore). «Scegli i tipi» è la lista dei tipi con un interruttore ciascuno. I blocchi di codice dei Markdown hanno il loro tasto **Copia**.
 
 **Ritoccare una foto.** Nel lettore **D** (o la matita in alto) apre la barra del ritocco: penna, evidenziatore, freccia,
 riquadro, ovale e **testo** (clic dove scrivere, Invio per fissarlo), otto colori più uno a scelta, lo spessore, annulla e
@@ -190,6 +188,11 @@ un'indovinata, il motore codifica davvero la foto (JPG e HEIC interi; WEBP, AVIF
 (un MKV in H.264 che deve diventare MP4) c'è **VELOCE**: cambia solo la scatola, in pochi secondi e senza
 perdere niente.
 
+## Gli archivi: 7-Zip dentro
+
+Tutti gli archivi passano da **7-Zip** (`motori\7zip`, viaggia con il programma): ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB, ISO si aprono e si guardano dentro senza estrarre, coi nomi giusti anche con le accentate, e dentro l'archivio le **foto, i video e i PDF hanno la loro miniatura**.
+Per comprimere c'è lo **slider della compressione** (da *Nessuna*, che archivia soltanto, a *Massima*): vale per ZIP, 7Z, TAR.GZ e TAR.XZ, anche partendo da un archivio già fatto. Uno ZIP debole, ricompresso al massimo, pesa meno e dentro c'è la stessa roba (l'originale non si tocca). Non c'è ancora la password sugli archivi cifrati: il programma lo dice e basta.
+
 ## La scheda video
 
 All'avvio il convertitore **prova davvero** gli encoder (tre fotogrammi neri ciascuno): così un driver vecchio
@@ -222,8 +225,8 @@ AV1; in H.264 diventa SDR coi colori giusti. FFmpeg gira a priorità bassa: ment
 | **Testi** Markdown, TXT, HTML, registri e codice (LOG, INI, YAML, XML, PY…, anche senza estensione), con l'**anteprima a destra** (numeri di riga, Ctrl+F) | PDF impaginato, HTML, DOCX, TXT | WebView2 (il motore di Edge), Markdig |
 | **Dati** CSV, TSV, JSON | XLSX, CSV, JSON, TSV | il convertitore |
 | **Sottotitoli** SRT, VTT, ASS | SRT, VTT, ASS, TXT (solo le battute) | FFmpeg |
-| **Archivi** ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB, ISO | estrai qui, ZIP, 7Z, TAR.GZ, TAR.XZ | il `tar` di Windows |
-| **Cartelle** e qualsiasi altro file | ZIP, 7Z | il `tar` di Windows |
+| **Archivi** ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB, ISO | estrai qui, ZIP, 7Z, TAR.GZ, TAR.XZ, col livello di compressione che scegli | **7-Zip** (dentro il programma) |
+| **Cartelle** e qualsiasi altro file | ZIP, 7Z | 7-Zip |
 
 Le foto si girano da sole come le vede il telefono (orientamento EXIF); la posizione GPS e gli altri dati
 nascosti non passano, la data del file sì. Con lo slider del **peso** la qualità scende finché la foto ci sta, e se
@@ -238,7 +241,6 @@ Per documenti, fogli e presentazioni serve **[LibreOffice](https://it.libreoffic
 - Per HEIC e RAW: le *Estensioni immagini HEIF* e *Raw Image Extension* di Microsoft (su Windows 11 di
   solito ci sono). Per **scrivere** HEIC servono le *Estensioni video HEVC*.
 - Per l'OCR: una lingua di Windows col riconoscimento del testo (l'italiano va benissimo).
-- Per **creare** archivi 7Z serve il `tar` di Windows 11 (quello di Windows 10 fa solo ZIP e TAR).
 - 64 bit. L'installer pesa circa 170 MB perché dentro c'è FFmpeg con tutti i codec.
 
 ## Come è fatto
@@ -249,7 +251,7 @@ Per documenti, fogli e presentazioni serve **[LibreOffice](https://it.libreoffic
 | Interfaccia | TypeScript senza framework (Vite), canvas per bobine e strumenti a lancetta, Orbitron, Rajdhani e DSEG7 |
 | Motore | `src/DaPConvertitore.Motore`: catalogo dei formati, piano del video, coda dei lavori, un motore per famiglia |
 | Video e audio | **FFmpeg 9.0** con NVENC/AMF/Quick Sync, x264, x265, SVT-AV1, libvpx, libaom, LAME, Opus |
-| Windows | WIC (HEIC, RAW, orientamento), Windows.Data.Pdf, Windows.Media.Ocr, `tar.exe`, contatori "GPU Engine", notifiche, barra delle applicazioni |
+| Windows | WIC (HEIC, RAW, orientamento), Windows.Data.Pdf, Windows.Media.Ocr, contatori "GPU Engine", notifiche, barra delle applicazioni |
 | Lettore | una finestra WPF per volta con la sua pagina (`ui/lettore.html`, una vista per tipo caricata solo quando serve); i file arrivano da `https://dap.file/`, che non esiste in rete: risponde l'app (`Risorse.cs`), a pezzi come vuole il tag `<video>`, e solo per i file aperti. Il video che WebView2 non suona lo traduce FFmpeg in MP4 a frammenti messi in fila nel **Media Source** della pagina; il 3D con **three.js** |
 | Tasto destro di Windows 11 | `menu/DaPMenu.cpp`: un comando **IExplorerCommand** col sottomenu, in una DLL nativa (compilata con **Zig**, niente Visual Studio), registrati da un pacchetto MSIX **sparse** (`menu/AppxManifest.xml`, solo manifest e icone) firmato col certificato di DaProd; le voci la DLL le legge da `menu.tsv`, che l'app scrive dal Catalogo |
 | Menu classico | registro in HKCU (`SystemFileAssociations\.ext\shell` + sottomenu `ExtendedSubCommandsKey`), protocollo `dap-convertitore:` per i bottoni delle notifiche, istanza unica con named pipe (Esplora file lancia un processo per file) |

@@ -55,7 +55,7 @@ public sealed class Ponte
         risorse = new Risorse(finestra.Dispatcher);
         Processi.Priorita = imp.AlMassimo ? ProcessPriorityClass.Normal : ProcessPriorityClass.BelowNormal;
         rilevazione = Task.Run(() => Hardware.Rileva(strumenti));
-        Coda = new Coda(strumenti, () => hardware ?? rilevazione.GetAwaiter().GetResult(), () => new StampanteInAttesa(stampante.Task), imp.ScrittaPulita, () => imp.CestinoDaSolo);
+        Coda = new Coda(strumenti, () => hardware ?? rilevazione.GetAwaiter().GetResult(), () => new StampanteInAttesa(stampante.Task), imp.ScrittaPulita, () => imp.CestinoDaSolo) { QuandoFatto = Storico.Aggiungi };
         Coda.Cambiato += l => finestra.Dispatcher.BeginInvoke(() => LavoroCambiato(l));
         timerRapide = new DispatcherTimer(TimeSpan.FromMilliseconds(450), DispatcherPriority.Normal, (_, _) => PartonoRapide(), finestra.Dispatcher) { IsEnabled = false };
         timerCarico = new DispatcherTimer(TimeSpan.FromMilliseconds(700), DispatcherPriority.Background, (_, _) => Carico(), finestra.Dispatcher) { IsEnabled = false };
@@ -220,19 +220,24 @@ public sealed class Ponte
                     categorie = Enum.GetValues<Categoria>().Select(c => new { id = Catalogo.Chiave(c), nome = Catalogo.NomeCategoria(c) }),
                     impostazioni = imp,
                     apriConGruppi = ApriCon.Elenco().Select(g => new { g.Id, g.Nome, g.Esempi }),
-                    regolaPredefiniti = new { supportata = Predefiniti.Supportata(), attiva = Predefiniti.Attiva(), diAltri = Predefiniti.DiAltri() },
+                    regolaPredefiniti = RegolaPredefiniti(),
                     aggiornamento = Aggiornamenti.Disponibile,
                     modo = finestra.Modo,
                     file = Ordinati().Select(FileDto),
                     lavori = Coda.Tutti.Where(l => giro.Contains(l.Id)).Select(LavoroDto),
-                    office = new { libreOffice = strumenti.LibreOffice is not null, word = strumenti.Word },
+                    office = new { libreOffice = strumenti.LibreOffice is not null, word = strumenti.Word, setteZip = strumenti.HaSetteZip },
                     menu11 = StatoMenu11(),
                 };
             case "pronto":
                 return true;
             case "scegli":
-                Scegli();
+                Scegli((string?)a["categoria"], a["lettore"]?.GetValue<bool>() == true);
                 return true;
+            case "storico":
+            {
+                var (recenti, totali) = Storico.Recenti(a["quanti"]?.GetValue<int>() ?? 6);
+                return new { recenti = recenti.Select(v => new { v.Quando, v.Nome, v.Formato, v.Uscita, v.PesoPrima, v.PesoDopo, v.Categoria }), totali };
+            }
             case "incolla":
             {
                 // i file copiati in Esplora file (Ctrl+C) entrano nella coda, come se fossero trascinati
@@ -332,7 +337,7 @@ public sealed class Ponte
                 if (a["scritta"] is { } s) imp.Scritta = (string?)s ?? "convertito";
                 if (a["menu"] is { } m) imp.Menu = m.GetValue<bool>();
                 if (a["alMassimo"] is { } am) { imp.AlMassimo = am.GetValue<bool>(); Processi.Priorita = imp.AlMassimo ? ProcessPriorityClass.Normal : ProcessPriorityClass.BelowNormal; }
-                if (a["suoni"] is { } su) imp.Suoni = su.GetValue<bool>();
+                if (a["suoniAccesi"] is { } su) imp.SuoniAccesi = su.GetValue<bool>();
                 if (a["apriCartella"] is { } ac) imp.ApriCartella = ac.GetValue<bool>();
                 if (a["cestinoDaSolo"] is { } ce) imp.CestinoDaSolo = ce.GetValue<bool>();
                 if (a["apriCon"] is { } ap)
@@ -419,22 +424,30 @@ public sealed class Ponte
                     imp.ApriCon = true;
                     ApriCon.Registra(Environment.ProcessPath!, gruppi);
                 }
-                var pagina = () => Process.Start(new ProcessStartInfo($"ms-settings:defaultapps?registeredAppUser={Uri.EscapeDataString(ApriCon.NomeApp)}") { UseShellExecute = true });
-                if (a["gruppi"] is not JsonArray || !Predefiniti.Supportata() || Predefiniti.DiAltri()) { pagina(); return new { esito = "pagina" }; }
-                // il modo di Windows per gli amministratori: un file di associazioni, applicato all'accesso (serve il permesso)
-                var xml = Path.Combine(Path.GetTempPath(), $"dap-associazioni-{Guid.NewGuid():N}.xml");
-                await File.WriteAllTextAsync(xml, Predefiniti.Xml(imp.GruppiPredefiniti ?? []), new System.Text.UTF8Encoding(false));
-                try
+                if (a["gruppi"] is not JsonArray)
                 {
-                    var codice = await Predefiniti.ChiediAdmin(Environment.ProcessPath!, $"--predefiniti-applica \"{xml}\"");
-                    return new { esito = codice switch { null => "negato", Predefiniti.Fatto => "ok", Predefiniti.GiaUsata => "gia", _ => "errore" } };
+                    Process.Start(new ProcessStartInfo($"ms-settings:defaultapps?registeredAppUser={Uri.EscapeDataString(ApriCon.NomeApp)}") { UseShellExecute = true });
+                    return new { esito = "pagina" };
                 }
-                finally { try { File.Delete(xml); } catch { } }
+                return new { esito = await ApplicaRegola(imp.GruppiPredefiniti ?? []) };
             }
             case "predefiniteTogli":
             {
                 var codice = await Predefiniti.ChiediAdmin(Environment.ProcessPath!, "--predefiniti-togli");
                 return new { esito = codice switch { null => "negato", Predefiniti.Fatto => "ok", _ => "errore" } };
+            }
+            case "aggiustaTutto":
+                return await AggiustaTutto();
+            case "togliTutto":
+            {
+                // le voci del sistema tolte tutte insieme (la regola delle app predefinite, se c'è, ha il suo tasto)
+                MenuContestuale.Rimuovi();
+                ApriCon.Rimuovi();
+                if (Menu11.Registrato()) await Menu11.Rimuovi();
+                imp.Menu = false;
+                imp.ApriCon = false;
+                imp.Salva();
+                return new { menu11 = StatoMenu11(), regola = RegolaPredefiniti() };
             }
             case "esplora":
                 await Menu11.RiavviaEsplora();
@@ -492,10 +505,20 @@ public sealed class Ponte
         throw new InvalidOperationException($"Comando sconosciuto: {cmd}");
     }
 
-    void Scegli()
+    /// <summary>
+    /// Il selettore di file. Con una categoria (video, audio…) mostra solo quei tipi; con «lettore» il file scelto si apre nel
+    /// lettore invece di entrare nella coda.
+    /// </summary>
+    void Scegli(string? categoria = null, bool lettore = false)
     {
-        var d = new Microsoft.Win32.OpenFileDialog { Multiselect = true, Title = "Scegli i file da convertire" };
-        if (d.ShowDialog(finestra) == true) Gestisci(new Richiesta(null, d.FileNames, true));
+        var cat = Enum.GetValues<Categoria>().Where(c => c is not (Categoria.Altro or Categoria.Cartella)).Cast<Categoria?>().FirstOrDefault(c => Catalogo.Chiave(c!.Value) == categoria);
+        var filtro = "Tutti i file|*.*";
+        if (cat is not null)
+            filtro = $"{Catalogo.NomeCategoria(cat.Value)}|{string.Join(';', Catalogo.EstensioniDi(cat.Value).Select(e => "*." + e.TrimStart('.')))}|Tutti i file|*.*";
+        var d = new Microsoft.Win32.OpenFileDialog { Multiselect = !lettore, Title = lettore ? "Scegli un file da guardare" : "Scegli i file da convertire", Filter = filtro };
+        if (d.ShowDialog(finestra) != true) return;
+        if (lettore) Regia.ApriNelLettore(d.FileName);
+        else Gestisci(new Richiesta(null, d.FileNames, true));
     }
 
     // ————————————————————————— notizie verso l'interfaccia —————————————————————————
@@ -581,6 +604,99 @@ public sealed class Ponte
         gpu = hardware.Gpu.Select(g => new { g.Nome, g.Marca, g.Vram, g.Driver }),
         encoder = hardware.Encoder, acceleratore = hardware.Acceleratore,
     };
+
+    static readonly string[] GruppiSpentiDiPartenza = ["Documento", "Presentazione", "Tabella", "Archivio"];
+
+    /// <summary>I gruppi per cui il lettore vuole essere il programma di tutti i giorni: quelli scelti, o tutti tranne quelli che Office ed Esplora file aprono meglio.</summary>
+    List<string> GruppiDaAprire() => imp.GruppiPredefiniti ?? ApriCon.Elenco().Select(g => g.Id).Where(g => !GruppiSpentiDiPartenza.Contains(g)).ToList();
+
+    object RegolaPredefiniti()
+    {
+        var (fatti, tutti) = Predefiniti.Conta(GruppiDaAprire());
+        return new { supportata = Predefiniti.Supportata(), attiva = Predefiniti.Attiva(), diAltri = Predefiniti.DiAltri(), impostati = fatti, totale = tutti };
+    }
+
+    /// <summary>Scrive la regola di Windows per i gruppi dati (chiede il permesso di amministratore, una volta). Restituisce l'esito: ok, negato, gia, errore, pagina.</summary>
+    async Task<string> ApplicaRegola(List<string> gruppi)
+    {
+        if (!Predefiniti.Supportata() || Predefiniti.DiAltri())
+        {
+            Process.Start(new ProcessStartInfo($"ms-settings:defaultapps?registeredAppUser={Uri.EscapeDataString(ApriCon.NomeApp)}") { UseShellExecute = true });
+            return "pagina";
+        }
+        // il modo di Windows per gli amministratori: un file di associazioni, applicato all'accesso (serve il permesso)
+        var xml = Path.Combine(Path.GetTempPath(), $"dap-associazioni-{Guid.NewGuid():N}.xml");
+        await File.WriteAllTextAsync(xml, Predefiniti.Xml(gruppi), new System.Text.UTF8Encoding(false));
+        try
+        {
+            var codice = await Predefiniti.ChiediAdmin(Environment.ProcessPath!, $"--predefiniti-applica \"{xml}\"");
+            return codice switch { null => "negato", Predefiniti.Fatto => "ok", Predefiniti.GiaUsata => "gia", _ => "errore" };
+        }
+        finally { try { File.Delete(xml); } catch { } }
+    }
+
+    /// <summary>
+    /// Il tasto «Aggiusta tutto»: mette a posto in un colpo il tasto destro (classico e di Windows 11), il menu «Apri con» e
+    /// la regola delle app predefinite. Ogni passo dice com'è andata; niente si fa di nascosto e niente si ripete se c'è già.
+    /// </summary>
+    async Task<object> AggiustaTutto()
+    {
+        var passi = new List<object>();
+        void Passo(string nome, string esito, string? nota = null) => passi.Add(new { nome, esito, nota });
+        var exe = Environment.ProcessPath!;
+        var cartella = AppContext.BaseDirectory;
+        var daRiavviare = false;
+
+        try
+        {
+            imp.Menu = true;
+            MenuContestuale.Registra(exe, Path.Combine(cartella, "icona.png"));
+            Passo("Tasto destro (menu classico e «Invia a»)", "ok");
+        }
+        catch (Exception e) { Registro.Errore("aggiusta: menu", e); Passo("Tasto destro (menu classico e «Invia a»)", "errore", e.Message); }
+
+        try
+        {
+            imp.ApriCon = true;
+            ApriCon.Registra(exe, GruppiDaAprire());
+            Passo("Menu «Apri con» e icone dei file", "ok");
+        }
+        catch (Exception e) { Registro.Errore("aggiusta: apri con", e); Passo("Menu «Apri con» e icone dei file", "errore", e.Message); }
+
+        if (Menu11.Windows11 && Menu11.Presente(cartella))
+        {
+            if (Menu11.Registrato()) Passo("Tasto destro di Windows 11", "gia");
+            else if (!Menu11.Fidato(cartella) && !await Menu11.RendiFidato(cartella)) Passo("Tasto destro di Windows 11", "negato", "Serve il permesso di Windows, una volta sola.");
+            else
+            {
+                var errore = await Menu11.Registra(cartella);
+                Passo("Tasto destro di Windows 11", errore is null ? "ok" : "errore", errore);
+                daRiavviare = errore is null;
+            }
+            imp.Menu11Chiesto = true;
+        }
+
+        imp.Salva();
+        var gruppi = GruppiDaAprire();
+        var (fatti, totale) = Predefiniti.Conta(gruppi);
+        if (Predefiniti.Attiva() && totale > 0 && fatti == totale) Passo("App predefinite", "gia", $"{fatti} tipi su {totale} già col lettore");
+        else
+        {
+            imp.GruppiPredefiniti = gruppi;
+            imp.Salva();
+            var esito = await ApplicaRegola(gruppi);
+            Passo("App predefinite", esito, esito switch
+            {
+                "ok" => "Si applicano quando ti disconnetti e riaccedi a Windows.",
+                "pagina" => "Questo Windows non accetta la regola: ho aperto la pagina di Windows, dove basta un clic.",
+                "gia" => "C'è già una regola di un'altra azienda o programma: non la tocco.",
+                "negato" => "Non hai dato il permesso.",
+                _ => "Non sono riuscito a scrivere la regola.",
+            });
+        }
+
+        return new { passi, daRiavviare, menu11 = StatoMenu11(), regola = RegolaPredefiniti(), impostazioni = imp };
+    }
 
     /// <summary>Il menu nuovo di Windows 11: si può avere qui? c'è già? manca solo il permesso?</summary>
     object StatoMenu11()

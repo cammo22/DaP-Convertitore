@@ -64,7 +64,8 @@ export interface Impostazioni {
   scritta: string;
   menu: boolean;
   alMassimo: boolean;
-  suoni: boolean;
+  /** Il clac dei tasti e il din-don: di partenza spenti. */
+  suoniAccesi: boolean;
   apriCartella: boolean;
   /** L'originale va nel Cestino da solo a fine conversione (di partenza no: c'è il tasto accanto al risultato). */
   cestinoDaSolo: boolean;
@@ -135,14 +136,21 @@ export interface Stato {
   aggiornamento?: string | null;
   file: InfoFile[];
   lavori: Lavoro[];
-  office: { libreOffice: boolean; word: boolean };
+  office: { libreOffice: boolean; word: boolean; setteZip: boolean };
   /** Il tasto destro nuovo di Windows 11. */
   menu11: StatoMenu11;
   /** I tipi di file che il lettore sa aprire, per la lista «Aprire tutto con DaProd?». */
   apriConGruppi: { id: string; nome: string; esempi: string }[];
   /** La regola di Windows con le associazioni: se questo Windows la applica, se c'è la nostra, se ce n'è una di altri. */
-  regolaPredefiniti: { supportata: boolean; attiva: boolean; diAltri: boolean };
+  regolaPredefiniti: RegolaPredefiniti;
 }
+
+/** La regola delle app predefinite di Windows e quanti tipi hanno davvero il lettore come programma (UserChoice). */
+export interface RegolaPredefiniti { supportata: boolean; attiva: boolean; diAltri: boolean; impostati: number; totale: number }
+
+/** Com'è andato ogni passo di «Aggiusta tutto». */
+export interface PassoSistema { nome: string; esito: 'ok' | 'gia' | 'negato' | 'errore' | 'pagina'; nota?: string | null }
+export interface EsitoAggiusta { passi: PassoSistema[]; daRiavviare: boolean; menu11: StatoMenu11; regola: RegolaPredefiniti; impostazioni: Impostazioni }
 
 export interface StatoMenu11 {
   /** Windows 11 e il pacchetto del menu c'è. */
@@ -176,7 +184,9 @@ export interface OpzioniImmagine { modo: 'peso' | 'qualita'; qualita: number; la
 /** Quello che il motore risponde a «stimaImmagine»: quanto peserà la foto, a che qualità e scala ci si arriva. */
 export interface StimaImmagine { peso: number; qualita: number; scala: number; min: number; max: number; larghezza: number; altezza: number; esatta: boolean }
 export interface OpzioniPdf { dpi: number }
-export interface Opzioni { video: OpzioniVideo; audio: OpzioniAudio; immagine: OpzioniImmagine; pdf: OpzioniPdf }
+/** Compressione degli archivi: -1 solo archiviare, 0 il livello di partenza del formato, 1…9 (7-Zip). */
+export interface OpzioniArchivio { livello: number }
+export interface Opzioni { video: OpzioniVideo; audio: OpzioniAudio; immagine: OpzioniImmagine; pdf: OpzioniPdf; archivio: OpzioniArchivio }
 
 type Ascoltatore = (dati: any) => void;
 

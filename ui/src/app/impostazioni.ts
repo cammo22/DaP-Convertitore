@@ -1,13 +1,13 @@
 // Le impostazioni: il cassetto con le leve.
 
 import { chiedi } from '../ponte';
-import type { StatoMenu11 } from '../ponte';
+import type { EsitoAggiusta, StatoMenu11 } from '../ponte';
 import { h } from '../util';
 import { icone, iconaCategoria } from '../icone';
 import { clac, accendiSuoni } from '../suoni';
 import { s, ui } from './stato';
 import { mostraAvviso } from './scheletro';
-import { proponiRiavvio, rigaMenu11 } from './menu11';
+import { proponiRiavvio } from './menu11';
 
 /** Gruppi spenti di partenza: i documenti e gli archivi li aprono meglio Office ed Esplora file. */
 const spentiDiPartenza = new Set(['Documento', 'Presentazione', 'Tabella', 'Archivio']);
@@ -64,6 +64,32 @@ function esitoRegola(esito: string, applicata: boolean) {
   } as Record<string, string>)[esito] ?? 'Fatto.');
 }
 
+/** Il tasto «Aggiusta tutto»: il motore fa i passi, qui si legge com'è andata e si ridisegna. */
+async function aggiustaTutto(b: HTMLButtonElement) {
+  clac(true);
+  b.disabled = true;
+  b.lastChild!.textContent = 'Aspetto Windows…';
+  try {
+    const r = await chiedi<EsitoAggiusta>('aggiustaTutto');
+    Object.assign(s.stato.impostazioni, r.impostazioni);
+    s.stato.menu11 = r.menu11;
+    s.stato.regolaPredefiniti = r.regola;
+    const segno = { ok: '✓', gia: '✓', pagina: '→', negato: '✗', errore: '✗' } as const;
+    document.querySelectorAll('.velo.riassunto').forEach((v) => v.remove());
+    const velo = h('div.velo.riassunto', { onclick: (e: Event) => { if (e.target === velo) velo.remove(); } });
+    velo.append(h('div.cassetto.piccolo', null,
+      h('div.confronto-testa', null, h('b', null, 'COM\'È ANDATA'), h('span')),
+      h('ul.imp-stati', null, ...r.passi.map((p) => h(`li${p.esito === 'ok' || p.esito === 'gia' ? '.ok' : ''}`, null, h('i.puntino'), h('span', null, `${segno[p.esito]} ${p.nome}`), p.nota ? h('small', null, p.nota) : null))),
+      h('div.invito-tasti', null, h('button.tasto.su', { onclick: () => { clac(); velo.remove(); } }, 'OK'))));
+    document.body.append(velo);
+    apriImpostazioni();
+    if (r.daRiavviare) proponiRiavvio('Esplora file legge il menu solo quando parte: riavvialo e «DaP Convertitore» compare nel tasto destro.');
+  } catch (e) {
+    mostraAvviso(`Non sono riuscito: ${(e as Error).message}`);
+    b.disabled = false;
+  }
+}
+
 export function apriImpostazioni() {
   clac();
   const imp = s.stato.impostazioni;
@@ -81,31 +107,51 @@ export function apriImpostazioni() {
     b.addEventListener('click', () => { clac(); acceso = !acceso; b.classList.toggle('su', acceso); cambia(acceso); });
     return b;
   };
+  // ——— il tasto solo: «Aggiusta tutto» mette a posto tasto destro, «Apri con» e app predefinite ———
+  const m = s.stato.menu11;
+  const regola = s.stato.regolaPredefiniti;
+  const stati: { nome: string; ok: boolean; nota?: string }[] = [
+    { nome: 'Tasto destro (menu classico e «Invia a»)', ok: imp.menu },
+    ...(m?.supportato ? [{ nome: 'Tasto destro di Windows 11', ok: m.registrato }] : []),
+    { nome: 'Menu «Apri con» e icone dei file', ok: imp.apriCon },
+    { nome: 'App predefinite', ok: regola.totale > 0 && regola.impostati === regola.totale,
+      nota: regola.totale ? `${regola.impostati} tipi su ${regola.totale} si aprono col lettore` : undefined },
+  ];
+  const tuttoOk = stati.every((x) => x.ok);
+  const bAggiusta = h<HTMLButtonElement>('button.tasto.su.grande', { onclick: () => void aggiustaTutto(bAggiusta) }, h('i.led.verde'), tuttoOk ? 'Controlla di nuovo' : 'Aggiusta tutto');
+  const sistema = h('div.imp-sistema', null,
+    h('div.imp-sistema-testa', null,
+      h('div', null, h('b', null, tuttoOk ? 'Tutto a posto' : 'C\'è qualcosa da sistemare'),
+        h('p', null, 'Un tasto solo: mette il convertitore nel tasto destro, il lettore in «Apri con» e prepara le app predefinite, così i file si aprono da soli. Windows può chiedere il permesso di amministratore (una volta).')),
+      bAggiusta),
+    h('ul.imp-stati', null, ...stati.map((x) => h(`li${x.ok ? '.ok' : ''}`, null, h('i.puntino'), h('span', null, x.nome), x.nota ? h('small', null, x.nota) : null))),
+    h('button.link', { title: 'Toglie le voci dal tasto destro e da «Apri con»', onclick: async () => {
+      const r = await chiedi<{ menu11: StatoMenu11; regola: typeof regola }>('togliTutto');
+      imp.menu = false; imp.apriCon = false;
+      s.stato.menu11 = r.menu11; s.stato.regolaPredefiniti = r.regola;
+      apriImpostazioni();
+    } }, 'Togli le voci dal sistema'),
+    regola.attiva ? h('button.link', { title: 'Cancella la regola di Windows: i tipi tornano a come li scegli tu', onclick: () => { clac(); void chiedi<{ esito: string }>('predefiniteTogli').then((r) => esitoRegola(r.esito, false)); } }, 'Togli la regola delle app predefinite') : null);
+
   cassetto.append(h('div.cassetto', null,
     h('div.confronto-testa', null, h('b', null, 'IMPOSTAZIONI'), h('span'), h('button.btn-fin', { html: icone.chiudi, onclick: () => cassetto.remove() })),
     riga('La scritta nel nome', 'Foto.jpg diventa «Foto (convertito).webp». Puoi cambiarla.', scritta),
     riga('L\'originale nel Cestino da solo', 'Spento: l\'originale resta, e lo butti tu col cestino accanto al risultato. Acceso: quando il convertito ne prende il posto (MOV → MP4, PNG → JPG…) l\'originale va nel Cestino da solo. Mai quando ne tiri fuori un pezzo (l\'audio, il testo, le pagine) né su chiavette e dischi di rete.',
       leva(imp.cestinoDaSolo, (v) => { salva({ cestinoDaSolo: v }); ui.piede(); })),
-    h('div.imp-sezione', null, 'LETTORE'),
-    riga('Nel menu «Apri con»', 'Il lettore di DaP fra i programmi che aprono foto, video, musica, PDF, documenti, archivi, codice. Non si prende niente da solo. Porta anche le icone di ogni tipo e le anteprime vere in Esplora file (la foto, il fotogramma del video, il modello 3D, la forma dell\'onda).',
-      leva(imp.apriCon, (v) => salva({ apriCon: v }))),
-    riga('Aprire col doppio clic', 'Per farlo diventare il programma di tutti i giorni (al posto di Foto o Lettore multimediale): Windows lo fa scegliere a te, tipo per tipo.',
-      h('button.tasto', { onclick: () => { clac(); apriPredefinite(); } }, 'App predefinite')),
-    h('div.imp-sezione', null, 'TASTO DESTRO'),
-    rigaMenu11(),
-    s.stato.menu11?.windows11
-      ? riga('Menu classico ovunque', 'Il tasto destro apre subito il menu di Windows 10, con tutte le voci a un clic e senza «Mostra altre opzioni». Spegnilo per tornare al menu di Windows 11.',
+    h('div.imp-sezione', null, 'SISTEMA'),
+    sistema,
+    riga('Scegliere i tipi da aprire col lettore', 'La lista dei tipi di file (foto, video, musica, PDF…) con un interruttore ciascuno: «Aggiusta tutto» usa questa scelta.',
+      h('button.tasto', { onclick: () => { clac(); apriPredefinite(); } }, 'Scegli i tipi')),
+    ...(s.stato.menu11?.windows11
+      ? [riga('Mostra tutti i menu del tasto destro', 'Su Windows 11 il tasto destro apre subito il menu completo, con tutte le voci a un clic e senza «Mostra altre opzioni». Spento torna il menu di Windows 11. Esplora file va riavviato: te lo chiedo.',
           leva(s.stato.menu11.classico, async (v) => {
             s.stato.menu11 = await chiedi<StatoMenu11>('classico', { attivo: v });
-            proponiRiavvio(v ? 'Il menu classico arriva quando riparte Esplora file.' : 'Il menu di Windows 11 torna quando riparte Esplora file.');
-          }))
-      : null,
-    riga('Nel menu classico', 'La voce DaP Convertitore anche nel menu di prima: «Mostra altre opzioni» o Maiusc + tasto destro, e «Invia a».', leva(imp.menu, (v) => { salva({ menu: v }); void chiedi('menu', { attivo: v }); })),
-    riga('Riavvia Esplora file', 'Esplora file legge le voci del tasto destro solo quando parte: se una voce non compare, di solito basta questo. Butta anche le anteprime e le icone vecchie, così ripartono nuove.',
-      h('button.tasto', { onclick: () => { clac(); proponiRiavvio('Esplora file si spegne e si riaccende subito.'); } }, 'Riavvia')),
+            proponiRiavvio(v ? 'Il menu completo arriva quando riparte Esplora file.' : 'Il menu di Windows 11 torna quando riparte Esplora file.');
+          }))]
+      : []),
     h('div.imp-sezione', null, 'ALTRO'),
     riga('Spingi al massimo', 'FFmpeg a priorità normale: un po\' più veloce, ma mentre converte il PC si sente.', leva(imp.alMassimo, (v) => salva({ alMassimo: v }))),
-    riga('Suoni', 'Il clac dei tasti e il din-don alla fine.', leva(imp.suoni, (v) => { salva({ suoni: v }); accendiSuoni(v); })),
+    riga('Suoni', 'Il clac dei tasti e il din-don alla fine. Di partenza sono spenti.', leva(imp.suoniAccesi, (v) => { salva({ suoniAccesi: v }); accendiSuoni(v); })),
     riga('Apri la cartella alla fine', 'Quando ha finito, apre Esplora file col file convertito già selezionato.', leva(imp.apriCartella, (v) => salva({ apriCartella: v }))),
     h('div.imp-piede', null,
       h('span', null, `DaP Convertitore ${s.stato.versione} · DaProd`),

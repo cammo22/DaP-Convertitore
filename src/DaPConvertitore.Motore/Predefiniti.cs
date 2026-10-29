@@ -58,6 +58,29 @@ public static class Predefiniti
         return sb.Append("</DefaultAssociations>\r\n").ToString();
     }
 
+    /// <summary>
+    /// Com'è la situazione vera: per ogni tipo dei gruppi dati, la scelta dell'utente in Windows (UserChoice, in sola lettura)
+    /// è già il lettore di DaP? Serve a dire «14 tipi su 40» invece di sperare.
+    /// </summary>
+    public static (int Impostati, int Totale) Conta(IEnumerable<string> gruppi)
+    {
+        var scelti = gruppi.ToHashSet(StringComparer.Ordinal);
+        int fatti = 0, tutti = 0;
+        foreach (var est in Lettore.Vista.Estensioni)
+        {
+            var g = Lettore.Vista.Gruppo(est);
+            if (!scelti.Contains(g)) continue;
+            tutti++;
+            try
+            {
+                using var k = Registry.CurrentUser.OpenSubKey($@"Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\{est}\UserChoice");
+                if (k?.GetValue("ProgId") is string p && string.Equals(p, ApriCon.ProgIdDi(g), StringComparison.OrdinalIgnoreCase)) fatti++;
+            }
+            catch { /* chiave non leggibile: conta come non impostato */ }
+        }
+        return (fatti, tutti);
+    }
+
     // ——— quello che gira con i permessi di amministratore (l'app rilanciata con «runas») ———
 
     public static int ApplicaDaAdmin(string xmlTemporaneo)

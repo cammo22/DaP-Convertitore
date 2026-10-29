@@ -13,6 +13,8 @@
     <PackageReference Include="PDFsharp" Version="6.2.4" />
     <PackageReference Include="PdfPig" Version="0.1.16" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.12" />
+    <!-- PDFsharp porta la 8.0.1, con due vulnerabilità note: qui si prende la versione corretta -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
   </ItemGroup>
 
 </Project>
