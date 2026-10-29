@@ -50,7 +50,7 @@ public static class Notifiche
                 """;
             var doc = new XmlDocument();
             doc.LoadXml(xml);
-            ToastNotificationManager.CreateToastNotifier(MenuContestuale.Aumid).Show(new ToastNotification(doc));
+            ToastNotificationManager.CreateToastNotifier(MenuContestuale.Aumid).Show(new ToastNotification(doc) { ExpirationTime = DateTimeOffset.Now.AddSeconds(30) }); // dopo mezzo minuto sparisce anche dal centro notifiche
         }
         catch (Exception e) { Registro.Scrivi($"Notifica non mostrata: {e.Message}"); }
     }

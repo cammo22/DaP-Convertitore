@@ -293,7 +293,7 @@ kbd { display: inline-grid; place-items: center; min-width: 24px; height: 23px; 
 .a-volume .v-vol { width: 100px; opacity: 1; margin: 0 6px 0 2px; }
 .a-spettro { width: 100%; height: clamp(70px, 14vh, 120px); display: block; margin-top: 4px; }
 .a-scaletta { position: absolute; z-index: 2; top: 0; right: 0; bottom: 0; width: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 0; background: rgba(12, 11, 17, 0.72); backdrop-filter: blur(14px); border-left: 1px solid var(--bordo); transition: width 0.35s var(--liscio), padding 0.35s var(--liscio); }
-.a-stanza.con-scaletta .a-scaletta { width: 330px; padding: 22px 16px 16px; }
+.con-scaletta > .a-scaletta { width: 330px; padding: 22px 16px 16px; }
 .a-scaletta > b { font: 900 12px var(--marchio); letter-spacing: 0.18em; color: var(--verde); padding: 4px 6px; }
 .a-brani { overflow-y: auto; display: grid; gap: 2px; align-content: start; }
 .a-brano { display: flex; gap: 10px; align-items: center; padding: 7px 8px; border-radius: 8px; text-align: left; font-size: 13.5px; color: var(--testo2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -629,3 +629,32 @@ kbd { display: inline-grid; place-items: center; min-width: 24px; height: 23px; 
 .z-fantasma svg { width: 17px; height: 17px; color: #c9a26b; }
 .z-zona.trascina { border-color: #c9a26b; background: rgba(201, 162, 107, 0.07); }
 .z-riga { user-select: none; }
+
+/* la linguetta della scaletta: sul bordo destro, visibile solo quando nella cartella c'è altro */
+.l-linguetta { position: absolute; z-index: 3; right: 0; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 26px; padding: 14px 0; border-radius: 10px 0 0 10px; background: rgba(15, 14, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid var(--bordo); border-right: 0; color: var(--testo2); cursor: pointer; transition: width 0.15s, background 0.15s, color 0.15s; }
+.l-linguetta span { writing-mode: vertical-rl; font: 800 10.5px var(--marchio); letter-spacing: 0.22em; }
+.l-linguetta:hover { width: 32px; background: rgba(30, 28, 40, 0.9); color: var(--verde); }
+.con-scaletta > .l-linguetta { display: none; }
+/* la scaletta sopra il cinema: scorre da destra, sul video */
+.v-sala > .a-scaletta { z-index: 8; }
+/* l'anteprima vera sulla linea del tempo del video */
+.v-bolla { display: grid; justify-items: center; gap: 4px; }
+.v-quadro { display: none; width: 192px; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; background: #000; border: 1px solid var(--bordo-forte); }
+.v-quadro.pronto { display: block; }
+.v-quadro { position: relative; }
+.v-quadro video, .v-quadro img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+.v-quadro img.esatto, .v-quadro video { opacity: 0; }
+.v-quadro img.esatto.su, .v-quadro video.su { opacity: 1; }
+.v-bolla-testo { font: 700 12.5px var(--ui); }
+.v-linea:hover .v-bolla { bottom: 24px; }
+
+/* i popup in vetro, come la scaletta: sfondo trasparente che sfuma quello che c'è dietro */
+.l-menu, .l-pannello, .l-pillola, .l-hud, .l-stato, .v-prossimo, .v-riprendi, .a-scaletta, .v-bolla {
+  background: rgba(14, 13, 20, 0.5) !important;
+  backdrop-filter: blur(22px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.5) !important;
+  border-color: rgba(255, 255, 255, 0.13) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+.a-scaletta { border-top: 0 !important; border-right: 0 !important; border-bottom: 0 !important; box-shadow: -18px 0 48px rgba(0, 0, 0, 0.3) !important; }
+.l-velo { background: rgba(4, 3, 7, 0.38) !important; backdrop-filter: blur(10px) saturate(1.2) !important; }

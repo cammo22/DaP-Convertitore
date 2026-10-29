@@ -2,6 +2,32 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.1.0 — 29 ottobre 2026
+
+- **La finestra si apre sempre davanti.** Prima, aprendo un file da Esplora file, la finestra a volte restava dietro alle altre.
+  Adesso il programma già aperto riceve il permesso di passare in primo piano da chi lo ha lanciato e, se Windows fa i capricci,
+  la finestra si riporta davanti da sola (anche se era ridotta a icona). Vale per il lettore e per il convertitore.
+- **La scaletta, di nuovo a portata di mano, per la musica e per i video.** Sul bordo destro c'è la linguetta **SCALETTA** (e un tasto
+  nei comandi, **L** nella musica, **E** nei video): un clic e scorre la lista dei file della cartella, in vetro trasparente, sopra il
+  video o accanto al disco; un clic su un titolo lo suona. Resta chiusa finché non la apri, e passando da un file all'altro resta come
+  l'hai lasciata.
+- **Sulla linea del tempo del video, l'anteprima è fluida come in QuickTime.** Passa il cursore e il fotogramma di quel punto cambia a
+  ogni pixel, senza aspettare: appena ti avvicini il programma prepara un fotogramma ogni 1,5 secondi circa (al massimo 160), e sotto il
+  cursore si vede subito il più vicino; appena rallenti arriva quello esatto. **Trascinando, il video vero segue il cursore in tempo
+  reale.** Funziona anche con i video che il programma traduce da solo.
+- **I popup in vetro trasparente**, come la scaletta: impostazioni, avvisi, menu, pannelli e finestrelle sfumano quello che c'è dietro.
+- **I popup si chiudono da soli.** La finestrella della conversione rapida si chiude 6 secondi dopo la fine (20 se c'è un errore,
+  il tempo di leggerlo); se il mouse ci sta sopra aspetta, e quando lo togli si chiude dopo 4 secondi. La notifica di Windows sparisce
+  anche dal centro notifiche dopo mezzo minuto.
+- **Novità e aggiornamenti nella barra in alto.** Il tasto ✦ accanto all'ingranaggio apre le novità della versione in uso e cerca
+  l'aggiornamento (c'è anche il tasto «Aggiornamento X disponibile» di prima, che si accende quando ne trova uno). Dopo un aggiornamento
+  le novità si aprono da sole, una volta. Il «Cerca aggiornamenti» è uscito dalle Impostazioni.
+- **README nuovo**: gli screen nuovi (home, impostazioni, archivi con le miniature, slider della compressione, lettore) e i **download
+  diretti** (il file parte subito, senza passare dalla pagina delle release).
+- Dentro: `Davanti.cs`, `Novita.cs`, `ui/src/lettore/scaletta.ts` (la scaletta condivisa da musica e video), `ui/src/app/novita.ts`;
+  comando `fotogrammaA` del lettore; `DAP_DATI` sposta la cartella dei dati (per le prove e le foto del README) e `DAP_DIM` dà la misura
+  alla pagina in `scripts/schermo.mjs`.
+
 ## 2.0.0 — 29 ottobre 2026
 
 - **Gli archivi ora li apre 7-Zip, quello vero.** Dentro il programma c'è 7-Zip: ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB e ISO si guardano

@@ -14,6 +14,7 @@ export const icone = {
   play: i('<path d="M7 5l12 7-12 7z" fill="currentColor"/>'),
   ferma: i('<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'),
   ok: i('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  novita: i('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>'),
   attenzione: i('<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17.5v.01"/>'),
   freccia: i('<path d="M5 12h14M13 6l6 6-6 6"/>'),
   indietro: i('<path d="M19 12H5M11 6l-6 6 6 6"/>'),

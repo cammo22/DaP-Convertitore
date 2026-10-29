@@ -16,6 +16,8 @@ namespace DaP.Convertitore.App;
 /// </summary>
 public sealed class PonteLettore
 {
+    /// <summary>Le anteprime sotto il cursore: due fotogrammi alla volta al massimo, la pagina chiede già solo l'ultimo punto.</summary>
+    readonly SemaphoreSlim fotogrammi = new(2), fotogrammiPrecarica = new(3);
     readonly FinestraLettore finestra;
     readonly WebView2 vista;
     readonly Strumenti strumenti = Strumenti.Trova();
@@ -226,6 +228,22 @@ public sealed class PonteLettore
             }
             case "archivio":
                 return (await Contenuti.Archivio(strumenti, P(a))).Select(v => new { v.Percorso, v.Peso, v.Cartella, v.Data });
+            case "fotogrammaA":
+            {
+                // l'anteprima sotto il cursore, per i video che la pagina non sa suonare da sé: un fotogramma di FFmpeg
+                var t0 = Math.Max(0, a["t"]?.GetValue<double>() ?? 0);
+                var durata = a["durata"]?.GetValue<double>() ?? 0;
+                var lato = (uint)Math.Clamp((int?)a["lato"] ?? 384, 64, 960);
+                // i fotogrammi di «precarica» (lo storyboard sotto il cursore) hanno la loro fila: quello esatto non aspetta mai dietro di loro
+                var fila = a["precarica"]?.GetValue<bool>() == true ? fotogrammiPrecarica : fotogrammi;
+                await fila.WaitAsync();
+                try
+                {
+                    var r = await IndiceAnteprima.Fotogramma(P(a), t0, durata, strumenti, lato);
+                    return new { url = r?.DataUrl };
+                }
+                finally { fila.Release(); }
+            }
             case "miniaturaVoce":
             {
                 // la figurina di un file dentro l'archivio (foto, video, PDF): si estrae da solo e si butta

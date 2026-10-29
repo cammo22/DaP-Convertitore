@@ -21,6 +21,8 @@ public static class Istanza
             {
                 using var c = new NamedPipeClientStream(".", Tubo, PipeDirection.Out);
                 c.Connect(500);
+                // chi è stato lanciato da Esplora file può passare in primo piano: il permesso va all'app già aperta
+                Davanti.Permetti();
                 using var w = new StreamWriter(c);
                 w.Write(JsonSerializer.Serialize(r));
                 w.Flush();

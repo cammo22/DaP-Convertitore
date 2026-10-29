@@ -23,7 +23,10 @@ public sealed class Strumenti
     {
         get
         {
-            var c = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DaProd", "Convertitore");
+            // DAP_DATI sposta tutto altrove: le prove e le foto per il README non toccano i dati veri
+            var c = Environment.GetEnvironmentVariable("DAP_DATI") is { Length: > 0 } altrove
+                ? altrove
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DaProd", "Convertitore");
             Directory.CreateDirectory(c);
             return c;
         }

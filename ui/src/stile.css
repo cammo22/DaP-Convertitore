@@ -663,3 +663,26 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .scheda-pc b { font-size: 15px; }
 .scheda-pc small { color: var(--testo2); font-size: 12px; line-height: 1.35; }
 .scheda-pc .link { align-self: flex-start; margin-top: 4px; }
+
+/* i popup in vetro, come la scaletta del lettore: sfondo trasparente che sfuma quello che c'è dietro */
+.velo { background: rgba(5, 4, 8, 0.36); backdrop-filter: blur(12px) saturate(1.2); }
+.velo ~ .velo { background: rgba(5, 4, 8, 0.2); backdrop-filter: blur(6px); }
+.cassetto, .avviso, .invito, .chip-hw-menu {
+  background: rgba(18, 16, 26, 0.52) !important;
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  border-color: rgba(255, 255, 255, 0.13) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.avviso { color: #ffe3e8; border-color: rgba(255, 77, 109, 0.4) !important; background: rgba(42, 18, 25, 0.5) !important; }
+
+/* novità e aggiornamenti */
+.novita-cassetto { width: min(640px, 100%); }
+.novita-testo { max-height: min(56vh, 460px); overflow-y: auto; padding-right: 6px; }
+.novita-testo ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.novita-testo li { position: relative; padding-left: 16px; font-size: 14px; line-height: 1.5; color: var(--testo2); }
+.novita-testo li::before { content: ''; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--oro); box-shadow: 0 0 8px rgba(255, 213, 74, 0.6); }
+.novita-testo b { color: var(--testo); }
+.novita-testo code { font-size: 12.5px; color: var(--oro); }
+.novita-stato { color: var(--verde); font-size: 13px; }
+.btn-fin.nov svg { color: var(--oro); }

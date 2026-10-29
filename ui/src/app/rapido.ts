@@ -11,6 +11,14 @@ import { tastoCestino } from './risultati';
 
 export let bobineRapide: Bobine | null = null;
 export let chiusuraRapida: number | undefined;
+/** Il lavoro è finito e la finestrella aspetta di chiudersi da sola. */
+let aChiudere = false;
+
+/** La finestrella si chiude da sola a lavoro finito: dopo qualche secondo, e se il mouse c'è sopra aspetta che lo tolga. */
+function chiudiTra(ms: number) {
+  clearTimeout(chiusuraRapida);
+  chiusuraRapida = window.setTimeout(() => void chiedi('finestra', { azione: 'chiudi' }), ms);
+}
 
 export function disegnaRapido() {
   const giro = s.giro.map((i) => s.lavori.get(i)!).filter(Boolean);
@@ -20,6 +28,7 @@ export function disegnaRapido() {
     app.replaceChildren(testa, h('div.rapido-corpo', null, canvas, h('div.rapido-testo#rapido-testo')));
     requestAnimationFrame(() => { bobineRapide = new Bobine(canvas, '#ff3df2'); disegnaRapido(); });
     app.addEventListener('pointerenter', () => { if (chiusuraRapida) { clearTimeout(chiusuraRapida); chiusuraRapida = undefined; } });
+    app.addEventListener('pointerleave', () => { if (aChiudere) chiudiTra(4000); });
     return;
   }
   const t = document.getElementById('rapido-testo')!;
@@ -28,6 +37,10 @@ export function disegnaRapido() {
   const finiti = giro.every((x) => x.stato === 'fatto' || x.stato === 'errore' || x.stato === 'annullato');
   const nome = giro.length > 1 ? `${giro.filter((x) => x.stato === 'fatto').length} di ${giro.length} · ${f?.nome ?? ''}` : f?.nome ?? l.sorgenti[0].split('\\').pop() ?? '';
   if (!finiti) {
+    // un altro lavoro è partito: la chiusura da sola si annulla
+    aChiudere = false;
+    clearTimeout(chiusuraRapida);
+    chiusuraRapida = undefined;
     const fr = Math.max(0, l.frazione);
     bobineRapide?.imposta(l.frazione < 0 ? 0.5 : fr, l.velocita, l.stato === 'corre');
     t.replaceChildren(
@@ -56,6 +69,10 @@ export function disegnaRapido() {
         ultimo ? h('button.tasto.piccolo', { onclick: () => chiedi('mostra', { percorso: ultimo.uscita }) }, 'Mostra nella cartella') : null,
         h('button.tasto.piccolo', { onclick: () => chiedi('finestra', { azione: 'espandi' }) }, 'Altro…')),
     );
-    if (!chiusuraRapida && ok.length === giro.length) chiusuraRapida = window.setTimeout(() => chiedi('finestra', { azione: 'chiudi' }), 9000);
+    // tutto fatto: si chiude da sola dopo 6 secondi (se ci sono errori, dopo 20, il tempo di leggerli); il mouse sopra la ferma
+    if (!aChiudere) {
+      aChiudere = true;
+      if (!app.matches(':hover')) chiudiTra(ok.length === giro.length ? 6000 : 20000);
+    }
   }
 }

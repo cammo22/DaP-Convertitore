@@ -36,7 +36,8 @@ public static class Regia
             convertitore = new Finestra(r);
             convertitore.Closed += (_, _) => { convertitore = null; ForseFine(); };
             convertitore.Show();
-            convertitore.Activate();
+            Davanti.Porta(convertitore);
+            convertitore.ContentRendered += (_, _) => Davanti.Porta(convertitore!);
         }
         else convertitore.Ponte.Gestisci(r);
     }
@@ -52,7 +53,8 @@ public static class Regia
         lettori.Add(l);
         l.Closed += (_, _) => { lettori.Remove(l); ForseFine(); };
         l.Show();
-        l.Activate();
+        Davanti.Porta(l);
+        l.ContentRendered += (_, _) => Davanti.Porta(l);
     }
 
     /// <summary>Dal lettore al convertitore: il file entra nella piastra, con tutte le scelte.</summary>
