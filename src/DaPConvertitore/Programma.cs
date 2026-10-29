@@ -6,7 +6,9 @@ using Velopack;
 namespace DaP.Convertitore.App;
 
 /// <summary>Cosa chiede chi ci lancia: dei file, e forse un'azione del menu rapido, o di guardarli nel lettore.</summary>
-public sealed record Richiesta(string? Azione, IReadOnlyList<string> Percorsi, bool Finestra, bool Guarda = false)
+/// <param name="Compatto">La mini interfaccia vicino all'avatar: la stessa del convertitore, senza la lista dei file.</param>
+/// <param name="Scelta">Il formato già scelto (per «Comprimi» dall'avatar) e <paramref name="Preset"/> la scelta fatta (meta, piccola).</param>
+public sealed record Richiesta(string? Azione, IReadOnlyList<string> Percorsi, bool Finestra, bool Guarda = false, bool Compatto = false, string? Scelta = null, string? Preset = null)
 {
     public static Richiesta Da(string[] args)
     {

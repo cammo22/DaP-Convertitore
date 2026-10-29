@@ -8,7 +8,7 @@ import '@fontsource/rajdhani/600.css';
 import '@fontsource/rajdhani/700.css';
 import './stile.css';
 import { ascolta, avviaFinto, chiedi, dentroApp } from './ponte';
-import type { Carico, Formato, InfoFile, Lavoro, Opzioni, Stato } from './ponte';
+import type { Carico, Categoria, Formato, InfoFile, Lavoro, Opzioni, Stato } from './ponte';
 import { h, peso, durata, risoluzione } from './util';
 import { icone, iconaCategoria, coloreCategoria } from './icone';
 import { clac, accendiSuoni } from './suoni';
@@ -159,8 +159,27 @@ function sistemaAttiva() {
 
 function disegnaScegli() { conservaVista(banco, disegnaScegliVera); }
 
+/** «Comprimi» dall'avatar: il formato e il punto di partenza (metà peso, foto più piccola) sono già scelti, il resto lo decide Cammo. */
+function applicaRichiesta() {
+  const r = s.sceltaRichiesta;
+  if (!r) return;
+  const f = s.stato.formati.find((x) => x.id === r.formato);
+  if (!f) { s.sceltaRichiesta = null; return; }
+  const cat = f.categoria as Categoria;
+  const dei = fileDi(cat);
+  if (!dei.length) return;          // i file non sono ancora arrivati: si riprova al prossimo disegno
+  s.attiva = cat;
+  s.fileAttivo = dei[0].id;
+  s.scelta[cat] = f.id;
+  s.piano = null;
+  if (r.preset === 'meta') { s.opzioni.video.modo = 'peso'; s.opzioni.video.codec = 'hevc'; for (const x of dei) s.pesoPerFile.set(x.id, Math.max(1, Math.round(x.peso / 2))); }
+  if (r.preset === 'piccola') { s.opzioni.immagine.modo = 'qualita'; s.opzioni.immagine.lato = 1920; s.opzioni.immagine.qualita = 85; }
+  s.sceltaRichiesta = null;
+}
+
 function disegnaScegliVera() {
   sistemaAttiva();
+  applicaRichiesta();
   if (!s.attiva) {
     banco.replaceChildren(disegnaHome());
     return;
@@ -187,8 +206,14 @@ function disegnaScegliVera() {
     h('i.led'),
   )));
 
+  const nomiFile = s.ordine.map((i) => s.file.get(i)?.nome).filter(Boolean) as string[];
+  const testaCompatta = app.classList.contains('compatto')
+    ? h('div.compatto-testa', null,
+        h('div', null, h('b', null, nomiFile.length > 1 ? `${nomiFile.length} file` : (nomiFile[0] ?? '')), h('small', null, 'mini interfaccia: scegli tutto qui')),
+        h('button.tasto', { title: 'Apre la finestra intera, con la lista dei file e l\'anteprima', onclick: () => { clac(); void chiedi('finestra', { azione: 'completa' }); } }, h('span', { html: icone.ingrandisci }), 'Apri nell\'app intera'))
+    : null;
   banco.replaceChildren(
-    ...[invitoMenu11()].filter((x): x is HTMLElement => !!x),
+    ...[testaCompatta, invitoMenu11()].filter((x): x is HTMLElement => !!x),
     schede ?? h('div'),
     h('div.titolo-sezione', null, h('span', null, 'IN COSA LO TRASFORMO?'), h('span.conta', null, nomeCat(att))),
     griglia,
@@ -357,6 +382,12 @@ async function avvia() {
     strumenti.enc?.valore(c.encoder / 100);
     strumenti.dec?.valore(c.decoder / 100);
   });
+  ascolta('compatto', (d: { si: boolean; scelta?: { formato: string; preset?: string | null } | null }) => {
+    app.classList.toggle('compatto', d.si);
+    s.sceltaRichiesta = d.scelta ?? null;
+    s.piano = null;
+    disegnaTutto();
+  });
   ascolta('modo', (m: { modo: 'finestra' | 'rapido' }) => {
     s.stato.modo = m.modo;
     app.classList.toggle('rapido', m.modo === 'rapido');
@@ -376,6 +407,8 @@ async function avvia() {
   for (const f of s.stato.file) { s.file.set(f.id, f); s.ordine.push(f.id); }
   for (const l of s.stato.lavori) { s.lavori.set(l.id, l); s.giro.push(l.id); }
   app.classList.toggle('rapido', s.stato.modo === 'rapido');
+  app.classList.toggle('compatto', !!s.stato.compatto);
+  s.sceltaRichiesta = s.stato.scelta ?? null;
   if (s.stato.modo === 'finestra' && s.giro.length) s.vista = 'lavoro';
   document.body.classList.toggle('nel-browser', !dentroApp);
   disegnaTutto();

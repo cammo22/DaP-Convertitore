@@ -82,6 +82,9 @@ public sealed class Ponte
     }
 
     Action<string>? avvisoAgg;
+    /// <summary>La mini interfaccia accanto all'avatar e la scelta già fatta da lì: l'interfaccia le legge in «stato» o le riceve come eventi.</summary>
+    bool compatto;
+    object? sceltaIniziale;
     CancellationTokenSource? stima;
 
     // ————————————————————————— richieste da fuori (riga di comando, altre istanze) —————————————————————————
@@ -89,6 +92,13 @@ public sealed class Ponte
     public void Gestisci(Richiesta r)
     {
         var ids = r.Percorsi.Select(Aggiungi).ToList();
+        if (r.Compatto)
+        {
+            compatto = true;
+            sceltaIniziale = r.Scelta is null ? null : new { formato = r.Scelta, preset = r.Preset };
+            finestra.Compatta(Regia.AreaAvatar);
+            Manda("compatto", new { si = true, scelta = sceltaIniziale });
+        }
         if (r.Azione is { } azione && Catalogo.TrovaRapida(azione) is not null)
         {
             if (!rapide.TryGetValue(azione, out var l)) rapide[azione] = l = [];
@@ -226,6 +236,8 @@ public sealed class Ponte
                     lavori = Coda.Tutti.Where(l => giro.Contains(l.Id)).Select(LavoroDto),
                     office = new { libreOffice = strumenti.LibreOffice is not null, word = strumenti.Word, setteZip = strumenti.HaSetteZip },
                     menu11 = StatoMenu11(),
+                    compatto,
+                    scelta = sceltaIniziale,
                 };
             case "pronto":
                 return true;
@@ -329,6 +341,12 @@ public sealed class Ponte
                     case "riduci": finestra.WindowState = WindowState.Minimized; break;
                     case "massimizza": finestra.Massimizza(); break;
                     case "espandi": CambiaModo("finestra"); break;
+                    case "completa":
+                        // dalla mini interfaccia all'app intera (con la lista dei file e l'anteprima)
+                        compatto = false;
+                        finestra.Misura("finestra");
+                        Manda("compatto", new { si = false, scelta = (object?)null });
+                        break;
                 }
                 return true;
             case "impostazioni":

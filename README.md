@@ -5,46 +5,114 @@
 
 <div align="center">
 
-<img src="risorse/icona-256.png" width="110" alt="DaP Convertitore">
-
 # DaP Convertitore
 
 **Tasto destro su un file → DaP Convertitore. Fatto.**
 
-Video, audio, foto, PDF, documenti, archivi: qualsiasi file, nel formato che vuoi.
-Il risultato compare accanto all'originale, col nome `(convertito)`.
-Usa la scheda video (NVIDIA, AMD, Intel) quando c'è, la CPU quando serve. Tutto sul tuo PC.
+Video, audio, foto, PDF, documenti, archivi: qualsiasi file, nel formato che vuoi, **tutto sul tuo PC**.
 
-E per **guardarli**: un lettore leggero per qualsiasi file, con una pagina fatta apposta per ogni tipo.
+<br>
 
-[![versione](https://img.shields.io/github/v/release/cammo22/DaP-Convertitore?label=versione&color=ffd54a&labelColor=1a1428)](https://github.com/cammo22/DaP-Convertitore/releases/latest)
-[![Windows](https://img.shields.io/badge/Windows-10%20·%2011-35e8ff?labelColor=1a1428)](#requisiti)
-[![NVENC](https://img.shields.io/badge/NVIDIA-NVENC%20·%20AV1-5dffb4?labelColor=1a1428)](#la-scheda-video)
-[![FFmpeg](https://img.shields.io/badge/FFmpeg-9.0-ff3df2?labelColor=1a1428)](TERZE-PARTI.md)
-[![licenza](https://img.shields.io/badge/licenza-MIT-a19db0?labelColor=1a1428)](LICENSE)
-![locale](https://img.shields.io/badge/100%25-locale-5dffb4?labelColor=1a1428)
-[![Discord](https://img.shields.io/badge/Discord-DaProd-5865F2?logo=discord&logoColor=white)](https://discord.gg/Njs52aacwq)
+<!-- la vetrina: come la scheda di un negozio -->
+<table>
+<tr>
+<td align="center" width="170"><img src="risorse/icona-256.png" width="120" alt=""><br><sub><b>DaProd</b></sub></td>
+<td align="left">
 
-### ⬇ Scarica (il download parte subito)
+### DaP Convertitore
+<sub>Utilità · Video, audio, foto e documenti · Windows</sub>
 
-| Sistema | Scarica |
-| --- | --- |
-| 🪟 **Windows 10 · 11** — installer, si aggiorna da solo | **[DaPConvertitore-win-Setup.exe](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe)** |
-| 🪟 Windows — portatile, senza installare | [DaPConvertitore-win-Portable.zip](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Portable.zip) |
-| 🐧 **Linux** — tutte le distro (Flatpak) | _in arrivo: non è ancora pubblicato_ |
-| 🍎 **macOS** — Apple Silicon e Intel | _in arrivo: non è ancora pubblicato_ |
+[![versione](https://img.shields.io/github/v/release/cammo22/DaP-Convertitore?label=versione&color=ffd54a&labelColor=1a1428&style=flat-square)](https://github.com/cammo22/DaP-Convertitore/releases/latest)
+[![NVENC](https://img.shields.io/badge/NVIDIA-NVENC%20%C2%B7%20AV1-5dffb4?labelColor=1a1428&style=flat-square)](#la-scheda-video)
+![locale](https://img.shields.io/badge/100%25-locale%20%C2%B7%20offline-35e8ff?labelColor=1a1428&style=flat-square)
+[![licenza](https://img.shields.io/badge/licenza-MIT-a19db0?labelColor=1a1428&style=flat-square)](LICENSE)
+[![Discord](https://img.shields.io/badge/Discord-DaProd-5865F2?logo=discord&logoColor=white&style=flat-square)](https://discord.gg/Njs52aacwq)
 
-[Novità di ogni versione](CHANGELOG.md)
+<a href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe"><img src="https://img.shields.io/badge/%E2%AC%87%20OTTIENI-per%20Windows%2010%20%C2%B7%2011-ffd54a?style=for-the-badge&labelColor=1a1428" alt="Ottieni per Windows"></a>
+<a href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Portable.zip"><img src="https://img.shields.io/badge/portatile-.zip-ff3df2?style=for-the-badge&labelColor=1a1428" alt="Portatile"></a>
+
+<sub>Si installa per il tuo utente, senza amministratore, e si aggiorna da solo.</sub>
+
+</td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td align="center"><b>🪟 Windows</b><br><sub>10 · 11</sub><br><a href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe"><b>Scarica</b></a></td>
+<td align="center"><b>🐧 Linux</b><br><sub>Flatpak</sub><br><sub><i>in arrivo</i></sub></td>
+<td align="center"><b>🍎 macOS</b><br><sub>Apple Silicon · Intel</sub><br><sub><i>in arrivo</i></sub></td>
+<td align="center"><b>💾 Peso</b><br><sub>circa 190 MB</sub><br><sub>c'è dentro tutto</sub></td>
+<td align="center"><b>🌍 Lingua</b><br><sub>italiano</sub><br><sub>parlato</sub></td>
+</tr>
+</table>
+
+<br>
+
+<!-- i pulsanti rapidi -->
+<a href="#installare"><img src="https://img.shields.io/badge/Installare-ffd54a?style=flat-square&labelColor=1a1428" alt=""></a>
+<a href="#come-si-usa"><img src="https://img.shields.io/badge/Come%20si%20usa-35e8ff?style=flat-square&labelColor=1a1428" alt=""></a>
+<a href="#il-lettore"><img src="https://img.shields.io/badge/Il%20lettore-5dffb4?style=flat-square&labelColor=1a1428" alt=""></a>
+<a href="#lavatar-sul-desktop"><img src="https://img.shields.io/badge/L'avatar-ff3df2?style=flat-square&labelColor=1a1428" alt=""></a>
+<a href="#gli-archivi-7-zip-dentro"><img src="https://img.shields.io/badge/Gli%20archivi-ffb23d?style=flat-square&labelColor=1a1428" alt=""></a>
+<a href="#cosa-converte"><img src="https://img.shields.io/badge/Cosa%20converte-ff4d6d?style=flat-square&labelColor=1a1428" alt=""></a>
+<a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Novit%C3%A0-a19db0?style=flat-square&labelColor=1a1428" alt=""></a>
+<a href="TERZE-PARTI.md"><img src="https://img.shields.io/badge/Terze%20parti-6f6b7d?style=flat-square&labelColor=1a1428" alt=""></a>
 
 </div>
 
 ---
 
 <div align="center">
+
+## Anteprime
+
 <img src="risorse/schermate/home.png" width="820" alt="La home: da dove cominci, gli ultimi file convertiti, come sta il PC">
-<br><br>
-<img src="risorse/schermate/scegli.png" width="820" alt="La piastra: il video a sinistra, i formati a destra, lo slider del peso con la lancetta della qualità">
+
+<br>
+
+| | | |
+| --- | --- | --- |
+| <img src="risorse/schermate/scegli.png" alt="La piastra"> | <img src="risorse/schermate/compressione.png" alt="Lo slider della compressione"> | <img src="risorse/schermate/lettore-archivio.png" alt="Dentro un archivio, con le miniature"> |
+| <img src="risorse/schermate/lettore-video.png" alt="Il cinema: l'anteprima sulla linea del tempo"> | <img src="risorse/schermate/lettore-musica.png" alt="Il giradischi con la scaletta"> | <img src="risorse/schermate/impostazioni.png" alt="Le impostazioni e Aggiusta tutto"> |
+
 </div>
+
+## Cosa c'è di nuovo
+
+- **L'avatar fa il lettore di musica**: trascini un MP3 sull'avatar e parte, con il suo piccolo player, senza aprire l'app. **Converti** e **Comprimi** aprono la mini interfaccia accanto all'avatar, con tutte le scelte; **si ingrandisce** fermando il cursore e girando la rotella.
+- **Archivi con password** (aprire e cifrare), **miniature dentro gli archivi**, slider della compressione, 7-Zip dentro.
+- **L'anteprima fluida sul video**, la scaletta di musica e video, i popup in vetro, le novità nella barra in alto.
+- Tutto il resto, versione per versione, è nel [CHANGELOG](CHANGELOG.md).
+
+## Cosa sa fare
+
+<table>
+<tr>
+<td width="33%" valign="top"><b>🎬 Video</b><br>MP4, MKV, WEBM, MOV, GIF. <b>Il peso su misura</b> (10 MB per Discord, 100 MB per WhatsApp) con la scheda video: NVENC, AMF, Quick Sync.</td>
+<td width="33%" valign="top"><b>🎵 Musica</b><br>MP3, M4A, OPUS, FLAC, WAV… volume uniforme, mono. Il giradischi con la scaletta e l'onda.</td>
+<td width="33%" valign="top"><b>🖼 Foto</b><br>JPG, PNG, WEBP, AVIF, HEIC e RAW dell'iPhone e delle reflex. Ritocco e peso su misura.</td>
+</tr>
+<tr>
+<td valign="top"><b>📄 PDF e documenti</b><br>Word, fogli, presentazioni, PDF in testo (anche scansioni, con l'OCR).</td>
+<td valign="top"><b>🗜 Archivi</b><br>ZIP, 7Z, RAR, TAR, ISO… con 7-Zip dentro, password e miniature.</td>
+<td valign="top"><b>🎞 Il lettore</b><br>Apre ogni tipo di file: video, musica, foto, PDF, codice, 3D, tabelle.</td>
+</tr>
+</table>
+
+## Informazioni
+
+| | |
+| --- | --- |
+| **Sviluppatore** | DaProd · DaProdProduzioni |
+| **Categoria** | Utilità · Multimedia |
+| **Piattaforme** | Windows 10 e 11 (64 bit) · Linux e macOS in arrivo |
+| **Prezzo** | gratis, codice aperto (MIT) |
+| **Privacy** | tutto in locale: niente account, niente invii |
+| **Novità** | [CHANGELOG](CHANGELOG.md) |
+| **Programmi di altri dentro** | [TERZE-PARTI](TERZE-PARTI.md) |
+
+---
 
 ## Installare
 
@@ -209,9 +277,11 @@ saluto o un giro e, ogni qualche minuto, **si trasforma** in un VHS, un floppy, 
 scintille oro e magenta. Non dà fastidio: niente suoni, fermo quando hai un video, un gioco o una presentazione a schermo intero. Lo sposti col mouse
 (tasto destro per il menu, doppio clic per aprire il convertitore).
 
-**Ci trascini sopra dei file** e ti chiede cosa farne: **Apri** (nel lettore), **Converti** (nella finestra, col formato che scegli) o **Comprimi**
-(un video a metà peso, una foto più piccola, un audio leggero, una cartella o un archivio in 7Z). Funziona offline: gli oggetti 3D sono stati creati una volta
-(con Meshy) e nel programma ci sono solo le immagini animate (`scripts/avatar` rifà tutto dai modelli).
+**Ci trascini sopra dei file.** La **musica** parte subito, con il suo piccolo player attaccato all'avatar (play, pausa, avanti, indietro, barra) e **senza aprire l'app**;
+il tasto ↗ la apre nel lettore intero. Per **tutto il resto** compare «Cosa vuoi farne?»: **Apri** (nel lettore), **Converti** o **Comprimi**: questi due aprono la **mini
+interfaccia** accanto all'avatar, la stessa del convertitore, con tutte le scelte (non parte niente da solo), e in cima c'è sempre **Apri nell'app intera**.
+Per **ingrandirlo o rimpicciolirlo**: lascia il cursore fermo sopra l'avatar, aspetta che l'anello si carichi e giri la rotella.
+Funziona offline: gli oggetti 3D sono stati creati una volta (con Meshy) e nel programma ci sono solo le immagini animate (`scripts/avatar` rifà tutto dai modelli).
 
 ## Gli archivi: 7-Zip dentro
 
