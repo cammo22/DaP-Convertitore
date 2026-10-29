@@ -25,6 +25,8 @@ public sealed class Impostazioni
     public bool ApriCon { get; set; } = true;
     /// <summary>I gruppi che si è scelto di aprire sempre col lettore (la lista di «App predefinite»). Null = tutti.</summary>
     public List<string>? GruppiPredefiniti { get; set; }
+    /// <summary>L'ultima versione di cui si sono viste le novità: dopo un aggiornamento le novità si aprono da sole, una volta.</summary>
+    public string? NovitaVista { get; set; }
     /// <summary>L'invito a mettere il convertitore nel menu di Windows 11 è già stato mostrato (e chiuso).</summary>
     public bool Menu11Chiesto { get; set; }
     /// <summary>L'ultimo formato scelto per ogni categoria ("video" → "video.mp4").</summary>

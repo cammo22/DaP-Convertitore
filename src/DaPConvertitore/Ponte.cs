@@ -98,8 +98,7 @@ public sealed class Ponte
             timerRapide.Start();
         }
         if (r.Finestra && finestra.Modo == "rapido") CambiaModo("finestra");
-        if (finestra.WindowState == WindowState.Minimized) finestra.WindowState = WindowState.Normal;
-        finestra.Activate();
+        Davanti.Porta(finestra);
     }
 
     void CambiaModo(string modo)
@@ -435,6 +434,14 @@ public sealed class Ponte
             {
                 var codice = await Predefiniti.ChiediAdmin(Environment.ProcessPath!, "--predefiniti-togli");
                 return new { esito = codice switch { null => "negato", Predefiniti.Fatto => "ok", _ => "errore" } };
+            }
+            case "novita":
+            {
+                // le novità della versione in uso; «nuova» = prima apertura dopo un aggiornamento (si apre da sola, una volta)
+                var versione = Versione;
+                var nuova = !string.IsNullOrEmpty(imp.NovitaVista) && imp.NovitaVista != versione;
+                if (imp.NovitaVista != versione) { imp.NovitaVista = versione; imp.Salva(); }
+                return new { versione, testo = Novita.Di(versione), nuova };
             }
             case "aggiustaTutto":
                 return await AggiustaTutto();

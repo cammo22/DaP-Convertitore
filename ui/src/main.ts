@@ -13,6 +13,7 @@ import { h, peso, durata, risoluzione } from './util';
 import { icone, iconaCategoria, coloreCategoria } from './icone';
 import { clac, accendiSuoni } from './suoni';
 import { disegnaHome } from './app/home';
+import { apriNovita, type DatiNovita } from './app/novita';
 import { s, ui, nomeCat, formato, fileDi, categoriePresenti, sceltaPer, eVideoVero } from './app/stato';
 import { app, testa, coda, banco, piede, corpo, logoSvg, mostraAvviso, conservaVista } from './app/scheletro';
 import { regolazioni } from './app/pannelli';
@@ -46,6 +47,7 @@ function disegnaTesta() {
       hw ? h('span.chip', { title: hw.cpu }, h('i.led.ambra'), `${cpuCorta(hw.cpu)} · ${hw.thread} thread`) : h('span.chip', null, h('i.led.lampeggia'), 'Guardo la macchina…'),
     ),
     h('div.finestra', null,
+      h('button.btn-fin.nov', { title: 'Novità e aggiornamenti', onclick: () => void apriNovita(), html: icone.novita }),
       h('button.btn-fin', { title: 'Impostazioni', onclick: () => apriImpostazioni() , html: icone.ingranaggio }),
       h('button.btn-fin', { title: 'Riduci', onclick: () => chiedi('finestra', { azione: 'riduci' }), html: icone.riduci }),
       s.stato.modo === 'finestra' ? h('button.btn-fin', { title: 'Ingrandisci', onclick: () => chiedi('finestra', { azione: 'massimizza' }), html: icone.ingrandisci }) : null,
@@ -368,6 +370,8 @@ async function avvia() {
   s.stato = await chiedi<Stato>('stato');
   s.aggiornamento = s.stato.aggiornamento ?? null;
   accendiSuoni(s.stato.impostazioni.suoniAccesi);
+  // dopo un aggiornamento le novità si aprono da sole, una volta
+  if (s.stato.modo === 'finestra') void chiedi<DatiNovita>('novita').then((n) => { if (n?.nuova) setTimeout(() => void apriNovita(n), 1200); }).catch(() => {});
   opzioniSalvate();
   for (const f of s.stato.file) { s.file.set(f.id, f); s.ordine.push(f.id); }
   for (const l of s.stato.lavori) { s.lavori.set(l.id, l); s.giro.push(l.id); }

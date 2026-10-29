@@ -3,6 +3,7 @@
 import { chiedi } from '../ponte';
 import { h, clamp, durata as tempo } from '../util';
 import { attesa, giri, ic, memoria, menuSu, pillola, schermoIntero, type Contesto, type Tasto, type Vista } from './comune';
+import { scaletta } from './scaletta';
 import { Fila, copiabile, nativo, type InfoMedia } from './media';
 
 export async function monta(c: Contesto): Promise<Vista> {
@@ -24,7 +25,10 @@ export async function monta(c: Contesto): Promise<Vista> {
   const fatto = h('i.v-fatto');
   const pronto = h('i.v-pronto');
   const pallino = h('i.v-pallino');
-  const bolla = h('span.v-bolla');
+  // la bolla sopra la linea del tempo: l'anteprima vera del punto sotto il cursore (un fotogramma) e il tempo
+  const quadro = h('div.v-quadro');
+  const testoBolla = h('span.v-bolla-testo');
+  const bolla = h('span.v-bolla', null, quadro, testoBolla);
   const tacche = h('div.v-tacche', null, ...info.capitoli.filter((x) => x.inizio > 0).map((x) => h('i', { style: { left: `${(x.inizio / info.durata) * 100}%` }, title: x.titolo })));
   const pezzo = h('i.v-taglio');
   const linea = h('div.v-linea', null, h('div.v-binario', null, pronto, pezzo, fatto, tacche), pallino, bolla);
@@ -34,6 +38,7 @@ export async function monta(c: Contesto): Promise<Vista> {
   const bVol = h('button.v-b', { title: 'Muto (M)', html: video.muted ? ic.muto : ic.volume, onclick: () => muto() });
   const vol = h<HTMLInputElement>('input.v-vol', { type: 'range', min: 0, max: 1, step: 0.01, value: video.volume });
   const bSub = h('button.v-b', { title: 'Sottotitoli (C)', html: ic.sottotitoli, onclick: (e: Event) => menuSottotitoli(e.currentTarget as HTMLElement) });
+  const sc = scaletta(c);
   const bTracce = info.audio.length > 1 ? h('button.v-b', { title: 'Traccia audio (A)', html: ic.tracce, onclick: (e: Event) => menuTracce(e.currentTarget as HTMLElement) }) : null;
   const bVel = h('button.v-b.testo', { title: 'Velocità ([ e ])', onclick: (e: Event) => menuVelocita(e.currentTarget as HTMLElement) }, '1×');
   const comandi = h('div.v-comandi', null,
@@ -49,10 +54,11 @@ export async function monta(c: Contesto): Promise<Vista> {
       bVel,
       info.sottotitoli.some((x) => x.testo) || info.esterni.length ? bSub : null,
       bTracce,
+      h('button.v-b.solo-fratelli', { title: 'Scaletta dei video della cartella (E)', html: ic.elenco, onclick: () => sc.gira() }),
       h('button.v-b', { title: 'Salva il fotogramma (S)', html: ic.foto, onclick: () => void fotogramma() }),
       document.pictureInPictureEnabled ? h('button.v-b', { title: 'Finestrella sempre sopra (P)', html: ic.pip, onclick: () => void pip() }) : null,
       h('button.v-b', { title: 'Schermo intero (F)', html: ic.schermo, onclick: () => schermoIntero() })));
-  c.palco.replaceChildren(h('div.v-sala', null, cinema, centro, comandi));
+  c.palco.replaceChildren(h('div.v-sala', null, cinema, centro, comandi, sc.el, sc.linguetta));
   const sala = c.palco.firstElementChild as HTMLElement;
 
   // ——— da dove arriva il video: com'è, o tradotto al volo ———
@@ -280,6 +286,111 @@ export async function monta(c: Contesto): Promise<Vista> {
   disegnaLuce();
   luce.classList.toggle('spenta', !luceAccesa);
 
+  // ——— l'anteprima vera sotto il cursore, fluida come in QuickTime ———
+  // Passando sulla linea il fotogramma cambia a ogni pixel, senza aspettare nessuno: appena il cursore si avvicina, FFmpeg
+  // prepara in fila (tre alla volta) un fotogramma ogni ~1% del video; sotto il cursore si vede subito il più vicino (e
+  // se ne vedono già altri accanto), poi, appena il cursore rallenta, arriva quello esatto: per i video che WebView2
+  // suona è un secondo <video> muto che salta al punto, per gli altri un fotogramma di FFmpeg. Trascinando, il video
+  // vero segue il cursore in tempo reale.
+  const LARGHEZZA_QUADRO = 192;
+  const PASSI = Math.max(12, Math.min(160, Math.round((info.durata || 60) / 1.5)));
+  const storia: (string | null)[] = Array.from({ length: PASSI }, () => null);
+  let precaricato = false;
+  const quadroRapido = h<HTMLImageElement>('img', { alt: '' });
+  const quadroEsatto = h<HTMLImageElement>('img.esatto', { alt: '' });
+  quadro.replaceChildren(quadroRapido, quadroEsatto);
+  let spia: HTMLVideoElement | null = null;
+  let spiaCerca = false, spiaProssimo: number | null = null;
+  let inVolo = false, richiesto: number | null = null, ultimoT = 0;
+  const dalMotore = () => !!fila || !nativo(info);
+
+  /** I fotogrammi sparsi nel video, a fila: servono a far scorrere l'anteprima senza attese. */
+  async function precarica() {
+    if (precaricato || !info.video || !info.durata) return;
+    precaricato = true;
+    // dal punto dove sei verso i lati, così quello che guardi per primo c'è prima
+    const centro = (ultimoT / info.durata) * PASSI;
+    const ordine = [...storia.keys()].sort((x, y) => Math.abs(x - centro) - Math.abs(y - centro));
+    let prossimoIndice = 0;
+    const lavora = async () => {
+      while (c.viva()) {
+        const i = ordine[prossimoIndice++];
+        if (i === undefined) return;
+        try {
+          const r = await chiedi<{ url: string | null }>('fotogrammaA', { t: ((i + 0.5) / PASSI) * info.durata, durata: info.durata, lato: LARGHEZZA_QUADRO, precarica: true });
+          storia[i] = r.url;
+          if (r.url && Math.abs(i - (ultimoT / info.durata) * PASSI) < 1.5) mostraVicino(ultimoT);
+        } catch { /* quello che manca lo cerca il passaggio esatto */ }
+      }
+    };
+    await Promise.all([lavora(), lavora(), lavora()]);
+  }
+  /** Il fotogramma pronto più vicino al punto (subito, senza chiedere niente a nessuno). */
+  function mostraVicino(t: number) {
+    const i = clamp(Math.floor((t / (info.durata || 1)) * PASSI), 0, PASSI - 1);
+    for (let d = 0; d < PASSI; d++) {
+      const u = storia[i - d] ?? storia[i + d];
+      if (u) { if (quadroRapido.src !== u) quadroRapido.src = u; quadro.classList.add('pronto'); return; }
+    }
+  }
+  async function pompaMotore() {
+    if (inVolo) return;
+    inVolo = true;
+    while (richiesto !== null) {
+      const t = richiesto;
+      richiesto = null;
+      try {
+        const r = await chiedi<{ url: string | null }>('fotogrammaA', { t, durata: info.durata, lato: LARGHEZZA_QUADRO * 2 });
+        // se intanto il cursore si è spostato, questo non serve più
+        if (r.url && richiesto === null) { quadroEsatto.src = r.url; quadroEsatto.classList.add('su'); quadro.classList.add('pronto'); }
+      } catch { /* il prossimo movimento riprova */ }
+    }
+    inVolo = false;
+  }
+  function spiaVa(t: number) {
+    if (!spia) return;
+    if (spiaCerca) { spiaProssimo = t; return; }
+    spiaCerca = true;
+    try { spia.currentTime = t; } catch { spiaCerca = false; }
+  }
+  /** Il cursore è sul punto t: subito il fotogramma più vicino, poi quello esatto. */
+  function guardaA(t: number) {
+    if (!info.video) return;
+    ultimoT = t;
+    void precarica();
+    mostraVicino(t);
+    quadroEsatto.classList.remove('su');
+    if (dalMotore()) { richiesto = t; void pompaMotore(); return; }
+    if (!spia) {
+      spia = h<HTMLVideoElement>('video', { muted: true, playsinline: true, preload: 'auto' });
+      spia.muted = true;
+      spia.src = f.url;
+      spia.addEventListener('seeked', () => {
+        spiaCerca = false;
+        if (spiaProssimo !== null) { const x = spiaProssimo; spiaProssimo = null; spiaVa(x); return; }
+        // fermo sul punto giusto: il fotogramma esatto prende il posto di quello vicino
+        spia!.classList.add('su');
+        quadro.classList.add('pronto');
+      });
+      quadro.append(spia);
+    }
+    spia.classList.remove('su');
+    spiaVa(t);
+  }
+  /** Trascinando, il video vero segue il cursore in tempo reale (un salto alla volta, sempre l'ultimo punto). */
+  let seguiCerca = false, seguiProssimo: number | null = null;
+  video.addEventListener('seeked', () => {
+    if (!seguiCerca) return;
+    seguiCerca = false;
+    if (seguiProssimo !== null) { const x = seguiProssimo; seguiProssimo = null; seguiVideo(x); }
+  });
+  function seguiVideo(t: number) {
+    if (fila) return;
+    if (seguiCerca) { seguiProssimo = t; return; }
+    seguiCerca = true;
+    try { video.currentTime = t; } catch { seguiCerca = false; }
+  }
+
   // ——— la linea del tempo: clic, trascina, bolla col tempo ———
   let tieni = false;
   const daX = (x: number) => { const r = linea.getBoundingClientRect(); return clamp((x - r.left) / r.width, 0, 1) * (info.durata || video.duration || 0); };
@@ -288,9 +399,10 @@ export async function monta(c: Contesto): Promise<Vista> {
     const t = daX(e.clientX);
     const r = linea.getBoundingClientRect();
     const cap = [...info.capitoli].reverse().find((x) => x.inizio <= t);
-    bolla.textContent = cap?.titolo ? `${tempo(t)} · ${cap.titolo}` : tempo(t);
-    bolla.style.left = `${clamp(e.clientX - r.left, 30, r.width - 30)}px`;
-    if (tieni) mostraPosizione(t);
+    testoBolla.textContent = cap?.titolo ? `${tempo(t)} · ${cap.titolo}` : tempo(t);
+    bolla.style.left = `${clamp(e.clientX - r.left, LARGHEZZA_QUADRO / 2 + 6, r.width - LARGHEZZA_QUADRO / 2 - 6)}px`;
+    guardaA(t);
+    if (tieni) { mostraPosizione(t); seguiVideo(t); }
   });
   linea.addEventListener('pointerup', (e) => { if (tieni) { tieni = false; cerca(daX(e.clientX)); } });
   function mostraPosizione(t: number) {
@@ -368,6 +480,7 @@ export async function monta(c: Contesto): Promise<Vista> {
     { k: ['b'], etichetta: 'B', cosa: 'La luce intorno al video', fai: () => { luceAccesa = !luceAccesa; memoria.scrivi('luce', luceAccesa); luce.classList.toggle('spenta', !luceAccesa); c.hud(luceAccesa ? 'Luce accesa' : 'Luce spenta', ic.sole); } },
     { k: ['enter'], etichetta: 'Invio', cosa: 'Riprendi da dove eri', fai: () => { if (ripresa) { cerca(ripresa); schedaRipresa?.remove(); } } },
     { k: ['n'], etichetta: 'N', cosa: 'Il video dopo', fai: () => c.vai(1) },
+    { k: ['e'], etichetta: 'E', cosa: 'Scaletta dei video della cartella', fai: () => sc.gira() },
     { k: ['r'], etichetta: 'R', cosa: 'Gira a destra', fai: () => ruota(90) },
     { k: ['shift+r'], etichetta: 'Maiusc R', cosa: 'Gira a sinistra', fai: () => ruota(-90) },
     { k: ['ctrl+s'], etichetta: 'Ctrl S', cosa: 'Salva la rotazione nel video', fai: () => void salvaRotazione() },

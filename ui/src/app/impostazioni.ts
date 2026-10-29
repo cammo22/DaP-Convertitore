@@ -8,6 +8,7 @@ import { clac, accendiSuoni } from '../suoni';
 import { s, ui } from './stato';
 import { mostraAvviso } from './scheletro';
 import { proponiRiavvio } from './menu11';
+import { apriNovita } from './novita';
 
 /** Gruppi spenti di partenza: i documenti e gli archivi li aprono meglio Office ed Esplora file. */
 const spentiDiPartenza = new Set(['Documento', 'Presentazione', 'Tabella', 'Archivio']);
@@ -156,13 +157,7 @@ export function apriImpostazioni() {
     h('div.imp-piede', null,
       h('span', null, `DaP Convertitore ${s.stato.versione} · DaProd`),
       h('button.link', { onclick: () => chiedi('registro') }, 'Apri il registro'),
-      h('button.link#cerca-agg', { onclick: async (e: Event) => {
-        const b = e.currentTarget as HTMLButtonElement;
-        b.textContent = 'Cerco…';
-        const r = await chiedi<{ versione: string | null }>('aggiorna', { controlla: true }).catch(() => ({ versione: null }));
-        b.textContent = r.versione ? `Installa la ${r.versione}` : 'Sei all\'ultima versione';
-        if (r.versione) b.onclick = () => chiedi('aggiorna', { installa: true });
-      } }, 'Cerca aggiornamenti')),
+      h('button.link', { onclick: () => void apriNovita() }, 'Novità e aggiornamenti')),
   ));
   if (!vecchio) document.body.append(cassetto);
   else (cassetto.querySelector('.cassetto') as HTMLElement).scrollTop = scorri;

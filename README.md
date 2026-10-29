@@ -25,15 +25,24 @@ E per **guardarli**: un lettore leggero per qualsiasi file, con una pagina fatta
 ![locale](https://img.shields.io/badge/100%25-locale-5dffb4?labelColor=1a1428)
 [![Discord](https://img.shields.io/badge/Discord-DaProd-5865F2?logo=discord&logoColor=white)](https://discord.gg/Njs52aacwq)
 
-**[⬇ Scarica per Windows](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe)** ·
-[Tutte le versioni](https://github.com/cammo22/DaP-Convertitore/releases) ·
-[Novità](CHANGELOG.md)
+### ⬇ Scarica (il download parte subito)
+
+| Sistema | Scarica |
+| --- | --- |
+| 🪟 **Windows 10 · 11** — installer, si aggiorna da solo | **[DaPConvertitore-win-Setup.exe](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe)** |
+| 🪟 Windows — portatile, senza installare | [DaPConvertitore-win-Portable.zip](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Portable.zip) |
+| 🐧 **Linux** — tutte le distro (Flatpak) | _in arrivo: non è ancora pubblicato_ |
+| 🍎 **macOS** — Apple Silicon e Intel | _in arrivo: non è ancora pubblicato_ |
+
+[Novità di ogni versione](CHANGELOG.md)
 
 </div>
 
 ---
 
 <div align="center">
+<img src="risorse/schermate/home.png" width="820" alt="La home: da dove cominci, gli ultimi file convertiti, come sta il PC">
+<br><br>
 <img src="risorse/schermate/scegli.png" width="820" alt="La piastra: il video a sinistra, i formati a destra, lo slider del peso con la lancetta della qualità">
 </div>
 
@@ -45,8 +54,7 @@ E per **guardarli**: un lettore leggero per qualsiasi file, con una pagina fatta
    Se Windows SmartScreen avvisa (l'app non è firmata): *Ulteriori informazioni → Esegui comunque*.
 3. Fine. Gli aggiornamenti arrivano da soli: si scarica solo la differenza.
 
-Non vuoi installare niente? C'è anche `DaPConvertitore-win-Portable.zip` nella stessa
-[release](https://github.com/cammo22/DaP-Convertitore/releases/latest): scompatti e parte (senza tasto destro).
+Non vuoi installare niente? C'è anche **[DaPConvertitore-win-Portable.zip](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Portable.zip)**: scompatti e parte (senza tasto destro).
 Per toglierlo: *Impostazioni → App → DaP Convertitore → Disinstalla*, e la voce sparisce anche dal menu.
 
 ## Come si usa
@@ -107,7 +115,7 @@ apre il lettore: nero, senza cornice, leggero. Ogni tipo di file ha la sua pagin
 - **Video · il cinema.** I comandi di vetro spariscono quando guardi, la luce del video si allarga intorno
   (come le TV con l'ambilight, B la spegne). **Riprende da dove eri rimasto**, alla fine propone l'episodio dopo
   della cartella, sottotitoli dentro il video o accanto (`Film.srt`, `Film.it.srt`), tracce audio, velocità,
-  un fotogramma alla volta, **S salva il fotogramma in PNG**, la finestrella sempre sopra. Quello che WebView2 non
+  un fotogramma alla volta, **passando il cursore sulla linea del tempo vedi il fotogramma di quel punto, fluido come in QuickTime** (e trascinando il video segue il cursore), la **scaletta** dei video della cartella (E), **S salva il fotogramma in PNG**, la finestrella sempre sopra. Quello che WebView2 non
   suona da sé (AVI, WMV, MKV con dentro codec strani, AC3…) lo **traduce FFmpeg al volo** con la scheda video,
   e si scorre lo stesso dove vuoi. HEVC e 4K vanno col decoder della scheda.
 - **Musica · il giradischi.** Il disco gira con la copertina come etichetta, il braccio avanza col brano, la
@@ -135,6 +143,8 @@ scrittura, e **Salva** (Ctrl+S) lo riscrive nel file con la sua codifica e le su
 Esplora file o sul desktop: escono come file veri, dove li lasci. Sulla zona in alto escono accanto all'archivio. Nella piastra, **Ctrl+Canc** (o il tasto *svuota*) svuota la coda; **Canc** toglie il file scelto.
 
 **Incollare.** Nella piastra, tasto destro → **Incolla** (o Ctrl+V) aggiunge i file copiati in Esplora file.
+![Le impostazioni: il tasto Aggiusta tutto](risorse/schermate/impostazioni.png)
+
 In **Impostazioni** il tasto **Aggiusta tutto** mette a posto in un colpo il tasto destro, «Apri con» e le app predefinite, e dice per ogni passo com'è andata (e quanti tipi di file si aprono davvero col lettore). «Scegli i tipi» è la lista dei tipi con un interruttore ciascuno. I blocchi di codice dei Markdown hanno il loro tasto **Copia**.
 
 **Ritoccare una foto.** Nel lettore **D** (o la matita in alto) apre la barra del ritocco: penna, evidenziatore, freccia,
@@ -189,6 +199,10 @@ un'indovinata, il motore codifica davvero la foto (JPG e HEIC interi; WEBP, AVIF
 perdere niente.
 
 ## Gli archivi: 7-Zip dentro
+
+| Dentro l'archivio, con le miniature | Lo slider della compressione |
+| --- | --- |
+| ![Un 7z aperto nel lettore](risorse/schermate/lettore-archivio.png) | ![Lo slider della compressione](risorse/schermate/compressione.png) |
 
 Tutti gli archivi passano da **7-Zip** (`motori\7zip`, viaggia con il programma): ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB, ISO si aprono e si guardano dentro senza estrarre, coi nomi giusti anche con le accentate, e dentro l'archivio le **foto, i video e i PDF hanno la loro miniatura**.
 Per comprimere c'è lo **slider della compressione** (da *Nessuna*, che archivia soltanto, a *Massima*): vale per ZIP, 7Z, TAR.GZ e TAR.XZ, anche partendo da un archivio già fatto. Uno ZIP debole, ricompresso al massimo, pesa meno e dentro c'è la stessa roba (l'originale non si tocca). Non c'è ancora la password sugli archivi cifrati: il programma lo dice e basta.

@@ -3,11 +3,9 @@
 // il volume, e sotto lo spettro che balla. La rotella cambia il volume, ovunque sulla pagina; la scaletta si apre a destra.
 import { chiedi } from '../ponte';
 import { h, clamp, durata as tempo } from '../util';
+import { scaletta } from './scaletta';
 import { attesa, ic, memoria, type Contesto, type Tasto, type Vista } from './comune';
 import { nativo, type InfoMedia } from './media';
-
-/** La scaletta aperta in questa finestra: passando da un brano all'altro resta aperta, ma non si riapre da sola al prossimo avvio. */
-let scalettaViva = false;
 
 export async function monta(c: Contesto): Promise<Vista> {
   const f = c.scheda;
@@ -55,7 +53,7 @@ export async function monta(c: Contesto): Promise<Vista> {
     a0?.canali ? (a0.canali === 1 ? 'mono' : a0.canali === 2 ? 'stereo' : `${a0.canali} canali`) : null,
     a0?.bitrate || info.bitrate ? `${Math.round((a0?.bitrate || info.bitrate) / 1000)} kbit/s` : null,
   ].filter(Boolean) as string[];
-  const scaletta = h('aside.a-scaletta');
+  const sc = scaletta(c, { extra: () => riga() });
   const stanza = h('div.a-stanza', null,
     info.copertina ? h('div.a-fondo', { style: { backgroundImage: `url(${info.copertina})` } }) : h('div.a-fondo.vuoto'),
     h('div.a-scheda', null,
@@ -76,15 +74,15 @@ export async function monta(c: Contesto): Promise<Vista> {
           h('span.a-spazio'),
           bSeguito,
           bRipeti,
-          h('button.a-b.solo-fratelli', { title: 'Scaletta (L)', html: ic.elenco, onclick: () => giraScaletta() }),
+          h('button.a-b.solo-fratelli', { title: 'Scaletta (L)', html: ic.elenco, onclick: () => sc.gira() }),
           h('div.a-volume', null, bVol, vol)),
         spettro)),
-    scaletta);
+    sc.el, sc.linguetta);
   c.palco.replaceChildren(stanza);
 
   // la rotella cambia il volume, ovunque sulla pagina (sulla scaletta scorre la lista)
   stanza.addEventListener('wheel', (e) => {
-    if (scaletta.contains(e.target as Node) || e.deltaY === 0) return;
+    if (sc.el.contains(e.target as Node) || e.deltaY === 0) return;
     e.preventDefault();
     volume(e.deltaY < 0 ? 0.05 : -0.05);
   }, { passive: false });
@@ -230,7 +228,7 @@ export async function monta(c: Contesto): Promise<Vista> {
     seguito = valore;
     memoria.scrivi('seguito', seguito);
     bSeguito.classList.toggle('su', seguito);
-    scaletta.querySelector('.a-seguito-s')?.classList.toggle('su', seguito);
+    sc.el.querySelector('.a-seguito-s')?.classList.toggle('su', seguito);
     c.hud(seguito ? 'Di seguito: suona anche gli altri brani' : 'Solo questo brano', ic.elenco);
   }
   function cambiaRipeti() {
@@ -257,35 +255,11 @@ export async function monta(c: Contesto): Promise<Vista> {
   collegaAnalisi();
   void audio.play().catch(() => { /* aspetta un clic */ });
 
-  // ——— la scaletta: i brani della cartella ———
-  function giraScaletta() {
-    const aperta = stanza.classList.toggle('con-scaletta');
-    scalettaViva = aperta;
-    if (!aperta) return;
-    const { file, indice } = c.elenco();
-    const brani = file.map((p, i) =>
-      h(`button.a-brano${i === indice ? '.su' : ''}`, { title: 'Invio o doppio clic: suona questo', ondblclick: () => c.vaiA(i), onclick: () => c.vaiA(i) }, h('span', null, String(i + 1).padStart(2, '0')), p.split('\\').pop()!.replace(/\.[^.]+$/, '')));
-    scaletta.replaceChildren(
-      h('div.a-scaletta-testa', null, h('b', null, 'SCALETTA'), h('button.a-chiudi', { title: 'Chiudi (L)', onclick: () => giraScaletta() }, '×')),
-      h(`button.a-seguito-s${seguito ? '.su' : ''}`, { title: 'Suona anche gli altri brani, uno dopo l\'altro (T)', onclick: () => cambiaSeguito() }, h('i.led'), 'Di seguito', h('small', null, seguito ? 'suona anche gli altri' : 'suona solo quello scelto')),
-      h('div.a-brani', null, ...brani));
-    scaletta.querySelector('.su')?.scrollIntoView({ block: 'center' });
-  }
-  // dentro la scaletta le frecce su e giù passano da un brano all'altro (non cambiano il volume)
-  scaletta.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-    const lista = [...scaletta.querySelectorAll<HTMLElement>('.a-brano')];
-    const ora = lista.indexOf(document.activeElement as HTMLElement);
-    const dopo = lista[Math.max(0, Math.min(lista.length - 1, (ora < 0 ? lista.findIndex((x) => x.classList.contains('su')) : ora) + (e.key === 'ArrowDown' ? 1 : -1)))];
-    if (!dopo) return;
-    e.preventDefault();
-    e.stopPropagation();
-    dopo.focus();
-  });
-  // se in questa finestra la scaletta era già aperta (si è passati a un altro brano), resta aperta
-  if (scalettaViva) {
-    if (c.fratelli() > 1) giraScaletta();
-    else document.addEventListener('dap-fratelli', () => { if (c.viva() && c.fratelli() > 1 && !stanza.classList.contains('con-scaletta')) giraScaletta(); }, { once: true });
+  // ——— la scaletta: i brani della cartella (il componente è in scaletta.ts) ———
+  /** La riga «Di seguito» sotto il titolo della scaletta. */
+  function riga() {
+    return h(`button.a-seguito-s${seguito ? '.su' : ''}`, { title: 'Suona anche gli altri brani, uno dopo l\'altro (T)', onclick: () => cambiaSeguito() },
+      h('i.led'), 'Di seguito', h('small', null, seguito ? 'suona anche gli altri' : 'suona solo quello scelto'));
   }
 
   const tasti: Tasto[] = [
@@ -298,7 +272,7 @@ export async function monta(c: Contesto): Promise<Vista> {
     { k: ['n'], etichetta: 'N', cosa: 'Brano dopo', fai: () => c.vai(1) },
     { k: ['p'], etichetta: 'P', cosa: 'Brano prima (o da capo)', fai: prima },
     { k: ['r'], etichetta: 'R', cosa: 'Ripeti il brano', fai: cambiaRipeti },
-    { k: ['l'], etichetta: 'L', cosa: 'Scaletta', fai: () => giraScaletta() },
+    { k: ['l'], etichetta: 'L', cosa: 'Scaletta', fai: () => sc.gira() },
     { k: ['t'], etichetta: 'T', cosa: 'Di seguito: suona anche gli altri brani', fai: () => cambiaSeguito() },
     { k: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], etichetta: '0 … 9', cosa: 'Vai al 0%, 10%… 90%', fai: (e) => { audio.currentTime = (+e.key / 10) * (audio.duration || 0); } },
   ];
