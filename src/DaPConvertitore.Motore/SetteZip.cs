@@ -11,8 +11,11 @@ namespace DaP.Convertitore;
 /// </summary>
 public static partial class SetteZip
 {
-    /// <summary>Una password finta: se l'archivio è cifrato 7-Zip risponde «password sbagliata» invece di restare ad aspettarla.</summary>
-    const string PasswordFinta = "-pDaP-senza-password";
+    /// <summary>
+    /// L'opzione della password. Senza una password vera se ne dà una finta: se l'archivio è cifrato 7-Zip risponde «password
+    /// sbagliata» invece di restare ad aspettarla. Con una password vera i comandi non finiscono nel registro (si vedrebbe).
+    /// </summary>
+    static string Pw(string? password) => "-p" + (string.IsNullOrEmpty(password) ? "DaP-senza-password" : password);
 
     static readonly string[] Comuni = ["-y", "-bb0", "-sccUTF-8", "-scsUTF-8"];
 
@@ -31,11 +34,15 @@ public static partial class SetteZip
             if (m.Success && int.TryParse(m.Groups[1].Value, out var p)) avanzamento(Math.Clamp(p / 100.0, 0, 1));
         };
 
-    static ErroreConversione Errore(EsitoProcesso r, string predefinito)
+    /// <summary>7-Zip a volte chiude con «avviso» (1) anche quando la password era sbagliata e non ha estratto niente.</summary>
+    static bool PasswordSbagliata(EsitoProcesso r) =>
+        (r.Errori + " " + r.Uscita).Contains("Wrong password", StringComparison.OrdinalIgnoreCase);
+
+    static ErroreConversione Errore(EsitoProcesso r, string predefinito, string? password = null)
     {
         var t = r.Errori + "\n" + r.Uscita;
-        if (t.Contains("Wrong password", StringComparison.OrdinalIgnoreCase) || t.Contains("encrypted", StringComparison.OrdinalIgnoreCase))
-            return new ErroreConversione("L'archivio è protetto da password.", t);
+        if (t.Contains("Wrong password", StringComparison.OrdinalIgnoreCase) || t.Contains("encrypted", StringComparison.OrdinalIgnoreCase) || t.Contains("Data Error in encrypted", StringComparison.OrdinalIgnoreCase))
+            return new ErroreConversione(string.IsNullOrEmpty(password) ? "L'archivio è protetto da password." : "La password non è giusta.", t);
         if (t.Contains("Cannot open the file as archive", StringComparison.OrdinalIgnoreCase) || t.Contains("Can not open the file as archive", StringComparison.OrdinalIgnoreCase))
             return new ErroreConversione("Questo archivio non si riesce ad aprire.", t);
         if (t.Contains("Unsupported Method", StringComparison.OrdinalIgnoreCase))
@@ -48,16 +55,16 @@ public static partial class SetteZip
     // ————————————————————————— cosa c'è dentro —————————————————————————
 
     /// <summary>Le voci dell'archivio senza estrarlo. I percorsi hanno «/», le cartelle sono segnate.</summary>
-    public static async Task<List<VoceArchivio>> Elenca(Strumenti s, string archivio, CancellationToken ct = default)
+    public static async Task<List<VoceArchivio>> Elenca(Strumenti s, string archivio, CancellationToken ct = default, string? password = null)
     {
         Controlla(s);
-        var r = await Processi.Esegui(s.SetteZip!, ["l", "-slt", "-ba", "-spd", .. Comuni, PasswordFinta, "--", Path.GetFullPath(archivio)], ct, silenzioso: true);
-        if (r.Codice >= 2 && r.Uscita.Length == 0) throw Errore(r, "Questo archivio non si riesce ad aprire.");
+        var r = await Processi.Esegui(s.SetteZip!, ["l", "-slt", "-ba", "-spd", .. Comuni, Pw(password), "--", Path.GetFullPath(archivio)], ct, silenzioso: true);
+        if (r.Codice >= 2 && r.Uscita.Length == 0) throw Errore(r, "Questo archivio non si riesce ad aprire.", password);
         var voci = Analizza(r.Uscita);
         // .tar.gz e simili: 7-Zip vede solo il .tar dentro, e si guarda dentro anche a quello
         // (il .xz non porta il nome del .tar: 7-Zip non ne scrive nessuno)
         if (EDiTarCompresso(archivio) && (voci.Count == 0 || (voci.Count == 1 && !voci[0].Cartella && voci[0].Percorso.EndsWith(".tar", StringComparison.OrdinalIgnoreCase))))
-            return await ElencaTarCompresso(s, archivio, ct);
+            return await ElencaTarCompresso(s, archivio, ct, password);
         return voci;
     }
 
@@ -69,16 +76,16 @@ public static partial class SetteZip
     }
 
     /// <summary>Il .tar compresso: la lista del .tar interno si ha mettendo in fila i due 7-Zip (l'uscita del primo è l'ingresso del secondo).</summary>
-    static async Task<List<VoceArchivio>> ElencaTarCompresso(Strumenti s, string archivio, CancellationToken ct)
+    static async Task<List<VoceArchivio>> ElencaTarCompresso(Strumenti s, string archivio, CancellationToken ct, string? password)
     {
         var cartella = Path.Combine(Strumenti.CartellaTemporanea, "tar-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(cartella);
         try
         {
-            await Estrai(s, archivio, cartella, null, ct, apriIlTar: false);
+            await Estrai(s, archivio, cartella, null, ct, apriIlTar: false, password: password);
             var tar = Directory.EnumerateFiles(cartella, "*.tar").FirstOrDefault();
             if (tar is null) return [];
-            var r = await Processi.Esegui(s.SetteZip!, ["l", "-slt", "-ba", "-spd", .. Comuni, PasswordFinta, "--", tar], ct, silenzioso: true);
+            var r = await Processi.Esegui(s.SetteZip!, ["l", "-slt", "-ba", "-spd", .. Comuni, Pw(password), "--", tar], ct, silenzioso: true);
             return Analizza(r.Uscita);
         }
         finally { try { Directory.Delete(cartella, true); } catch { } }
@@ -129,14 +136,14 @@ public static partial class SetteZip
     /// una cartella porta con sé quello che ha dentro). Nei .tar.gz e simili passa dal .tar in mezzo.
     /// </summary>
     public static async Task Estrai(Strumenti s, string archivio, string dest, IReadOnlyList<string>? voci, CancellationToken ct,
-        Action<double>? avanzamento = null, bool apriIlTar = true)
+        Action<double>? avanzamento = null, bool apriIlTar = true, string? password = null)
     {
         Controlla(s);
         Directory.CreateDirectory(dest);
         if (!EDiTarCompresso(archivio))
         {
-            var r = await Lancia(s, archivio, dest, voci, ct, avanzamento);
-            if (r.Codice >= 2) throw Errore(r, "Non sono riuscito a estrarre l'archivio.");
+            var r = await Lancia(s, archivio, dest, voci, ct, avanzamento, password);
+            if (r.Codice >= 2 || PasswordSbagliata(r)) throw Errore(r, "Non sono riuscito a estrarre l'archivio.", password);
             return;
         }
 
@@ -145,8 +152,8 @@ public static partial class SetteZip
         try
         {
             Directory.CreateDirectory(appoggio);
-            var r1 = await Lancia(s, archivio, appoggio, null, ct, p => avanzamento?.Invoke(p * 0.5));
-            if (r1.Codice >= 2) throw Errore(r1, "Non sono riuscito a estrarre l'archivio.");
+            var r1 = await Lancia(s, archivio, appoggio, null, ct, p => avanzamento?.Invoke(p * 0.5), password);
+            if (r1.Codice >= 2 || PasswordSbagliata(r1)) throw Errore(r1, "Non sono riuscito a estrarre l'archivio.", password);
             var tar = Directory.EnumerateFiles(appoggio, "*.tar").FirstOrDefault();
             if (tar is null) throw new ErroreConversione("Questo archivio non si riesce ad aprire.", r1.Uscita);
             if (!apriIlTar) { File.Move(tar, Path.Combine(dest, Path.GetFileName(tar)), true); return; }
@@ -156,12 +163,12 @@ public static partial class SetteZip
         finally { try { Directory.Delete(appoggio, true); } catch { } }
     }
 
-    static Task<EsitoProcesso> Lancia(Strumenti s, string archivio, string dest, IReadOnlyList<string>? voci, CancellationToken ct, Action<double>? avanzamento)
+    static Task<EsitoProcesso> Lancia(Strumenti s, string archivio, string dest, IReadOnlyList<string>? voci, CancellationToken ct, Action<double>? avanzamento, string? password = null)
     {
-        List<string> a = ["x", "-aoa", "-bsp1", "-spd", .. Comuni, PasswordFinta, "-o" + dest, "--", Path.GetFullPath(archivio)];
+        List<string> a = ["x", "-aoa", "-bsp1", "-spd", .. Comuni, Pw(password), "-o" + dest, "--", Path.GetFullPath(archivio)];
         if (voci is not null)
             a.AddRange(voci.Select(v => v.Replace('\\', '/').Trim('/')).Where(v => v.Length > 0).Distinct(StringComparer.Ordinal));
-        return Processi.Esegui(s.SetteZip!, a, ct, LeggiPercento(avanzamento), tieniUscita: true, cartella: dest);
+        return Processi.Esegui(s.SetteZip!, a, ct, LeggiPercento(avanzamento), tieniUscita: true, cartella: dest, silenzioso: !string.IsNullOrEmpty(password));
     }
 
     // ————————————————————————— creare —————————————————————————
@@ -171,7 +178,7 @@ public static partial class SetteZip
     /// <paramref name="formato"/> è zip, 7z, tgz o txz. <paramref name="livello"/>: -1 solo archiviare, 0 deciso da solo, 1…9.
     /// </summary>
     public static async Task Crea(Strumenti s, string archivio, string base_, IReadOnlyList<string> voci, string formato, int livello,
-        CancellationToken ct, Action<double>? avanzamento = null)
+        CancellationToken ct, Action<double>? avanzamento = null, string? password = null)
     {
         Controlla(s);
         archivio = Path.GetFullPath(archivio);
@@ -197,8 +204,10 @@ public static partial class SetteZip
                 return;
             }
             var tipo = formato == "zip" ? "-tzip" : "-t7z";
-            var r = await Processi.Esegui(s.SetteZip!, ["a", tipo, "-spd", "-bsp1", .. Comuni, .. Livelli(formato, livello), archivio, "@" + elenco], ct,
-                LeggiPercento(avanzamento), tieniUscita: true, cartella: base_);
+            // con la password: 7Z cifra anche l'elenco dei file; ZIP usa AES-256 (quello vecchio si rompe in due minuti)
+            string[] cifra = string.IsNullOrEmpty(password) ? [] : formato == "7z" ? ["-p" + password, "-mhe=on"] : ["-p" + password, "-mem=AES256"];
+            var r = await Processi.Esegui(s.SetteZip!, ["a", tipo, "-spd", "-bsp1", .. Comuni, .. Livelli(formato, livello), .. cifra, archivio, "@" + elenco], ct,
+                LeggiPercento(avanzamento), tieniUscita: true, cartella: base_, silenzioso: cifra.Length > 0);
             if (r.Codice >= 2 || !File.Exists(archivio)) throw Errore(r, "Non sono riuscito a creare l'archivio.");
         }
         finally

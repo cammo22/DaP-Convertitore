@@ -157,6 +157,41 @@ public class ProveArchivi(Banco b)
     }
 
     [Fact]
+    public async Task ConLaPasswordGiustaSiApreESiEstrae()
+    {
+        var z = await Sette(Cartella("pw-origine"), Path.Combine(b.Cartella, "pw.7z"), "-pSegreta1", "-mhe=on");
+        var v = await Contenuti.Archivio(b.Strumenti, z, "Segreta1");
+        Assert.Contains(v, x => x.Percorso == "uno.txt");
+        var sbagliata = await Assert.ThrowsAsync<ErroreConversione>(() => Contenuti.Archivio(b.Strumenti, z, "Sbagliata9"));
+        Assert.Contains("non è giusta", sbagliata.Message);
+        var l = await b.Converti(z, "arch.estrai", new Opzioni { Archivio = { Password = "Segreta1" } });
+        Assert.Equal("uno", File.ReadAllText(Path.Combine(l.Uscita!, "uno.txt")));
+        var voci = await Trascinamento.Prepara(b.Strumenti, z, ["uno.txt"], "Segreta1");
+        Assert.Equal("uno", File.ReadAllText(voci[0]));
+    }
+
+    [Theory]
+    [InlineData("arch.zip", "zip")]
+    [InlineData("arch.7z", "7z")]
+    public async Task SiCreaUnArchivioCifrato(string formato, string estensione)
+    {
+        var c = Cartella("pw-crea-" + estensione);
+        var l = await Crea(c, formato, new Opzioni { Archivio = { Password = "Chiave-77" } });
+        Assert.EndsWith("." + estensione, l.Uscita);
+        // senza la password non si apre (nello ZIP i nomi si vedono, ma i file no); con la password sì, e il contenuto è quello
+        var e = await Assert.ThrowsAsync<ErroreConversione>(() => estensione == "7z"
+            ? Contenuti.Archivio(b.Strumenti, l.Uscita!)
+            : Scrittura.EstraiVoci(b.Strumenti, l.Uscita!, null));
+        Assert.Contains("protetto da password", e.Message);
+        var v = await Contenuti.Archivio(b.Strumenti, l.Uscita!, "Chiave-77");
+        Assert.Contains(v, x => x.Percorso.EndsWith("uno.txt"));
+        var fuori = await b.Converti(l.Uscita!, "arch.estrai", new Opzioni { Archivio = { Password = "Chiave-77" } });
+        Assert.Contains("uno.txt", Directory.GetFiles(fuori.Uscita!, "*", SearchOption.AllDirectories).Select(Path.GetFileName));
+        // la password non finisce nel registro
+        Assert.DoesNotContain("Chiave-77", File.ReadAllText(Path.Combine(Strumenti.CartellaDati, "registro.txt")));
+    }
+
+    [Fact]
     public void LAnalisiDellElencoLeggeCartelleEDate()
     {
         var uscita = "Path = a/b.txt\r\nFolder = -\r\nSize = 12\r\nModified = 2026-10-29 14:07:12.1234567\r\nAttributes = A\r\n\r\nPath = a\r\nFolder = +\r\nSize = 0\r\nAttributes = D\r\n\r\n";

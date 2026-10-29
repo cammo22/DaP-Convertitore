@@ -32,6 +32,21 @@ const spiegazioni: Record<string, string> = {
 
 export const eFormatoArchivio = (f: Formato) => f.id in spiegazioni;
 
+/** Il campo della password: solo in memoria, non si salva da nessuna parte. */
+function campoPassword(titolo: string, aiuto: string): Node {
+  const o = s.opzioni.archivio;
+  const campo = h<HTMLInputElement>('input.campo', { type: 'password', placeholder: 'Password', autocomplete: 'off', value: o.password ?? '' });
+  campo.addEventListener('input', () => { o.password = campo.value || undefined; });
+  return gruppo(titolo, h('div.liv-box', null, campo, h('small.spiega', null, aiuto)));
+}
+
+/** «Estrai»: il pannello con la password, se l'archivio ne ha una. */
+export function regolazioniEstrai(): Node {
+  return h('div.regolazioni', null,
+    h('p.spiega', null, 'In una cartella accanto, col nome dell\'archivio. Se dentro c\'è già una cartella sola, non la metto dentro un\'altra.'),
+    campoPassword('PASSWORD', 'Solo se l\'archivio ce l\'ha. Resta in memoria: non la scrivo da nessuna parte.'));
+}
+
 export function regolazioniArchivio(c: Categoria, f: Formato): Node {
   const o = s.opzioni.archivio;
   const posizione = () => {
@@ -48,5 +63,9 @@ export function regolazioniArchivio(c: Categoria, f: Formato): Node {
     h('p.spiega', null, spiegazioni[f.id] ?? ''),
     c === 'archivio'
       ? h('p.spiega', null, 'Hai già un archivio? Sceglilo con un livello più alto e ottieni un file più piccolo con dentro le stesse cose: l\'originale non si tocca.')
-      : null);
+      : null,
+    // aprire un archivio cifrato (da archivio), o cifrare il nuovo (da cartelle e file, solo ZIP e 7Z)
+    c === 'archivio'
+      ? campoPassword('PASSWORD DELL\'ARCHIVIO', 'Solo se quello che hai scelto ce l\'ha: serve per aprirlo. Il nuovo non avrà password.')
+      : /\.(zip|7z)$/.test(f.estensione) ? campoPassword('CIFRA CON UNA PASSWORD (facoltativo)', 'Senza la password non si apre: ZIP con AES-256, 7Z cifrato anche nell\'elenco dei file. Resta in memoria.') : null);
 }

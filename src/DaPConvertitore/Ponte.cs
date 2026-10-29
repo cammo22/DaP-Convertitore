@@ -339,6 +339,8 @@ public sealed class Ponte
                 if (a["suoniAccesi"] is { } su) imp.SuoniAccesi = su.GetValue<bool>();
                 if (a["apriCartella"] is { } ac) imp.ApriCartella = ac.GetValue<bool>();
                 if (a["cestinoDaSolo"] is { } ce) imp.CestinoDaSolo = ce.GetValue<bool>();
+                if (a["avatarAttivo"] is { } av) Regia.Avatar(av.GetValue<bool>());
+                if (a["avatarAvvio"] is { } aa) { imp.AvatarAvvio = aa.GetValue<bool>(); AvatarAvvioAutomatico(imp.AvatarAvvio); }
                 if (a["apriCon"] is { } ap)
                 {
                     imp.ApriCon = ap.GetValue<bool>();
@@ -611,6 +613,18 @@ public sealed class Ponte
         gpu = hardware.Gpu.Select(g => new { g.Nome, g.Marca, g.Vram, g.Driver }),
         encoder = hardware.Encoder, acceleratore = hardware.Acceleratore,
     };
+
+    /// <summary>L'avatar parte con Windows: una voce nella chiave «Run» dell'utente (si toglie spegnendo l'interruttore). Si chiede solo dalle Impostazioni.</summary>
+    static void AvatarAvvioAutomatico(bool si)
+    {
+        try
+        {
+            using var k = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
+            if (si) k.SetValue("DaPConvertitoreAvatar", $"\"{Environment.ProcessPath}\" --avatar");
+            else k.DeleteValue("DaPConvertitoreAvatar", false);
+        }
+        catch (Exception e) { Registro.Errore("avatar: avvio con Windows", e); }
+    }
 
     static readonly string[] GruppiSpentiDiPartenza = ["Documento", "Presentazione", "Tabella", "Archivio"];
 

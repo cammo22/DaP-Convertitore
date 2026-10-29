@@ -15,6 +15,7 @@ public static class Regia
     static readonly List<FinestraLettore> lettori = [];
     static readonly List<string> daGuardare = [];
     static DispatcherTimer? raccolta;
+    static FinestraAvatar? avatar;
 
     public static void Avvia(Application a) => app = a;
 
@@ -63,8 +64,28 @@ public static class Regia
     /// <summary>Dal convertitore al lettore.</summary>
     public static void ApriNelLettore(string percorso) => Gestisci(new Richiesta(null, [percorso], false, true));
 
+    /// <summary>L'avatar sul desktop: acceso o spento (e ricordato). Finché c'è, il programma resta aperto anche senza finestre.</summary>
+    public static void Avatar(bool acceso)
+    {
+        var imp = Impostazioni.Comune;
+        if (imp.AvatarAttivo != acceso) { imp.AvatarAttivo = acceso; imp.Salva(); }
+        if (acceso && avatar is null)
+        {
+            try
+            {
+                avatar = new FinestraAvatar();
+                avatar.Closed += (_, _) => { avatar = null; ForseFine(); };
+                avatar.Show();
+            }
+            catch (Exception e) { Registro.Errore("avatar", e); avatar = null; }
+        }
+        else if (!acceso && avatar is not null) { var a = avatar; avatar = null; a.Close(); ForseFine(); }
+    }
+
+    public static bool AvatarAcceso => avatar is not null;
+
     static void ForseFine()
     {
-        if (convertitore is null && lettori.Count == 0 && daGuardare.Count == 0) app.Shutdown();
+        if (convertitore is null && lettori.Count == 0 && daGuardare.Count == 0 && avatar is null) app.Shutdown();
     }
 }

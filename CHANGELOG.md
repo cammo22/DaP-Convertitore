@@ -2,6 +2,24 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.2.0 — 29 ottobre 2026
+
+- **L'avatar sul desktop.** Un oggetto piccolo (una **musicassetta** DaProd, un **VHS**, un **floppy**, un **CD**, un **vinile**…) che sta
+  in un angolo del desktop, sempre sopra, e ogni tanto fa un movimento: un saluto, un giro su se stesso, e ogni qualche minuto
+  **si trasforma** in un altro oggetto in una pioggia di scintille oro e magenta. Non dà fastidio: niente suoni, e sta fermo quando hai
+  un video, un gioco o una presentazione a schermo intero. Si sposta col mouse; il tasto destro dà il menu; il doppio clic apre il convertitore.
+  **Ci trascini sopra dei file** e si anima: compare «Cosa vuoi farne?» con tre scelte adattate al file, **Apri** (nel lettore),
+  **Converti** (nella finestra, col formato che scegli) e **Comprimi** (un video a metà peso, una foto più piccola, un audio in MP3 leggero, una
+  cartella o un archivio in 7Z). Il fumetto si chiude da solo dopo 10 secondi. **È spento di partenza**: si accende da
+  *Impostazioni → Avatar*, e può partire con Windows. Funziona offline; gli oggetti 3D sono stati creati una volta sola e qui ci sono
+  solo le immagini animate.
+- **Le password sugli archivi.** Un ZIP o un 7Z con la password ora si apre: il lettore chiede la password (e dice se è sbagliata), vale per
+  guardare dentro, per le miniature, per «Estrai qui» e per il trascinamento fuori; nella piastra c'è il campo della password per estrarre o
+  ricomprimere. **E si può cifrare**: comprimendo cartelle e file in ZIP (AES-256) o 7Z (cifrato anche l'elenco dei file) c'è il
+  campo *Cifra con una password*. La password resta in memoria, non finisce nel registro e non si salva da nessuna parte.
+- Dentro: `Avatar.cs`, `scripts/avatar/` (`render.html`, `rendi.mjs`, `impacchetta.py`: dal modello 3D alle immagini), `risorse/avatar/`;
+  le immagini sono a 256 colori con la trasparenza (circa 1 MB a oggetto). `DAP_AVATAR_PROVA` e `DAP_AVATAR_TRASFORMA` per le prove.
+
 ## 2.1.0 — 29 ottobre 2026
 
 - **La finestra si apre sempre davanti.** Prima, aprendo un file da Esplora file, la finestra a volte restava dietro alle altre.

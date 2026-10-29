@@ -150,6 +150,10 @@ export function apriImpostazioni() {
             proponiRiavvio(v ? 'Il menu completo arriva quando riparte Esplora file.' : 'Il menu di Windows 11 torna quando riparte Esplora file.');
           }))]
       : []),
+    h('div.imp-sezione', null, 'AVATAR'),
+    riga('Avatar sul desktop', 'Un oggetto piccolo (una musicassetta, poi un VHS, un floppy…) che sta in un angolo, ogni tanto fa un movimento e si trasforma. Non dà fastidio: sta fermo quando hai un programma a schermo intero. Ci trascini sopra dei file e ti chiede: aprire, convertire o comprimere. Si sposta col mouse, tasto destro per il menu.',
+      leva(!!imp.avatarAttivo, (v) => { salva({ avatarAttivo: v }); apriImpostazioni(); })),
+    ...(imp.avatarAttivo ? [riga('Parte con Windows', 'L\'avatar si accende da solo quando accedi, senza aprire finestre.', leva(!!imp.avatarAvvio, (v) => salva({ avatarAvvio: v })))] : []),
     h('div.imp-sezione', null, 'ALTRO'),
     riga('Spingi al massimo', 'FFmpeg a priorità normale: un po\' più veloce, ma mentre converte il PC si sente.', leva(imp.alMassimo, (v) => salva({ alMassimo: v }))),
     riga('Suoni', 'Il clac dei tasti e il din-don alla fine. Di partenza sono spenti.', leva(imp.suoniAccesi, (v) => { salva({ suoniAccesi: v }); accendiSuoni(v); })),

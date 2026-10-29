@@ -81,10 +81,13 @@ public static class Programma
         if (url >= 0 && url + 1 < args.Length) { Url(args[url + 1]); return; }
 
         try { SetCurrentProcessExplicitAppUserModelID(MenuContestuale.Aumid); } catch { }
+        var soloAvatar = args.Contains("--avatar");
         var richiesta = Richiesta.Da(args);
 
         using var mutex = new Mutex(true, $@"Local\{MenuContestuale.Aumid}", out var primo);
         // Esplora file lancia un processo per ogni file scelto: il primo apre la finestra, gli altri gli passano i file
+        // parte con Windows: se c'è già un programma aperto non serve altro; se no si apre solo l'avatar
+        if (!primo && soloAvatar) return;
         if (!primo && Istanza.Manda(richiesta)) return;
 
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
@@ -92,7 +95,8 @@ public static class Programma
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Registro.Errore("app", (Exception)e.ExceptionObject);
         app.Exit += (_, _) => Aggiornamenti.AllaChiusura();
         Regia.Avvia(app);
-        Regia.Gestisci(richiesta);
+        if (!soloAvatar) Regia.Gestisci(richiesta);
+        if (soloAvatar || Impostazioni.Comune.AvatarAttivo) Regia.Avatar(true);
         Aggiornamenti.Avvia(); // guarda le release in silenzio, all'avvio e poi ogni qualche ora
         if (primo) Istanza.Ascolta(r => app.Dispatcher.BeginInvoke(() => Regia.Gestisci(r)));
         _ = Task.Run(Lettore.Media.PulisciCache);

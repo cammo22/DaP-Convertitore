@@ -72,6 +72,10 @@ export interface Impostazioni {
   /** Il lettore in «Apri con» di Windows. */
   apriCon: boolean;
   menu11Chiesto: boolean;
+  /** L'avatar sul desktop (la musicassetta che si trasforma): di partenza spento. */
+  avatarAttivo?: boolean;
+  /** L'avatar parte con Windows. */
+  avatarAvvio?: boolean;
   /** I gruppi scelti per «Aprire tutto con DaProd» (null = tutti). */
   gruppiPredefiniti?: string[] | null;
   formati: Record<string, string>;
@@ -185,7 +189,7 @@ export interface OpzioniImmagine { modo: 'peso' | 'qualita'; qualita: number; la
 export interface StimaImmagine { peso: number; qualita: number; scala: number; min: number; max: number; larghezza: number; altezza: number; esatta: boolean }
 export interface OpzioniPdf { dpi: number }
 /** Compressione degli archivi: -1 solo archiviare, 0 il livello di partenza del formato, 1…9 (7-Zip). */
-export interface OpzioniArchivio { livello: number }
+export interface OpzioniArchivio { livello: number; /** Solo in memoria: serve per aprire un archivio cifrato o, in ZIP e 7Z, per cifrarlo. */ password?: string }
 export interface Opzioni { video: OpzioniVideo; audio: OpzioniAudio; immagine: OpzioniImmagine; pdf: OpzioniPdf; archivio: OpzioniArchivio }
 
 type Ascoltatore = (dati: any) => void;

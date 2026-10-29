@@ -82,9 +82,9 @@ public static partial class Contenuti
     // ————————————————————————— archivi —————————————————————————
 
     /// <summary>Cosa c'è dentro, senza estrarre: lo chiede a 7-Zip (nomi in UTF-8, anche accentati). Se 7-Zip manca, lo ZIP lo legge .NET.</summary>
-    public static async Task<List<VoceArchivio>> Archivio(Strumenti s, string percorso)
+    public static async Task<List<VoceArchivio>> Archivio(Strumenti s, string percorso, string? password = null)
     {
-        if (s.HaSetteZip) return await SetteZip.Elenca(s, percorso);
+        if (s.HaSetteZip) return await SetteZip.Elenca(s, percorso, default, password);
         if (Path.GetExtension(percorso).Equals(".zip", StringComparison.OrdinalIgnoreCase))
         {
             try
