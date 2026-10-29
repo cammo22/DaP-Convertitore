@@ -1,71 +1,104 @@
-<div align="center">
-
-<img src="risorse/schermate/banner.png" alt="DaP Convertitore — tasto destro, fatto." width="100%">
-
-<br><br>
-
-[![Scarica per Windows](https://img.shields.io/badge/%E2%AC%87%20%20SCARICA%20PER%20WINDOWS-ffd54a?style=for-the-badge&labelColor=ffd54a&color=ffd54a&logoColor=07060d)](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe)
-[![Portatile](https://img.shields.io/badge/VERSIONE%20PORTATILE-ZIP-35e8ff?style=for-the-badge&labelColor=1a1428)](https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Portable.zip)
-![Linux](https://img.shields.io/badge/LINUX-IN%20ARRIVO-5a5570?style=for-the-badge&labelColor=1a1428)
-![macOS](https://img.shields.io/badge/MACOS-IN%20ARRIVO-5a5570?style=for-the-badge&labelColor=1a1428)
-
-[![versione](https://img.shields.io/github/v/release/cammo22/DaP-Convertitore?label=versione&color=ffd54a&labelColor=1a1428&style=flat-square)](https://github.com/cammo22/DaP-Convertitore/releases/latest)
-![offline](https://img.shields.io/badge/100%25-offline-5dffb4?labelColor=1a1428&style=flat-square)
-![gratis](https://img.shields.io/badge/gratis-e%20senza%20pubblicit%C3%A0-ff3df2?labelColor=1a1428&style=flat-square)
-[![Discord](https://img.shields.io/badge/Discord-DaProd-5865F2?logo=discord&logoColor=white&style=flat-square)](https://discord.gg/Njs52aacwq)
-
-</div>
-
-<br>
-
-## Cosa fa
-
-<table>
-<tr>
-<td align="center" width="25%"><h3>🖱️</h3><b>Tasto destro</b><br><sub>su qualsiasi file e scegli il formato</sub></td>
-<td align="center" width="25%"><h3>🎬</h3><b>Tutto si converte</b><br><sub>video, audio, foto, PDF, documenti, archivi</sub></td>
-<td align="center" width="25%"><h3>👁️</h3><b>Guarda e ascolta</b><br><sub>un lettore per tutto, anche dentro gli archivi</sub></td>
-<td align="center" width="25%"><h3>🔒</h3><b>Resta sul tuo PC</b><br><sub>niente cloud, niente account</sub></td>
-</tr>
-</table>
-
-<br>
-
 <p align="center">
-  <img src="risorse/schermate/home.png" alt="La home" width="49%">
-  <img src="risorse/schermate/lettore-video.png" alt="Il lettore, con l'anteprima del video" width="49%">
+  <a href="https://discord.gg/Njs52aacwq"><img src=".github/discord-card.svg" alt="Entra nella community DaProd su Discord" width="720"></a>
 </p>
+
 <p align="center">
-  <img src="risorse/schermate/lettore-archivio.png" alt="Dentro un archivio, con le miniature" width="49%">
-  <img src="risorse/schermate/compressione.png" alt="Lo slider della compressione" width="49%">
+  <img src="risorse/readme/hero.png" alt="DaP Convertitore — tasto destro, fatto." width="100%">
+</p>
+
+<p align="center">
+  <b>Un convertitore per Windows che si usa dal tasto destro.</b><br>
+  Video, audio, foto, PDF, documenti e archivi: tutto sul tuo PC, senza account e senza internet.
+</p>
+
+<p align="center">
+  <a href="https://github.com/cammo22/DaP-Convertitore/releases/latest"><img src="https://img.shields.io/github/v/release/cammo22/DaP-Convertitore?label=versione&color=ffd54a&labelColor=1a1428&style=for-the-badge" alt="Versione"></a>
+  <img src="https://img.shields.io/badge/100%25-offline-5dffb4?labelColor=1a1428&style=for-the-badge" alt="Offline">
+  <img src="https://img.shields.io/badge/gratis-senza%20pubblicit%C3%A0-ff3df2?labelColor=1a1428&style=for-the-badge" alt="Gratis">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licenza-MIT-a19db0?labelColor=1a1428&style=for-the-badge" alt="Licenza MIT"></a>
 </p>
 
 <br>
 
-## Anche l'avatar
+<h2 align="center">⬇&nbsp; Scarica</h2>
 
-Un piccolo **oggetto DaProd** (una musicassetta, un VHS, un CD…) che vive sul desktop. **Ci trascini sopra un file** e lui lo apre, lo converte o lo comprime: la musica parte subito. Gira la rotella per farlo più grande o più piccolo. Si accende da **Impostazioni → Avatar**.
+<p align="center">
+  <a href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe"><img src="risorse/readme/scarica-win.png" alt="Scarica l'installer per Windows" width="49%"></a>
+  <a href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Portable.zip"><img src="risorse/readme/scarica-portatile.png" alt="Scarica la versione portatile per Windows" width="49%"></a>
+  <img src="risorse/readme/scarica-linux.png" alt="Linux, in arrivo" width="49%">
+  <img src="risorse/readme/scarica-macos.png" alt="macOS, in arrivo" width="49%">
+</p>
 
-<p align="center"><img src="risorse/schermate/avatar.png" alt="L'avatar sul desktop" width="60%"></p>
+<p align="center"><sub>I due pulsanti di Windows scaricano il file direttamente, senza passare dalla pagina delle release.</sub></p>
 
 <br>
 
-## Installare: 3 passi
+<h2 align="center">Cosa sa fare</h2>
+
+<p align="center">
+  <img src="risorse/readme/funzioni.png" alt="Tasto destro, video e audio, foto, PDF e documenti, archivi, un lettore per tutto" width="100%">
+</p>
+
+<br>
+
+<h2 align="center">Guardalo all'opera</h2>
+
+<p align="center">
+  <img src="risorse/readme/vetrina-1.png" alt="La home e il lettore video" width="100%">
+</p>
+<p align="center">
+  <img src="risorse/readme/vetrina-2.png" alt="Gli archivi con le miniature e lo slider della compressione" width="100%">
+</p>
+
+<br>
+
+<h2 align="center">C'è anche un avatar</h2>
+
+<p align="center">
+  Un piccolo <b>oggetto DaProd</b> vive sul desktop: una musicassetta che ogni tanto saluta e, ogni qualche minuto,<br>
+  si trasforma in un VHS, un floppy, un CD, un vinile… <b>Ci trascini sopra un file</b> e lo apre, lo converte o lo comprime.<br>
+  La musica parte subito, con il suo piccolo player. Con la rotella lo fai grande o piccolo.<br>
+  Si accende da <b>Impostazioni → Avatar</b>.
+</p>
+
+<p align="center">
+  <img src="risorse/schermate/avatar.png" alt="L'avatar sul desktop" width="80%">
+</p>
+
+<br>
+
+<h2 align="center">Come si installa</h2>
+
+<p align="center">
+  <img src="risorse/readme/passi.png" alt="1 Scarica, 2 Installa, 3 Tasto destro su un file" width="100%">
+</p>
+
+<p align="center"><sub>Windows può dire «Windows ha protetto il PC», perché l'installatore non ha ancora la firma a pagamento.<br>Premi <b>Ulteriori informazioni → Esegui comunque</b>. Si installa per il tuo utente, senza amministratore, e si aggiorna da solo.</sub></p>
+
+<br>
+
+## Com'è fatto
+
+Due pezzi, ed è per questo che è veloce e semplice da mantenere.
 
 | | |
-| :-: | --- |
-| **1** | Premi **Scarica per Windows** qui sopra. |
-| **2** | Apri il file scaricato: si installa da solo. |
-| **3** | Tasto destro su un file → **DaP Convertitore**. |
+| --- | --- |
+| **Il motore** | Scritto in **.NET 10**, senza finestre: fa tutto il lavoro. Un solo catalogo dice cosa si converte in cosa, e lo leggono l'interfaccia, il menu del tasto destro e le prove. Sotto lavorano **FFmpeg** (video e audio), **7-Zip** (archivi) e il motore immagini di Windows (foto). |
+| **L'interfaccia** | Una pagina in **TypeScript** dentro una finestra **WPF** con **WebView2**, il motore di Edge. Stile DaProd: viola notte, oro e magenta, vetro e Orbitron. |
+| **Il menu di Windows 11** | Una piccola libreria in C++ mette il programma nel menu nuovo del tasto destro, non solo in «Mostra altre opzioni». |
+| **L'avatar** | Modelli 3D creati con [Meshy](https://www.meshy.ai) e fotografati in animazione: nel programma ci sono solo le immagini, quindi pesa poco e va offline. |
 
-> Windows può dire «Windows ha protetto il PC»: l'installatore non ha ancora la firma a pagamento. Premi **Ulteriori informazioni → Esegui comunque**.
+### Come viene sviluppato
+
+Ogni versione ha la sua voce nel [registro delle novità](CHANGELOG.md) e passa da **oltre 170 prove automatiche** che convertono file veri. Quando una versione è pronta, una pipeline su GitHub compila, impacchetta con **Velopack** e pubblica la release da sola. Il codice è aperto, con licenza [MIT](LICENSE).
 
 <br>
 
-<div align="center">
+<p align="center">
+  <b><a href="docs/GUIDA.md">Guida completa</a></b> &nbsp;·&nbsp;
+  <b><a href="CHANGELOG.md">Novità</a></b> &nbsp;·&nbsp;
+  <b><a href="TERZE-PARTI.md">Software di terzi</a></b> &nbsp;·&nbsp;
+  <b><a href="https://discord.gg/Njs52aacwq">Discord</a></b>
+</p>
 
-**[Guida completa](docs/GUIDA.md)** · **[Novità](CHANGELOG.md)** · **[Discord](https://discord.gg/Njs52aacwq)** · Licenza [MIT](LICENSE) · [Software di terzi](TERZE-PARTI.md)
-
-<sub>Fatto da <b>DaProd</b></sub>
-
-</div>
+<p align="center"><sub>Un'app <b>DaProd Produzioni</b>, fatta con cura e in italiano.</sub></p>
