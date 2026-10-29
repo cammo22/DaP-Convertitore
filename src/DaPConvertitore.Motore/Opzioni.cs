@@ -105,4 +105,6 @@ public sealed class OpzioniArchivio
 {
     /// <summary>Quanto comprimere: -1 solo archiviare, 0 il livello di partenza del formato, 1 (velocissimo) … 9 (il più piccolo).</summary>
     public int Livello { get; set; }
+    /// <summary>La password dell'archivio: per aprire uno cifrato o, comprimendo in ZIP e 7Z, per cifrarlo. Non si salva da nessuna parte.</summary>
+    public string? Password { get; set; }
 }

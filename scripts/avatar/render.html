@@ -1,0 +1,141 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Avatar: render</title>
+<!-- La pagina che disegna l'avatar: carica un modello (GLB di Meshy) e, a comando, ne disegna un fotogramma di una
+     animazione su fondo trasparente. La guida scripts/avatar/rendi.mjs (Edge senza finestra) e ne fa le immagini. -->
+<style>html, body { margin: 0; background: transparent; overflow: hidden } canvas { display: block }</style>
+<script type="importmap">{ "imports": { "three": "/three/build/three.module.js", "three/addons/": "/three/examples/jsm/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const p = new URLSearchParams(location.search);
+const LATO = +p.get('lato') || 512;
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(LATO, LATO);
+renderer.setClearColor(0x000000, 0);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = +p.get('luce') || 1.5;
+document.body.append(renderer.domElement);
+
+const scena = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scena.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scena.environmentIntensity = 1.1;
+// le luci di DaProd: calda dall'alto a sinistra, magenta dietro a destra, ciano dal basso
+const chiave = new THREE.DirectionalLight(0xfff0d0, 2.4); chiave.position.set(-2.5, 3, 3); scena.add(chiave);
+const magenta = new THREE.DirectionalLight(0xff3df2, 2.2); magenta.position.set(3, 1.2, -2.5); scena.add(magenta);
+const ciano = new THREE.DirectionalLight(0x35e8ff, 1.2); ciano.position.set(1.5, -2.5, 2); scena.add(ciano);
+scena.add(new THREE.AmbientLight(0x6a5fa0, 0.8));
+
+const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 100);
+const radice = new THREE.Group();       // quello che si muove (le animazioni)
+scena.add(radice);
+let raggio = 1;
+
+/** Le scintille: un anello di puntini che si apre e svanisce (per le trasformazioni). */
+function cerchio() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,255,255,0.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+const NS = 36;
+const geoS = new THREE.BufferGeometry();
+const posS = new Float32Array(NS * 3), colS = new Float32Array(NS * 3);
+const semi = Array.from({ length: NS }, (_, i) => {
+  const a = (i / NS) * Math.PI * 2 + (i % 3) * 0.4, inc = ((i * 37) % 17) / 17 * 1.4 - 0.7;
+  return { dx: Math.cos(a) * Math.cos(inc), dy: Math.sin(inc), dz: Math.sin(a) * Math.cos(inc), v: 0.7 + ((i * 53) % 11) / 11 * 0.8, oro: i % 2 === 0 };
+});
+geoS.setAttribute('position', new THREE.BufferAttribute(posS, 3));
+geoS.setAttribute('color', new THREE.BufferAttribute(colS, 3));
+const scintille = new THREE.Points(geoS, new THREE.PointsMaterial({ size: 0.16, map: cerchio(), vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 1 }));
+scintille.visible = false;
+scena.add(scintille);
+const ORO = new THREE.Color(0xffd54a), MAG = new THREE.Color(0xff3df2);
+function mostraScintille(t) {   // t: 0..1, forza dell'esplosione
+  scintille.visible = t > 0 && t < 1;
+  if (!scintille.visible) return;
+  const k = Math.sin(t * Math.PI);
+  semi.forEach((s, i) => {
+    const r = raggio * (0.4 + t * 1.5 * s.v);
+    posS[i * 3] = s.dx * r; posS[i * 3 + 1] = s.dy * r; posS[i * 3 + 2] = s.dz * r;
+    const c = s.oro ? ORO : MAG;
+    colS[i * 3] = c.r * k; colS[i * 3 + 1] = c.g * k; colS[i * 3 + 2] = c.b * k;
+  });
+  geoS.attributes.position.needsUpdate = true;
+  geoS.attributes.color.needsUpdate = true;
+}
+
+const modelli = new Map();
+async function carica(nome) {
+  if (modelli.has(nome)) return modelli.get(nome);
+  const gltf = await new GLTFLoader().loadAsync(`/modelli/${nome}.glb`);
+  const m = gltf.scene;
+  // a volte il modello esce coricato: ROT=gradi,gradi,gradi (x,y,z) lo raddrizza
+  const rot = (p.get('rot') ?? '0,0,0').split(',').map((g) => ((+g || 0) * Math.PI) / 180);
+  m.rotation.set(rot[0], rot[1], rot[2]);
+  m.updateMatrixWorld(true);
+  // al centro, grande uguale per tutti (il raggio della sfera che lo contiene vale 1)
+  const box = new THREE.Box3().setFromObject(m);
+  const centro = box.getCenter(new THREE.Vector3());
+  const sfera = box.getBoundingSphere(new THREE.Sphere());
+  m.position.sub(centro);
+  const gruppo = new THREE.Group();
+  gruppo.add(m);
+  gruppo.scale.setScalar(1 / sfera.radius);
+  modelli.set(nome, gruppo);
+  return gruppo;
+}
+
+function inquadra() {
+  raggio = 1;
+  const d = 1 / Math.sin((camera.fov * Math.PI) / 360) * 1.02;
+  camera.position.set(0, 0.05, d);
+  camera.lookAt(0, 0, 0);
+}
+inquadra();
+
+const ease = (t) => t * t * (3 - 2 * t);
+const rimbalzo = (t) => Math.abs(Math.sin(t * Math.PI));
+const TAU = Math.PI * 2;
+
+/** Ogni animazione: dal tempo t (0..1) alla posa. Quelle che girano in tondo (idle, ...) chiudono senza salti. */
+const animazioni = {
+  // fermo, ma vivo: galleggia, dondola piano
+  idle: (o, t) => { o.position.y = Math.sin(t * TAU) * 0.05; o.rotation.set(0.12 + Math.sin(t * TAU) * 0.03, -0.5 + Math.sin(t * TAU) * 0.22, Math.sin(t * TAU * 2) * 0.025); o.scale.setScalar(1); },
+  // un salutino: due saltelli e un cenno
+  saluta: (o, t) => { o.position.y = rimbalzo(t * 2) * 0.22 * (1 - t * 0.4); o.rotation.set(0.12, -0.5 + Math.sin(t * TAU * 2) * 0.35, Math.sin(t * TAU * 2) * 0.1); o.scale.set(1 + Math.sin(t * TAU * 2) * 0.03, 1 - Math.sin(t * TAU * 2) * 0.03, 1); },
+  // ci si trascina sopra un file: si agita, contento
+  attento: (o, t) => { o.position.y = Math.sin(t * TAU * 3) * 0.04; o.rotation.set(0.12, -0.35, Math.sin(t * TAU * 4) * 0.12); o.scale.setScalar(1.08 + Math.sin(t * TAU * 3) * 0.02); },
+  // un giro completo su se stesso
+  gira: (o, t) => { o.position.y = Math.sin(t * Math.PI) * 0.12; o.rotation.set(0.12, -0.5 + ease(t) * TAU, 0); o.scale.setScalar(1); },
+  // sparisce girando in una pioggia di scintille (la prima metà della trasformazione)
+  esci: (o, t) => { const e = ease(t); o.position.y = e * 0.1; o.rotation.set(0.12, -0.5 + e * TAU * 1.5, e * 0.6); o.scale.setScalar(Math.max(0.0001, 1 - e)); mostraScintille(t * 0.55); },
+  // compare girando (la seconda metà)
+  entra: (o, t) => { const e = ease(t); o.position.y = (1 - e) * 0.1; o.rotation.set(0.12, -0.5 - (1 - e) * TAU * 1.5, -(1 - e) * 0.6); o.scale.setScalar(Math.max(0.0001, e)); mostraScintille(0.55 + t * 0.45); },
+};
+
+let corrente = null;
+async function mostra(nome) {
+  if (corrente) radice.remove(corrente);
+  corrente = await carica(nome);
+  radice.add(corrente);
+}
+
+window.carica = async (nome) => { await mostra(nome); renderer.compile(scena, camera); return true; };
+window.disegna = (anim, i, n) => {
+  scintille.visible = false;
+  radice.position.set(0, 0, 0); radice.rotation.set(0, 0, 0); radice.scale.setScalar(1);
+  (animazioni[anim] ?? animazioni.idle)(radice, n > 1 ? i / n : 0);
+  renderer.render(scena, camera);
+  return true;
+};
+window.animazioni = Object.keys(animazioni);
+window.pronto = true;
+</script>

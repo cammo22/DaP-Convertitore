@@ -658,3 +658,8 @@ kbd { display: inline-grid; place-items: center; min-width: 24px; height: 23px; 
 }
 .a-scaletta { border-top: 0 !important; border-right: 0 !important; border-bottom: 0 !important; box-shadow: -18px 0 48px rgba(0, 0, 0, 0.3) !important; }
 .l-velo { background: rgba(4, 3, 7, 0.38) !important; backdrop-filter: blur(10px) saturate(1.2) !important; }
+
+/* l'archivio con la password */
+.z-password { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; text-align: center; }
+.z-password b { font: 800 16px var(--marchio); letter-spacing: 0.04em; }
+.z-password .campo-pw { width: 260px; text-align: center; letter-spacing: 0.15em; }

@@ -18,6 +18,8 @@ public sealed class PonteLettore
 {
     /// <summary>Le anteprime sotto il cursore: due fotogrammi alla volta al massimo, la pagina chiede già solo l'ultimo punto.</summary>
     readonly SemaphoreSlim fotogrammi = new(2), fotogrammiPrecarica = new(3);
+    /// <summary>La password dell'archivio aperto in questa finestra (data dall'utente, solo in memoria).</summary>
+    string? passwordArchivio;
     readonly FinestraLettore finestra;
     readonly WebView2 vista;
     readonly Strumenti strumenti = Strumenti.Trova();
@@ -227,7 +229,8 @@ public sealed class PonteLettore
                 return new { t.Fogli, t.Attivo, t.Colonne, t.Righe, t.Totale };
             }
             case "archivio":
-                return (await Contenuti.Archivio(strumenti, P(a))).Select(v => new { v.Percorso, v.Peso, v.Cartella, v.Data });
+                if (a["password"] is { } pw) passwordArchivio = (string?)pw;
+                return (await Contenuti.Archivio(strumenti, P(a), passwordArchivio)).Select(v => new { v.Percorso, v.Peso, v.Cartella, v.Data });
             case "fotogrammaA":
             {
                 // l'anteprima sotto il cursore, per i video che la pagina non sa suonare da sé: un fotogramma di FFmpeg
@@ -248,7 +251,7 @@ public sealed class PonteLettore
             {
                 // la figurina di un file dentro l'archivio (foto, video, PDF): si estrae da solo e si butta
                 var lato = (uint)Math.Clamp((int?)a["lato"] ?? 96, 32, 512);
-                var url = await MiniatureArchivio.Fai(strumenti, P(a), (string?)a["voce"] ?? "", a["peso"]?.GetValue<long>() ?? 0, lato);
+                var url = await MiniatureArchivio.Fai(strumenti, P(a), (string?)a["voce"] ?? "", a["peso"]?.GetValue<long>() ?? 0, lato, default, passwordArchivio);
                 return new { url };
             }
             case "byte":
@@ -275,6 +278,13 @@ public sealed class PonteLettore
                 Regia.Converti(P(a));
                 return true;
             case "estrai":
+                if (!string.IsNullOrEmpty(passwordArchivio))
+                {
+                    // un archivio con la password: si estrae tutto da qui, dove la password si sa
+                    var tutto = await Scrittura.EstraiVoci(strumenti, P(a), null, passwordArchivio);
+                    Programma.Mostra(tutto);
+                    return true;
+                }
                 Regia.Gestisci(new Richiesta("arch-estrai", [P(a)], false));
                 return true;
             case "apriCon":
@@ -359,7 +369,7 @@ public sealed class PonteLettore
             {
                 // i file veri da portare fuori: si estraggono subito, il trascinamento di Windows parte quando il mouse esce
                 var voci = Voci(a);
-                var percorsi = await Trascinamento.Prepara(strumenti, P(a), voci);
+                var percorsi = await Trascinamento.Prepara(strumenti, P(a), voci, passwordArchivio);
                 var id = Guid.NewGuid().ToString("N");
                 lock (trascinamenti) { trascinamenti.Clear(); trascinamenti[id] = percorsi; }
                 return new { id, n = percorsi.Count };
@@ -380,7 +390,7 @@ public sealed class PonteLettore
             {
                 // solo le voci scelte (cartelle o file) escono, in una cartella accanto all'archivio; poi si apre
                 var voci = Voci(a);
-                var dest = await Scrittura.EstraiVoci(strumenti, P(a), voci);
+                var dest = await Scrittura.EstraiVoci(strumenti, P(a), voci, passwordArchivio);
                 Programma.Mostra(dest);
                 return new { cartella = dest };
             }

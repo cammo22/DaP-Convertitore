@@ -54,11 +54,40 @@ function miniature(c: Contesto) {
   };
 }
 
+/** Il foglietto «questo archivio ha la password»: si scrive, Invio, e se è giusta l'archivio si apre. */
+function chiediPassword(c: Contesto, messaggio: string, prova: (password: string) => Promise<Voce[]>): Promise<Voce[] | null> {
+  return new Promise((fatto) => {
+    const campo = h<HTMLInputElement>('input.t-cerca.campo-pw', { type: 'password', placeholder: 'Password', autocomplete: 'off' });
+    const nota = h('p.c-nota', null, messaggio);
+    const vai = async () => {
+      if (!campo.value) return;
+      nota.textContent = 'Provo…';
+      try { fatto(await prova(campo.value)); }
+      catch (e) { nota.textContent = (e as Error).message; campo.select(); }
+    };
+    // i tasti scritti qui non devono far partire le scorciatoie del lettore
+    campo.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') void vai(); });
+    c.palco.replaceChildren(h('div.z-password', null,
+      h('div.z-scatola', { html: iconaCategoria.archivio }),
+      h('b', null, 'Questo archivio ha la password'),
+      campo,
+      h('button.l-converti', { onclick: () => void vai() }, 'Apri'),
+      nota));
+    setTimeout(() => campo.focus(), 50);
+  });
+}
+
 export async function monta(c: Contesto): Promise<Vista> {
   c.palco.append(attesa('Guardo dentro la scatola…'));
   let voci: Voce[];
   try { voci = await chiedi<Voce[]>('archivio'); }
-  catch (e) { c.palco.replaceChildren(errore((e as Error).message)); return { tasti: [], smonta() {} }; }
+  catch (e) {
+    const messaggio = (e as Error).message;
+    // un archivio con la password: si chiede, e si riprova finché è quella giusta
+    const dopo = /password/i.test(messaggio) ? await chiediPassword(c, messaggio, (pw) => chiedi<Voce[]>('archivio', { password: pw })) : null;
+    if (!dopo) { if (!/password/i.test(messaggio)) c.palco.replaceChildren(errore(messaggio)); return { tasti: [], smonta() {} }; }
+    voci = dopo;
+  }
   if (!c.viva()) return { tasti: [], smonta() {} };
 
   const mini = miniature(c);

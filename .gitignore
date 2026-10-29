@@ -19,3 +19,7 @@ ui/dist/
 # prove
 test/.out/
 TestResults/
+
+# i modelli 3D dell'avatar (grandi, fatti con Meshy): si tengono fuori da git, si rifanno con scripts/avatar
+avatar/sorgenti/*.glb
+avatar/frames/

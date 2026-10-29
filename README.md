@@ -198,6 +198,21 @@ un'indovinata, il motore codifica davvero la foto (JPG e HEIC interi; WEBP, AVIF
 (un MKV in H.264 che deve diventare MP4) c'è **VELOCE**: cambia solo la scatola, in pochi secondi e senza
 perdere niente.
 
+## L'avatar sul desktop
+
+<div align="center">
+<img src="risorse/schermate/avatar.png" width="820" alt="Gli oggetti dell'avatar: musicassetta, VHS, floppy, CD, vinile, bobina, MiniDisc, cartuccia, tutti con la scritta DaProd">
+</div>
+
+Un oggetto piccolo che sta in un angolo del desktop (**Impostazioni → Avatar**, spento di partenza): una **musicassetta** DaProd che ogni tanto fa un
+saluto o un giro e, ogni qualche minuto, **si trasforma** in un VHS, un floppy, un CD, un vinile, una bobina, un MiniDisc o una cartuccia, in una pioggia di
+scintille oro e magenta. Non dà fastidio: niente suoni, fermo quando hai un video, un gioco o una presentazione a schermo intero. Lo sposti col mouse
+(tasto destro per il menu, doppio clic per aprire il convertitore).
+
+**Ci trascini sopra dei file** e ti chiede cosa farne: **Apri** (nel lettore), **Converti** (nella finestra, col formato che scegli) o **Comprimi**
+(un video a metà peso, una foto più piccola, un audio leggero, una cartella o un archivio in 7Z). Funziona offline: gli oggetti 3D sono stati creati una volta
+(con Meshy) e nel programma ci sono solo le immagini animate (`scripts/avatar` rifà tutto dai modelli).
+
 ## Gli archivi: 7-Zip dentro
 
 | Dentro l'archivio, con le miniature | Lo slider della compressione |
@@ -205,7 +220,7 @@ perdere niente.
 | ![Un 7z aperto nel lettore](risorse/schermate/lettore-archivio.png) | ![Lo slider della compressione](risorse/schermate/compressione.png) |
 
 Tutti gli archivi passano da **7-Zip** (`motori\7zip`, viaggia con il programma): ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB, ISO si aprono e si guardano dentro senza estrarre, coi nomi giusti anche con le accentate, e dentro l'archivio le **foto, i video e i PDF hanno la loro miniatura**.
-Per comprimere c'è lo **slider della compressione** (da *Nessuna*, che archivia soltanto, a *Massima*): vale per ZIP, 7Z, TAR.GZ e TAR.XZ, anche partendo da un archivio già fatto. Uno ZIP debole, ricompresso al massimo, pesa meno e dentro c'è la stessa roba (l'originale non si tocca). Non c'è ancora la password sugli archivi cifrati: il programma lo dice e basta.
+Per comprimere c'è lo **slider della compressione** (da *Nessuna*, che archivia soltanto, a *Massima*): vale per ZIP, 7Z, TAR.GZ e TAR.XZ, anche partendo da un archivio già fatto. Uno ZIP debole, ricompresso al massimo, pesa meno e dentro c'è la stessa roba (l'originale non si tocca). Gli archivi con la **password** si aprono (il lettore la chiede e dice se è sbagliata) e si possono **cifrare** comprimendo in ZIP (AES-256) o 7Z (cifrato anche l'elenco dei file); la password resta in memoria, non finisce nel registro e non si salva.
 
 ## La scheda video
 

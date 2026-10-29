@@ -6,7 +6,7 @@ import { s, eVideoVero } from '../stato';
 import { gruppo, bottoni, interruttore } from '../controlli';
 import { regolazioniVideo } from './video';
 import { regolazioniImmagine } from './immagine';
-import { eFormatoArchivio, regolazioniArchivio } from './archivio';
+import { eFormatoArchivio, regolazioniArchivio, regolazioniEstrai } from './archivio';
 
 export function regolazioni(c: Categoria, f?: Formato): Node {
   if (!f) return h('div');
@@ -39,6 +39,7 @@ export function regolazioni(c: Categoria, f?: Formato): Node {
       gruppo('DEFINIZIONE', bottoni([{ v: 100, testo: '100', nota: 'schermo' }, { v: 150, testo: '150', nota: 'leggera' }, { v: 200, testo: '200', nota: 'buona' }, { v: 300, testo: '300', nota: 'stampa' }], o.pdf.dpi, (v) => (o.pdf.dpi = v))),
       h('p.spiega', null, 'Una immagine per pagina, in una cartella accanto al PDF. Se la pagina è una sola, esce un file solo.'));
   }
+  if (c === 'archivio' && f.id === 'arch.estrai') return regolazioniEstrai();
   if ((c === 'archivio' || c === 'cartella') && eFormatoArchivio(f)) return regolazioniArchivio(c, f);
   const spiegazioni: Record<string, string> = {
     'pdf.txt': 'Il testo si legge dal PDF. Se è una scansione, lo legge l\'OCR di Windows, nella lingua del PC.',

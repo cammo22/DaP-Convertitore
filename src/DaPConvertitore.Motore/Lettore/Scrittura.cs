@@ -60,14 +60,14 @@ public static class Scrittura
     /// (come «Estrai qui», ma di quello che hai scelto, con 7-Zip). Le voci sono i percorsi dentro l'archivio, con «/», e le
     /// cartelle con «/» in fondo.
     /// </summary>
-    public static async Task<string> EstraiVoci(Strumenti s, string archivio, IReadOnlyList<string> voci)
+    public static async Task<string> EstraiVoci(Strumenti s, string archivio, IReadOnlyList<string>? voci, string? password = null)
     {
-        if (voci.Count == 0) throw new ErroreConversione("Non hai scelto niente da estrarre.");
+        if (voci is { Count: 0 }) throw new ErroreConversione("Non hai scelto niente da estrarre.");
         var dest = Nomi.PrenotaCartella(archivio);
         try
         {
             Directory.CreateDirectory(dest);
-            await SetteZip.Estrai(s, archivio, dest, voci, CancellationToken.None);
+            await SetteZip.Estrai(s, archivio, dest, voci, CancellationToken.None, password: password);
             if (!Directory.EnumerateFileSystemEntries(dest).Any())
                 throw new ErroreConversione("Non ho estratto niente: forse le voci scelte non ci sono più.");
             return dest;

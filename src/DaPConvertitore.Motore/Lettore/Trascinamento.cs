@@ -14,14 +14,14 @@ public static class Trascinamento
     /// restituisce i percorsi dei file e delle cartelle da trascinare: quelle che stanno dentro una cartella scelta non
     /// si contano due volte.
     /// </summary>
-    public static async Task<IReadOnlyList<string>> Prepara(Strumenti s, string archivio, IReadOnlyList<string> voci)
+    public static async Task<IReadOnlyList<string>> Prepara(Strumenti s, string archivio, IReadOnlyList<string> voci, string? password = null)
     {
         if (voci.Count == 0) throw new ErroreConversione("Non hai scelto niente da trascinare.");
         Pulisci();
         var dest = Path.Combine(Cartella, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dest);
         string? errore = null;
-        try { await SetteZip.Estrai(s, archivio, dest, voci, CancellationToken.None); }
+        try { await SetteZip.Estrai(s, archivio, dest, voci, CancellationToken.None, password: password); }
         catch (ErroreConversione e) { errore = e.Dettaglio ?? e.Message; }
         var percorsi = PercorsiInUscita(dest, voci).Where(p => File.Exists(p) || Directory.Exists(p)).ToList();
         if (percorsi.Count == 0)

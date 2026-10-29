@@ -25,6 +25,14 @@ public sealed class Impostazioni
     public bool ApriCon { get; set; } = true;
     /// <summary>I gruppi che si è scelto di aprire sempre col lettore (la lista di «App predefinite»). Null = tutti.</summary>
     public List<string>? GruppiPredefiniti { get; set; }
+    /// <summary>L'avatar sul desktop (la musicassetta che si trasforma). Di partenza spento: lo si accende dalle Impostazioni.</summary>
+    public bool AvatarAttivo { get; set; }
+    /// <summary>L'avatar parte con Windows (da solo, senza aprire finestre).</summary>
+    public bool AvatarAvvio { get; set; }
+    /// <summary>L'oggetto di adesso (cassetta, vhs…) e dove l'hai lasciato.</summary>
+    public string? AvatarOggetto { get; set; }
+    public double? AvatarX { get; set; }
+    public double? AvatarY { get; set; }
     /// <summary>L'ultima versione di cui si sono viste le novità: dopo un aggiornamento le novità si aprono da sole, una volta.</summary>
     public string? NovitaVista { get; set; }
     /// <summary>L'invito a mettere il convertitore nel menu di Windows 11 è già stato mostrato (e chiuso).</summary>

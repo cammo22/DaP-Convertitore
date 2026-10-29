@@ -19,14 +19,14 @@ public static class MiniatureArchivio
     };
 
     /// <summary>La miniatura come «data:» URL, o null se non si riesce (la pagina tiene l'icona).</summary>
-    public static async Task<string?> Fai(Strumenti s, string archivio, string voce, long peso, uint lato, CancellationToken ct = default)
+    public static async Task<string?> Fai(Strumenti s, string archivio, string voce, long peso, uint lato, CancellationToken ct = default, string? password = null)
     {
         if (!Ammessa(voce, peso) || !s.HaSetteZip) return null;
         await due.WaitAsync(ct);
         var cartella = Path.Combine(Strumenti.CartellaTemporanea, "miniatura-" + Guid.NewGuid().ToString("N"));
         try
         {
-            await SetteZip.Estrai(s, archivio, cartella, [voce], ct);
+            await SetteZip.Estrai(s, archivio, cartella, [voce], ct, password: password);
             var file = Directory.EnumerateFiles(cartella, "*", SearchOption.AllDirectories).FirstOrDefault();
             if (file is null) return null;
             var r = await Anteprime.Fai(file, Catalogo.CategoriaDi(voce), s, 0, lato);

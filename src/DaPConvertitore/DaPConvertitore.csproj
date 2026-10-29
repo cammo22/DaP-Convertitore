@@ -28,6 +28,8 @@
     <None Include="..\..\motori\7zip\**" LinkBase="motori\7zip" CopyToOutputDirectory="PreserveNewest" />
     <!-- le novità: il CHANGELOG viaggia con l'app e si apre dal tasto in alto -->
     <None Include="..\..\CHANGELOG.md" Link="CHANGELOG.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- le immagini dell'avatar (fatte con scripts/avatar) -->
+    <None Include="..\..\risorse\avatar\**" LinkBase="avatar" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\ui\dist\**" LinkBase="ui" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\risorse\icona-256.png" Link="icona.png" CopyToOutputDirectory="PreserveNewest" />
     <!-- il menu di Windows 11: la DLL, il pacchetto sparse firmato e la parte pubblica del certificato -->

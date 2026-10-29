@@ -1,0 +1,32 @@
+{
+ "oggetto": "vhs",
+ "lato": 192,
+ "colonne": 12,
+ "fps": 24,
+ "animazioni": {
+  "attento": {
+   "da": 0,
+   "n": 24
+  },
+  "entra": {
+   "da": 24,
+   "n": 24
+  },
+  "esci": {
+   "da": 48,
+   "n": 24
+  },
+  "gira": {
+   "da": 72,
+   "n": 36
+  },
+  "idle": {
+   "da": 108,
+   "n": 48
+  },
+  "saluta": {
+   "da": 156,
+   "n": 30
+  }
+ }
+}

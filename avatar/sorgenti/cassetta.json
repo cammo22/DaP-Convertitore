@@ -1,0 +1,12 @@
+{
+ "nome": "cassetta",
+ "forma": "A single stylized vintage compact audio cassette tape, chunky collectible-toy proportions, softly rounded edges, glossy translucent plastic shell with a clean label in the middle, two visible tape reels with white hubs, tiny screws in the corners, charming and slightly oversized, one object alone, centered, no background, no text, no hands",
+ "texture": "Deep midnight-violet translucent glossy plastic shell, label with gold and magenta accent stripes, metallic gold screws, white reel hubs with dark brown magnetic tape, subtle retro-futuristic neon edge glow, clean studio look, rich PBR materials",
+ "preview": "01a18805-8371-757f-840e-00b6127af44b",
+ "refine": "01a18807-a220-7018-8131-2c7a7134eecb",
+ "crediti": [
+  25,
+  15
+ ],
+ "glb": "cassetta.glb"
+}
