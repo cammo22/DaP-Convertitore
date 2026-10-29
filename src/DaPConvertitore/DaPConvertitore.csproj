@@ -25,6 +25,7 @@
     <Resource Include="..\..\risorse\icona.ico" Link="icona.ico" />
     <!-- FFmpeg e l'interfaccia viaggiano accanto all'exe -->
     <None Include="..\..\motori\ffmpeg\**" LinkBase="motori\ffmpeg" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\motori\7zip\**" LinkBase="motori\7zip" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\ui\dist\**" LinkBase="ui" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\risorse\icona-256.png" Link="icona.png" CopyToOutputDirectory="PreserveNewest" />
     <!-- il menu di Windows 11: la DLL, il pacchetto sparse firmato e la parte pubblica del certificato -->

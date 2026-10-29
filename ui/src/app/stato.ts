@@ -6,6 +6,7 @@ export const opzioniDiPartenza = (): Opzioni => ({
   audio: { kbps: 0, normalizza: false, mono: false, bit: 16 },
   immagine: { modo: 'peso', qualita: 88, lato: 0, pesoMaxByte: 0 },
   pdf: { dpi: 200 },
+  archivio: { livello: 0 },
 });
 
 /** Lo stato: una cosa sola, la leggono e la cambiano tutti i pezzi. */

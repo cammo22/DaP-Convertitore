@@ -17,6 +17,9 @@ public sealed class Coda(Strumenti strumenti, Func<InfoHardware> hardware, Func<
     /// <summary>Ogni cambiamento di un lavoro (avanzamento compreso, al massimo ~8 volte al secondo).</summary>
     public event Action<Lavoro>? Cambiato;
 
+    /// <summary>Chi vuole saperlo quando un lavoro finisce bene (l'app ci ricorda lo storico; le prove no).</summary>
+    public Action<Lavoro>? QuandoFatto { get; set; }
+
     public IReadOnlyList<Lavoro> Tutti { get { lock (lavori) return lavori.ToList(); } }
 
     public bool Occupata { get { lock (lavori) return lavori.Any(l => l.Stato is StatoLavoro.Attesa or StatoLavoro.Corre); } }
@@ -217,6 +220,7 @@ public sealed class Coda(Strumenti strumenti, Func<InfoHardware> hardware, Func<
         l.Stato = s;
         l.Eta = null;
         Cambiato?.Invoke(l);
+        if (s == StatoLavoro.Fatto) { try { QuandoFatto?.Invoke(l); } catch { /* la home non deve far fallire una conversione */ } }
     }
 }
 

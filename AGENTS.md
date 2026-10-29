@@ -72,7 +72,7 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
   `ComponiExif` (tabella «prima si specchia, poi si gira in senso orario»), provato.
 - **Scrivere e estrarre** (`Lettore/Scrittura.cs`, dalla 1.4.0): il testo salvato dal lettore torna nella stessa
   codifica (`FormatoDi`: BOM UTF-8/UTF-16, CRLF se il file lo ha, Latin-1 → UTF-8 e lo si dice) con bozza e
-  `Sposta`. Le voci scelte dentro un archivio escono con `tar -xf archivio -C dest voci…`: il percorso di una
+  `Sposta`. Le voci scelte dentro un archivio escono con 7-Zip (`SetteZip.Estrai`, vedi sotto): il percorso di una
   cartella (`foto/`) porta con sé anche quello che c'è dentro (provato in `ProveScrittura`).
 - **La barra bianca**: `.testa` (convertitore) e `.l-barra` (lettore) hanno uno sfondo chiaro apposta, il resto è
   scuro. Non è la barra di Windows (la finestra è senza cornice): è disegnata dalla pagina.
@@ -83,7 +83,7 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
   rimesso a 1: i pixel sono già dritti), bozza `.~` e `Modifiche.Sostituisci`. Formati che non si riscrivono → PNG accanto.
 - **Trascinare fuori dall'archivio** (dalla 1.5.0): l'HTML5 drag non sa portare file fuori da WebView2, quindi si
   guida col mouse (`pointerdown/move` in `archivio.ts`). Dopo 6 px parte `preparaTrascinamento` (`Trascinamento.cs`
-  estrae con `tar` in `%TEMP%\DaP Convertitore\trascina\<guid>`); quando il mouse esce dalla finestra con il tasto
+  estrae con 7-Zip in `%TEMP%\DaP Convertitore\trascina\<guid>`); quando il mouse esce dalla finestra con il tasto
   premuto la pagina chiama `trascinaFuori` e C# fa `DragDrop.DoDragDrop` col FileDrop (la risposta torna a drop
   finito). Sulla zona in alto si estrae accanto all'archivio. Per provarlo: `mouse_event` (SendInput) dal lettore a una
   finestra di Esplora file; `scripts\clic.mjs` fa i clic veri (non `.click()`) dentro la pagina.
@@ -107,3 +107,18 @@ Cosa fa e come si usa: `README.md`. Cosa è cambiato: `CHANGELOG.md`.
   `main.ts` collega all'avvio: così i moduli non si importano in tondo.
 - **Il Cestino a mano** (dalla 1.1.0): `Impostazioni.CestinoDaSolo`, spento di partenza (nome nuovo apposta: la
   1.0.2 salvava `cestino` acceso). Il tasto accanto al risultato chiama `Coda.OriginaleNelCestino`.
+- **Archivi con 7-Zip** (dalla prossima versione): `SetteZip.cs` è l'unico posto che lancia `7z.exe` (con `7z.dll` accanto, in
+  `motori\7zip`, preso da `scripts\prendi-7zip.ps1`: copia il 7-Zip installato o lo scarica da 7-zip.org). Sempre `-sccUTF-8 -scsUTF-8`
+  (il `tar` di Windows scriveva i nomi in ANSI e gli accenti si rovinavano: era il bug del 7z), `-spd` (niente caratteri jolly nei nomi),
+  `--` prima dell'archivio **tranne** quando si passa `@elenco` (dopo `--` il `@` non vale più), e una password finta (`-p…`) perché
+  un archivio cifrato risponda «password sbagliata» invece di restare ad aspettarla. I `.tar.gz` sono un `.tar` dentro un altro
+  archivio: si tira fuori il `.tar` e poi si apre (`EDiTarCompresso`). Il livello dello slider è `OpzioniArchivio.Livello` (-1 solo
+  archiviare, 0 il livello di partenza, 1…9); lo ZIP al massimo usa Deflate con `-mfb=258 -mpass=15`. Le miniature dentro gli
+  archivi (`MiniatureArchivio.cs`, comando `miniaturaVoce`) estraggono una voce alla volta (foto, video, PDF non enormi) e la buttano.
+- **«Aggiusta tutto»** (`Ponte.AggiustaTutto`): menu classico, «Apri con», menu di Windows 11 (permesso una volta) e regola delle app
+  predefinite, un passo alla volta con l'esito di ognuno. `Predefiniti.Conta` legge `UserChoice` (sola lettura) e dice quanti tipi
+  hanno davvero il lettore: serve a vedere se la regola ha funzionato. La regola di Windows si riapplica a **ogni** accesso (senza
+  `Suggested="true"`): chi cambia a mano un tipo se lo ritrova com'era.
+- **La home** (`ui/src/app/home.ts`): le sei strade (il selettore si apre già filtrato: comando `scegli` con `categoria`), gli ultimi
+  convertiti (`Storico.cs`, `storico.json`, solo l'app lo scrive: la coda lo chiama tramite `Coda.QuandoFatto`) e come sta il PC.
+- **Suoni** spenti di partenza: la proprietà si chiama `SuoniAccesi` (nome nuovo apposta, come `CestinoDaSolo`).

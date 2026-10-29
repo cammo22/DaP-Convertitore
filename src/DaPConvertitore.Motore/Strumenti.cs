@@ -14,6 +14,8 @@ public sealed class Strumenti
     public bool Word { get; init; }
     public bool Excel { get; init; }
     public bool PowerPoint { get; init; }
+    /// <summary>7z.exe (con 7z.dll accanto): il motore di tutti gli archivi. Viaggia con l'app.</summary>
+    public string? SetteZip { get; init; }
     public string Tar { get; init; } = Path.Combine(Environment.SystemDirectory, "tar.exe");
 
     /// <summary>%LocalAppData%\DaProd\Convertitore: impostazioni, cache dell'hardware, registro, profilo di LibreOffice.</summary>
@@ -44,6 +46,7 @@ public sealed class Strumenti
         {
             Ffmpeg = ffmpeg,
             Ffprobe = Path.Combine(Path.GetDirectoryName(ffmpeg) ?? "", "ffprobe.exe"),
+            SetteZip = CercaSetteZip(),
             LibreOffice = CercaLibreOffice(),
             Word = ComRegistrato("Word.Application"),
             Excel = ComRegistrato("Excel.Application"),
@@ -66,6 +69,19 @@ public sealed class Strumenti
             if (File.Exists(p)) return p;
         }
         return Path.Combine(AppContext.BaseDirectory, "motori", "ffmpeg", "ffmpeg.exe");
+    }
+
+    static string? CercaSetteZip()
+    {
+        // accanto all'exe (installato), poi su per le cartelle fino al repo (sviluppo e prove)
+        for (var d = new DirectoryInfo(AppContext.BaseDirectory); d is not null; d = d.Parent)
+        {
+            var p = Path.Combine(d.FullName, "motori", "7zip", "7z.exe");
+            if (File.Exists(p) && File.Exists(Path.Combine(d.FullName, "motori", "7zip", "7z.dll"))) return p;
+        }
+        // in sviluppo, se il 7-Zip del PC c'è, va bene lo stesso
+        var pf = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.exe");
+        return File.Exists(pf) ? pf : null;
     }
 
     static string? CercaLibreOffice()
@@ -102,6 +118,7 @@ public sealed class Strumenti
         catch { return false; }
     }
 
+    public bool HaSetteZip => SetteZip is not null && File.Exists(SetteZip);
     public bool HaFfmpeg => File.Exists(Ffmpeg) && File.Exists(Ffprobe);
     public bool HaOffice => LibreOffice is not null || Word || Excel || PowerPoint;
 }

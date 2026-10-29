@@ -181,6 +181,10 @@ code { font: 600 12px 'Cascadia Mono', Consolas, monospace; color: var(--oro); b
 .fila-regolazioni .bottoni { flex-wrap: nowrap; }
 .sotto-gruppo { display: flex; flex-direction: column; gap: 6px; }
 .spiega { margin: 0; color: var(--testo2); font-size: 14px; line-height: 1.45; max-width: 64ch; }
+.liv-box { display: flex; flex-direction: column; gap: 10px; max-width: 520px; }
+.liv-testa { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.liv-nome { font-family: 'Orbitron', sans-serif; letter-spacing: 0.08em; color: var(--oro, #ffd54a); font-size: 15px; }
+.liv-nota { color: var(--testo2); font-size: 13px; }
 
 .bottoni { display: flex; gap: 6px; flex-wrap: wrap; }
 .tasto {
@@ -618,3 +622,44 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .cl-barra.suona .cl-riempi { transition: width 0.25s linear; }
 .cl-barra:focus-visible { box-shadow: 0 0 0 1px rgba(255, 213, 74, 0.6); }
 .scheda:focus-visible, .cl-voce:focus-visible { outline: 0; border-color: var(--oro); box-shadow: 0 0 0 2px rgba(255, 213, 74, 0.35); }
+
+
+/* Impostazioni: il blocco «Aggiusta tutto» */
+.imp-sistema { display: flex; flex-direction: column; gap: 12px; padding: 16px; margin: 6px 0 10px; border: 1px solid var(--bordo); border-radius: 14px; background: rgba(255, 255, 255, 0.03); }
+.imp-sistema-testa { display: flex; gap: 18px; align-items: center; justify-content: space-between; }
+.imp-sistema-testa p { margin: 4px 0 0; color: var(--testo2); font-size: 13px; line-height: 1.45; max-width: 52ch; }
+.tasto.grande { padding: 14px 22px; font-size: 15px; white-space: nowrap; }
+.imp-stati { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.imp-stati li { display: flex; align-items: baseline; gap: 10px; font-size: 14px; color: var(--testo2); }
+.imp-stati li .puntino { width: 9px; height: 9px; border-radius: 50%; background: #ff5d7a; flex: none; align-self: center; box-shadow: 0 0 8px rgba(255, 93, 122, 0.6); }
+.imp-stati li.ok .puntino { background: #5dffb4; box-shadow: 0 0 8px rgba(93, 255, 180, 0.6); }
+.imp-stati li.ok { color: var(--testo); }
+.imp-stati li small { color: var(--testo3); font-size: 12px; }
+
+/* la home */
+.home { display: flex; flex-direction: column; gap: 14px; padding: 8px 4px 18px; }
+.home .benvenuto { margin: 0 auto; padding: 8px 20px 4px; }
+.strade { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.strada { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; padding: 14px 14px 12px; border-radius: 14px; border: 1px solid var(--bordo); background: rgba(255, 255, 255, 0.03); color: var(--testo); transition: transform 0.15s, background 0.15s, border-color 0.15s; position: relative; overflow: hidden; }
+.strada::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--tinta); opacity: 0.8; }
+.strada:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--tinta) 10%, transparent); border-color: color-mix(in srgb, var(--tinta) 55%, transparent); }
+.strada-icona svg { width: 26px; height: 26px; color: var(--tinta); }
+.strada b { font: 800 15px var(--marchio); letter-spacing: 0.02em; margin-top: 6px; }
+.strada small { color: var(--tinta); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+.strada em { font-style: normal; color: var(--testo3); font-size: 12px; line-height: 1.35; }
+.recenti { display: flex; flex-direction: column; gap: 4px; }
+.recenti-vuoto { color: var(--testo3); font-size: 13px; margin: 2px 0; }
+.recente { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.025); }
+.recente-icona svg { width: 20px; height: 20px; color: var(--tinta); }
+.recente-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.recente-testo b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recente-freccia { color: var(--tinta); font-weight: 800; }
+.recente-testo small { color: var(--testo3); font-size: 12px; }
+.stato-pc { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.scheda-pc { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--bordo); background: rgba(255, 255, 255, 0.025); }
+.scheda-titolo { display: flex; align-items: center; gap: 8px; font: 800 10.5px var(--marchio); letter-spacing: 0.16em; text-transform: uppercase; color: var(--testo3); }
+.scheda-pc .puntino { width: 8px; height: 8px; border-radius: 50%; background: #5dffb4; box-shadow: 0 0 8px rgba(93, 255, 180, 0.6); }
+.scheda-pc.da-fare .puntino { background: #ffb23d; box-shadow: 0 0 8px rgba(255, 178, 61, 0.6); }
+.scheda-pc b { font-size: 15px; }
+.scheda-pc small { color: var(--testo2); font-size: 12px; line-height: 1.35; }
+.scheda-pc .link { align-self: flex-start; margin-top: 4px; }

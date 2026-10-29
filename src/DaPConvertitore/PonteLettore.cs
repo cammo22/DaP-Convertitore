@@ -226,6 +226,13 @@ public sealed class PonteLettore
             }
             case "archivio":
                 return (await Contenuti.Archivio(strumenti, P(a))).Select(v => new { v.Percorso, v.Peso, v.Cartella, v.Data });
+            case "miniaturaVoce":
+            {
+                // la figurina di un file dentro l'archivio (foto, video, PDF): si estrae da solo e si butta
+                var lato = (uint)Math.Clamp((int?)a["lato"] ?? 96, 32, 512);
+                var url = await MiniatureArchivio.Fai(strumenti, P(a), (string?)a["voce"] ?? "", a["peso"]?.GetValue<long>() ?? 0, lato);
+                return new { url };
+            }
             case "byte":
             {
                 var da = a["da"]?.GetValue<long>() ?? 0;

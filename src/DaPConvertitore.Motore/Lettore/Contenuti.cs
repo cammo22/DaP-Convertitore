@@ -81,9 +81,10 @@ public static partial class Contenuti
 
     // ————————————————————————— archivi —————————————————————————
 
-    /// <summary>Cosa c'è dentro, senza estrarre: lo ZIP lo legge .NET (coi nomi giusti), il resto il tar di Windows.</summary>
+    /// <summary>Cosa c'è dentro, senza estrarre: lo chiede a 7-Zip (nomi in UTF-8, anche accentati). Se 7-Zip manca, lo ZIP lo legge .NET.</summary>
     public static async Task<List<VoceArchivio>> Archivio(Strumenti s, string percorso)
     {
+        if (s.HaSetteZip) return await SetteZip.Elenca(s, percorso);
         if (Path.GetExtension(percorso).Equals(".zip", StringComparison.OrdinalIgnoreCase))
         {
             try
@@ -92,26 +93,10 @@ public static partial class Contenuti
                 return z.Entries.Select(e => new VoceArchivio(e.FullName.Replace('\\', '/'), e.Length, e.FullName.EndsWith('/') || e.FullName.EndsWith('\\'),
                     e.LastWriteTime.Year > 1980 ? e.LastWriteTime.LocalDateTime : null)).ToList();
             }
-            catch (InvalidDataException) { /* ZIP strano: ci prova il tar */ }
+            catch (InvalidDataException) { /* ZIP strano */ }
         }
-        var r = await Processi.Esegui(s.Tar, ["-tvf", Path.GetFullPath(percorso)], CancellationToken.None);
-        if (r.Codice != 0 && r.Uscita.Length == 0)
-            throw new ErroreConversione(r.Errori.Contains("passphrase", StringComparison.OrdinalIgnoreCase) || r.Errori.Contains("encrypt", StringComparison.OrdinalIgnoreCase)
-                ? "L'archivio è protetto da password." : "Questo archivio non si riesce ad aprire.", r.Errori);
-        var l = new List<VoceArchivio>();
-        foreach (var riga in r.Uscita.Split('\n'))
-        {
-            var m = RigaTar().Match(riga.TrimEnd('\r'));
-            if (!m.Success) continue;
-            var nome = m.Groups[3].Value;
-            l.Add(new VoceArchivio(nome, long.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture), m.Groups[1].Value.StartsWith('d') || nome.EndsWith('/'), null));
-        }
-        return l;
+        throw new ErroreConversione("Manca 7-Zip dentro il programma: reinstalla DaP Convertitore.");
     }
-
-    // -rw-rw-rw-  0 0      0           6 ott 08 03:12 a b.txt
-    [GeneratedRegex(@"^(\S+)\s+\d+\s+\S+\s+\S+\s+(\d+)\s+\S+\s+\d+\s+\S+\s(.+)$")]
-    private static partial Regex RigaTar();
 
     // ————————————————————————— byte —————————————————————————
 

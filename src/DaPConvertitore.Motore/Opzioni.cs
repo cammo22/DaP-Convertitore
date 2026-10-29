@@ -13,6 +13,7 @@ public sealed class Opzioni
     public OpzioniAudio Audio { get; set; } = new();
     public OpzioniImmagine Immagine { get; set; } = new();
     public OpzioniPdf Pdf { get; set; } = new();
+    public OpzioniArchivio Archivio { get; set; } = new();
 
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
@@ -98,4 +99,10 @@ public sealed class OpzioniPdf
 {
     /// <summary>Punti per pollice delle pagine trasformate in immagini.</summary>
     public int Dpi { get; set; } = 200;
+}
+
+public sealed class OpzioniArchivio
+{
+    /// <summary>Quanto comprimere: -1 solo archiviare, 0 il livello di partenza del formato, 1 (velocissimo) … 9 (il più piccolo).</summary>
+    public int Livello { get; set; }
 }

@@ -6,6 +6,7 @@ sua licenza.
 | Cosa | Per cosa | Licenza | Dove |
 | --- | --- | --- | --- |
 | **FFmpeg 9.0** (build GPL "shared" di [BtbN](https://github.com/BtbN/FFmpeg-Builds)) | video, audio, immagini, sottotitoli | GPL v3 (con x264, x265, SVT-AV1, libaom, libvpx, libwebp, libjxl, librsvg, LAME, Opus, Vorbis…) | `motori\ffmpeg\` nell'installazione, licenza in `LICENSE-FFmpeg.txt`; sorgenti su [ffmpeg.org](https://ffmpeg.org/download.html) e [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds) |
+| **7-Zip 26.03** ([7-zip.org](https://www.7-zip.org), di Igor Pavlov) | tutti gli archivi: ZIP, 7Z, RAR, TAR, GZ, XZ, ZST, CAB, ISO… | GNU LGPL; il codice che apre i RAR ha in più la restrizione «unRAR» (si può usare per leggere, non per fare un compressore RAR) | `motori\7zip\` nell'installazione, licenza in `License.txt` |
 | [PDFsharp](https://github.com/empira/PDFsharp) | unire PDF, foto in un PDF | MIT | |
 | [PdfPig](https://github.com/UglyToad/PdfPig) | leggere il testo dei PDF | Apache 2.0 | |
 | [Markdig](https://github.com/xoofx/markdig) | Markdown → pagina | BSD 2-Clause | |

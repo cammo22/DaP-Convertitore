@@ -12,7 +12,8 @@ public sealed class Impostazioni
     public bool Menu { get; set; } = true;
     /// <summary>FFmpeg a priorità normale invece che bassa: più veloce, ma il PC si sente.</summary>
     public bool AlMassimo { get; set; }
-    public bool Suoni { get; set; } = true;
+    /// <summary>I suoni (il clac dei tasti, il din-don alla fine). Di partenza spenti; il nome è nuovo apposta: chi aveva «suoni» acceso riparte da spento.</summary>
+    public bool SuoniAccesi { get; set; }
     /// <summary>Alla fine apre la cartella con il file selezionato.</summary>
     public bool ApriCartella { get; set; }
     /// <summary>

@@ -12,6 +12,7 @@ import type { Carico, Formato, InfoFile, Lavoro, Opzioni, Stato } from './ponte'
 import { h, peso, durata, risoluzione } from './util';
 import { icone, iconaCategoria, coloreCategoria } from './icone';
 import { clac, accendiSuoni } from './suoni';
+import { disegnaHome } from './app/home';
 import { s, ui, nomeCat, formato, fileDi, categoriePresenti, sceltaPer, eVideoVero } from './app/stato';
 import { app, testa, coda, banco, piede, corpo, logoSvg, mostraAvviso, conservaVista } from './app/scheletro';
 import { regolazioni } from './app/pannelli';
@@ -159,19 +160,7 @@ function disegnaScegli() { conservaVista(banco, disegnaScegliVera); }
 function disegnaScegliVera() {
   sistemaAttiva();
   if (!s.attiva) {
-    banco.replaceChildren(h('div.benvenuto', null,
-      h('div.logo-grande', { html: logoSvg }),
-      h('h1', null, 'Qualsiasi file, in qualsiasi formato.'),
-      h('p', null, 'Tasto destro su un file → ', h('b', null, 'DaP Convertitore'), '. Oppure trascinali qui.'),
-      h('p.piccolo', null, 'Il risultato finisce accanto all\'originale, col nome ', h('code', null, `(${s.stato.impostazioni.scritta || 'convertito'})`), '.'),
-      h('div.righe-motori', null,
-        rigaMotore('Video, audio e foto', 'FFmpeg 9 · ' + (s.stato.hardware?.acceleratore ?? 'CPU')),
-        rigaMotore('HEIC, RAW, PDF, OCR', 'Windows'),
-        rigaMotore('Documenti', s.stato.office.word ? 'Microsoft Office' : s.stato.office.libreOffice ? 'LibreOffice' : 'serve LibreOffice'),
-        rigaMotore('Archivi 7Z, ZIP, RAR', 'tar di Windows'),
-      ),
-      invitoMenu11(),
-    ));
+    banco.replaceChildren(disegnaHome());
     return;
   }
   const cc = categoriePresenti();
@@ -204,10 +193,6 @@ function disegnaScegliVera() {
     regolazioni(att, scelto),
   );
   if (eVideoVero(scelto) && s.opzioni.video.modo !== 'copia') aggiornaPiano();
-}
-
-function rigaMotore(cosa: string, chi: string) {
-  return h('div.riga-motore', null, h('span', null, cosa), h('b', null, chi));
 }
 
 // ————————————————————————————————— piede —————————————————————————————————
@@ -382,7 +367,7 @@ async function avvia() {
 
   s.stato = await chiedi<Stato>('stato');
   s.aggiornamento = s.stato.aggiornamento ?? null;
-  accendiSuoni(s.stato.impostazioni.suoni);
+  accendiSuoni(s.stato.impostazioni.suoniAccesi);
   opzioniSalvate();
   for (const f of s.stato.file) { s.file.set(f.id, f); s.ordine.push(f.id); }
   for (const l of s.stato.lavori) { s.lavori.set(l.id, l); s.giro.push(l.id); }

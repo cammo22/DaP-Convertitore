@@ -22,12 +22,46 @@ const categoria = (nome: string) => {
   return 'altro';
 };
 
+/** Le figurine dei file dentro l'archivio (foto, video, PDF): si chiedono solo quando la riga entra in vista. */
+function miniature(c: Contesto) {
+  const attesa = new WeakMap<Element, { percorso: string; peso: number }>();
+  const fatte = new Map<string, string | null>();
+  const metti = (icona: Element, url: string) => {
+    icona.classList.add('con-mini');
+    icona.replaceChildren(h('img', { src: url, alt: '', draggable: 'false' }));
+  };
+  const osservatore = new IntersectionObserver((righe) => {
+    for (const r of righe) {
+      if (!r.isIntersecting) continue;
+      osservatore.unobserve(r.target);
+      const voce = attesa.get(r.target);
+      if (!voce || !c.viva()) continue;
+      const nota = fatte.get(voce.percorso);
+      if (nota) { metti(r.target, nota); continue; }
+      void chiedi<{ url: string | null }>('miniaturaVoce', { voce: voce.percorso, peso: voce.peso, lato: 96 })
+        .then((x) => { if (x.url) { fatte.set(voce.percorso, x.url); if (c.viva()) metti(r.target, x.url); } })
+        .catch(() => { /* resta l'icona */ });
+    }
+  }, { rootMargin: '160px' });
+  return {
+    /** Segna l'icona di una riga: se il file ha una figurina, arriverà quando la riga si vede. */
+    segna(icona: Element, percorso: string, pesoVoce: number) {
+      if (pesoVoce <= 0 || !['immagine', 'video', 'pdf'].includes(categoria(percorso))) return;
+      attesa.set(icona, { percorso, peso: pesoVoce });
+      osservatore.observe(icona);
+    },
+    ferma() { osservatore.disconnect(); },
+  };
+}
+
 export async function monta(c: Contesto): Promise<Vista> {
   c.palco.append(attesa('Guardo dentro la scatola…'));
   let voci: Voce[];
   try { voci = await chiedi<Voce[]>('archivio'); }
   catch (e) { c.palco.replaceChildren(errore((e as Error).message)); return { tasti: [], smonta() {} }; }
   if (!c.viva()) return { tasti: [], smonta() {} };
+
+  const mini = miniature(c);
 
   // l'albero dalle voci "a/b/c.txt"; ogni nodo sa il suo percorso dentro l'archivio ("a/", "a/b/c.txt")
   const radice: Nodo = { nome: '', percorso: '', peso: 0, file: 0, figli: new Map(), cartella: true, data: null };
@@ -135,9 +169,11 @@ export async function monta(c: Contesto): Promise<Vista> {
   const riga = (n: Nodo, livello: number, max: number): HTMLElement => {
     const cat = n.cartella ? 'cartella' : categoria(n.nome);
     const figli = h('div.z-figli');
+    const icona = h('span.z-icona', { html: iconaCategoria[cat] });
+    if (!n.cartella) mini.segna(icona, n.percorso, n.peso);
     const bottone = h('button.z-riga', { style: { '--liv': String(livello), '--tinta': coloreCategoria[cat] }, title: 'Clic per scegliere · Ctrl per più · trascina fuori dalla finestra o sulla zona in alto per estrarre' },
       n.cartella ? h('i.j-freccia', { title: 'Apri / chiudi' }) : h('i.z-vuoto'),
-      h('span.z-icona', { html: iconaCategoria[cat] }),
+      icona,
       h('span.z-nome', { title: n.nome }, n.nome),
       n.cartella ? h('span.z-conta', null, `${n.file} file`) : null,
       h('span.z-barra', null, h('i', { style: { width: `${max ? Math.max(1, (n.peso / max) * 100) : 0}%` } })),
@@ -168,8 +204,10 @@ export async function monta(c: Contesto): Promise<Vista> {
   // la ricerca guarda tutti i nomi, e mostra i percorsi trovati (si scelgono e si trascinano anche da lì)
   const trovati = h('div.z-trovati');
   const rigaFile = (v: Voce) => {
+    const icona = h('span.z-icona', { html: iconaCategoria[categoria(v.percorso)] });
+    mini.segna(icona, v.percorso, v.peso);
     const el = h('button.z-riga.piatta', { style: { '--tinta': coloreCategoria[categoria(v.percorso)] }, title: 'Clic per scegliere · trascina fuori dalla finestra o sulla zona in alto per estrarre' },
-      h('span.z-icona', { html: iconaCategoria[categoria(v.percorso)] }), h('span.z-nome', { title: v.percorso }, v.percorso), h('span.z-peso', null, peso(v.peso)));
+      icona, h('span.z-nome', { title: v.percorso }, v.percorso), h('span.z-peso', null, peso(v.peso)));
     fila(v.percorso, el);
     el.addEventListener('click', (e) => { if (!appenaTrascinato) selezionaRiga(v.percorso, e); });
     return el;
@@ -224,6 +262,6 @@ export async function monta(c: Contesto): Promise<Vista> {
       { k: ['e'], etichetta: 'E', cosa: 'Estrai (la scelta, o tutto)', fai: () => void estraiScelte() },
     ],
     info: () => `${radice.file.toLocaleString('it-IT')} file dentro${scelte.size ? ` · ${scelte.size} scelte` : ''}`,
-    smonta() {},
+    smonta() { mini.ferma(); },
   };
 }

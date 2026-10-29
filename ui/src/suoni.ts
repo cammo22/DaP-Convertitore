@@ -1,7 +1,7 @@
 // I suoni, sintetizzati al volo (niente file): il "clac" dei tasti della piastra e il din-don della fine.
 
 let ctx: AudioContext | null = null;
-export let suoniAccesi = true;
+export let suoniAccesi = false;
 export function accendiSuoni(si: boolean) { suoniAccesi = si; }
 
 function ac() {

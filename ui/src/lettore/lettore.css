@@ -245,7 +245,19 @@ kbd { display: inline-grid; place-items: center; min-width: 24px; height: 23px; 
 
 /* ———————————————————— la musica: una scheda pulita ———————————————————— */
 .a-stanza { --cop: #5dffb4; position: absolute; inset: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 4vh 4vw; background: var(--fondo); transition: padding 0.35s var(--liscio), background 1s; }
-.a-stanza.con-scaletta { padding-right: 330px; }
+.a-stanza.con-scaletta { padding-right: calc(330px + 3vw); }
+.a-scaletta-testa { display: flex; align-items: center; justify-content: space-between; }
+.a-chiudi { width: 28px; height: 28px; border-radius: 50%; font-size: 20px; line-height: 1; color: var(--testo2); }
+.a-chiudi:hover { background: rgba(255, 255, 255, 0.1); color: var(--testo); }
+.a-seguito, .a-seguito-s { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--bordo); font: 800 11px var(--marchio); letter-spacing: 0.1em; text-transform: uppercase; color: var(--testo2); }
+.a-seguito-s { border-radius: 10px; padding: 8px 10px; text-align: left; flex-wrap: wrap; }
+.a-seguito-s small { flex-basis: 100%; font: 500 11.5px var(--corpo, inherit); letter-spacing: 0; text-transform: none; color: var(--testo3); }
+.a-seguito:hover, .a-seguito-s:hover { background: rgba(255, 255, 255, 0.06); color: var(--testo); }
+.a-seguito.su, .a-seguito-s.su { color: var(--verde); border-color: color-mix(in srgb, var(--verde) 55%, transparent); }
+.a-seguito .led, .a-seguito-s .led { width: 8px; height: 8px; border-radius: 50%; background: var(--testo3); }
+.a-seguito.su .led, .a-seguito-s.su .led { background: var(--verde); box-shadow: 0 0 8px var(--verde); }
+.a-brano { min-height: 38px; }
+.a-brano:focus-visible { outline: 2px solid var(--verde); outline-offset: -2px; }
 .a-fondo { position: absolute; inset: -90px; z-index: 0; background-size: cover; background-position: center; filter: blur(90px) saturate(1.5) brightness(0.42); opacity: 0.85; }
 .a-fondo.vuoto { background: radial-gradient(700px 480px at 25% 35%, color-mix(in srgb, var(--cop) 24%, transparent), transparent 70%), radial-gradient(600px 420px at 85% 75%, rgba(255, 61, 242, 0.12), transparent); filter: none; opacity: 1; }
 .a-scheda { position: relative; z-index: 1; width: min(1080px, 100%); display: grid; grid-template-columns: minmax(180px, min(36vh, 360px)) minmax(0, 1fr); gap: clamp(22px, 4vw, 56px); align-items: center; }
@@ -465,10 +477,12 @@ kbd { display: inline-grid; place-items: center; min-width: 24px; height: 23px; 
 .z-scatola { width: 46px; height: 46px; padding: 10px; border-radius: 12px; color: #c9a26b; background: rgba(201, 162, 107, 0.1); border: 1px solid rgba(201, 162, 107, 0.3); animation: sobbalza 0.8s var(--molla) both; }
 @keyframes sobbalza { from { transform: translateY(-10px) rotate(-8deg); opacity: 0; } }
 .z-scorre { overflow-y: auto; padding: 10px 14px 60px; }
-.z-riga { --liv: 0; display: grid; grid-template-columns: 14px 20px minmax(0, 1fr) auto 110px 80px; align-items: center; gap: 8px; width: 100%; padding: 6px 10px 6px calc(10px + var(--liv) * 22px); border-radius: 8px; text-align: left; font-size: 14px; }
-.z-riga.piatta { grid-template-columns: 20px minmax(0, 1fr) 80px; padding-left: 10px; }
+.z-riga { --liv: 0; display: grid; grid-template-columns: 14px 28px minmax(0, 1fr) auto 110px 80px; align-items: center; gap: 8px; width: 100%; padding: 6px 10px 6px calc(10px + var(--liv) * 22px); border-radius: 8px; text-align: left; font-size: 14px; }
+.z-riga.piatta { grid-template-columns: 28px minmax(0, 1fr) 80px; padding-left: 10px; }
 .z-riga:hover { background: rgba(255, 255, 255, 0.045); }
 .z-icona svg { width: 18px; height: 18px; color: var(--tinta); }
+.z-icona.con-mini { width: 28px; height: 28px; margin: -4px 0; border-radius: 5px; overflow: hidden; background: rgba(255, 255, 255, 0.06); box-shadow: 0 0 0 1px color-mix(in srgb, var(--tinta) 45%, transparent); }
+.z-icona.con-mini img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .z-nome { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .z-voce.cartella > .z-riga .z-nome { font-weight: 700; }
 .z-conta { font-size: 12px; color: var(--testo3); }

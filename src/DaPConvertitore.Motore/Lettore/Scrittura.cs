@@ -57,7 +57,7 @@ public static class Scrittura
 
     /// <summary>
     /// Estrae solo le voci scelte (una cartella intera o dei file) in una cartella accanto all'archivio, col suo nome
-    /// (come «Estrai qui», ma di quello che hai scelto). Le voci sono i percorsi dentro l'archivio, con «/», e le
+    /// (come «Estrai qui», ma di quello che hai scelto, con 7-Zip). Le voci sono i percorsi dentro l'archivio, con «/», e le
     /// cartelle con «/» in fondo.
     /// </summary>
     public static async Task<string> EstraiVoci(Strumenti s, string archivio, IReadOnlyList<string> voci)
@@ -67,11 +67,9 @@ public static class Scrittura
         try
         {
             Directory.CreateDirectory(dest);
-            var argomenti = new List<string> { "-xf", Path.GetFullPath(archivio), "-C", dest };
-            argomenti.AddRange(voci.Select(v => v.Replace('\\', '/')));
-            var r = await Processi.Esegui(s.Tar, argomenti, CancellationToken.None, tieniUscita: false);
-            if (r.Codice != 0 || !Directory.EnumerateFileSystemEntries(dest).Any())
-                throw new ErroreConversione("Non ho estratto niente: forse le voci scelte non ci sono più.", r.Errori);
+            await SetteZip.Estrai(s, archivio, dest, voci, CancellationToken.None);
+            if (!Directory.EnumerateFileSystemEntries(dest).Any())
+                throw new ErroreConversione("Non ho estratto niente: forse le voci scelte non ci sono più.");
             return dest;
         }
         catch
