@@ -65,6 +65,9 @@ public static class Regia
     public static void ApriNelLettore(string percorso) => Gestisci(new Richiesta(null, [percorso], false, true));
 
     /// <summary>L'avatar sul desktop: acceso o spento (e ricordato). Finché c'è, il programma resta aperto anche senza finestre.</summary>
+    /// <summary>L'avatar si è acceso o spento (da dove sia successo): la pagina aggiorna il suo simbolo.</summary>
+    public static event Action<bool>? AvatarCambiato;
+
     public static void Avatar(bool acceso)
     {
         var imp = Impostazioni.Comune;
@@ -80,9 +83,13 @@ public static class Regia
             catch (Exception e) { Registro.Errore("avatar", e); avatar = null; }
         }
         else if (!acceso && avatar is not null) { var a = avatar; avatar = null; a.Close(); ForseFine(); }
+        try { AvatarCambiato?.Invoke(avatar is not null); } catch (Exception e) { Registro.Errore("avatar (avviso)", e); }
     }
 
     public static bool AvatarAcceso => avatar is not null;
+
+    /// <summary>Torna al fumetto «Cosa vuoi farne?» per questi file (il tasto «Indietro» della mini interfaccia).</summary>
+    public static void Fumetto(IReadOnlyList<string> file) => avatar?.ApriFumetto(file);
 
     /// <summary>Dov'è l'avatar sullo schermo (per mettergli accanto la mini interfaccia).</summary>
     public static Rect? AreaAvatar => avatar?.Area;

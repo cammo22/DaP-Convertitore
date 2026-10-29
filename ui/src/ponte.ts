@@ -76,6 +76,8 @@ export interface Impostazioni {
   avatarAttivo?: boolean;
   /** L'avatar parte con Windows. */
   avatarAvvio?: boolean;
+  /** L'avatar si trasforma da solo ogni tanto (vero di partenza); spento resta il personaggio scelto. */
+  avatarCambioAuto?: boolean;
   /** I gruppi scelti per «Aprire tutto con DaProd» (null = tutti). */
   gruppiPredefiniti?: string[] | null;
   formati: Record<string, string>;

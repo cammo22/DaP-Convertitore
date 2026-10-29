@@ -421,6 +421,16 @@ input[type='range'] { -webkit-appearance: none; appearance: none; background: tr
 .campo:focus { border-color: var(--oro); }
 .imp-sezione { font: 700 10.5px var(--marchio); letter-spacing: 0.22em; color: var(--oro); padding: 14px 0 2px; }
 .cassetto { max-height: calc(100vh - 52px); overflow-y: auto; }
+/* la X (e il titolo) restano sempre in vista quando si scorre */
+.cassetto > .confronto-testa { position: sticky; top: 0; z-index: 3; margin: -14px -16px 6px; padding: 12px 16px 10px; background: var(--pann2); border-radius: 14px 14px 0 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+/* il simbolo dell'avatar: oro se acceso, spento e barrato se no */
+.btn-fin.av { position: relative; }
+.btn-fin.av.su { color: var(--oro); }
+.btn-fin.av:not(.su) { opacity: 0.6; }
+.btn-fin.av:not(.su)::after { content: ''; position: absolute; left: 9px; right: 9px; top: 50%; height: 2px; border-radius: 2px; background: currentColor; transform: rotate(-35deg); }
+#app.rapido .btn-fin.av { display: none; }
+.testa .btn-fin.av.su { color: #c28a00; }
+.compatto-tasti { display: flex; gap: 8px; align-items: center; }
 .cassetto.piccolo { width: min(460px, 100%); gap: 10px; }
 .cassetto.piccolo .invito-tasti { justify-content: flex-end; margin-top: 6px; }
 .imp-piede { display: flex; gap: 14px; align-items: center; padding-top: 12px; color: var(--testo3); font-size: 13px; }
