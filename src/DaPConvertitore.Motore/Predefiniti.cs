@@ -41,6 +41,48 @@ public static class Predefiniti
     /// <summary>La regola c'è ed è la nostra.</summary>
     public static bool Attiva() => string.Equals(Corrente(), FileRegola, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Quando è cominciata la sessione di Windows di questo utente (l'ultimo accesso): il processo «sihost» parte all'accesso e non
+    /// si riavvia con Esplora file. Se non lo trova, il più vecchio Esplora file della sessione.
+    /// </summary>
+    static DateTime? InizioSessione()
+    {
+        var mia = Process.GetCurrentProcess().SessionId;
+        foreach (var nome in new[] { "sihost", "explorer" })
+        {
+            DateTime? primo = null;
+            foreach (var p in Process.GetProcessesByName(nome))
+            {
+                try { if (p.SessionId == mia && (primo is null || p.StartTime < primo)) primo = p.StartTime; }
+                catch { /* un processo di un altro utente: non si legge */ }
+                finally { p.Dispose(); }
+            }
+            if (primo is not null) return primo;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// La regola è nostra e già scritta, ma Windows la applica all'accesso e da quando è stata scritta non c'è stato un accesso:
+    /// per questo i tipi «non cambiano». Basta disconnettersi e riaccedere.
+    /// </summary>
+    public static bool InAttesaDiAccesso()
+    {
+        try
+        {
+            if (!Attiva() || !File.Exists(FileRegola)) return false;
+            return InizioSessione() is { } accesso && File.GetLastWriteTime(FileRegola) > accesso;
+        }
+        catch { return false; }
+    }
+
+    /// <summary>Il file di adesso è proprio quello che si scriverebbe per questi gruppi (niente permesso di amministratore da richiedere di nuovo).</summary>
+    public static bool StessaRegola(IEnumerable<string> gruppi)
+    {
+        try { return File.Exists(FileRegola) && File.ReadAllText(FileRegola).Replace("\r\n", "\n").Trim() == Xml(gruppi).Replace("\r\n", "\n").Trim(); }
+        catch { return false; }
+    }
+
     /// <summary>Un'altra regola di associazioni già in vigore (un'azienda, un altro programma): non la si tocca.</summary>
     public static bool DiAltri() => Corrente() is { Length: > 0 } c && !string.Equals(c, FileRegola, StringComparison.OrdinalIgnoreCase);
 

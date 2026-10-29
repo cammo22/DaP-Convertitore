@@ -430,6 +430,8 @@ input[type='range'] { -webkit-appearance: none; appearance: none; background: tr
 .btn-fin.av:not(.su)::after { content: ''; position: absolute; left: 9px; right: 9px; top: 50%; height: 2px; border-radius: 2px; background: currentColor; transform: rotate(-35deg); }
 #app.rapido .btn-fin.av { display: none; }
 .testa .btn-fin.av.su { color: #c28a00; }
+.imp-attesa { display: flex; align-items: center; gap: 12px; margin: 4px 0 8px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 213, 74, 0.08); border: 1px solid rgba(255, 213, 74, 0.28); color: var(--testo2); font-size: 13px; }
+.imp-attesa span { flex: 1; }
 .compatto-tasti { display: flex; gap: 8px; align-items: center; }
 .cassetto.piccolo { width: min(460px, 100%); gap: 10px; }
 .cassetto.piccolo .invito-tasti { justify-content: flex-end; margin-top: 6px; }

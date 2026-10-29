@@ -67,7 +67,7 @@ function statoPc(): HTMLElement {
     scheda('Documenti', doc, st.office.word || st.office.libreOffice ? 'Word, fogli e presentazioni in PDF e viceversa' : 'Per Word, Excel e PowerPoint',
       st.office.word || st.office.libreOffice ? undefined : { testo: 'Scarica LibreOffice', fai: () => void chiedi('link', { url: 'https://it.libreoffice.org/download/download/' }) }, !!(st.office.word || st.office.libreOffice)),
     scheda('Sistema', aPosto === voci.length ? 'Tutto a posto' : `${aPosto} su ${voci.length} a posto`,
-      reg.totale ? `${reg.impostati} tipi su ${reg.totale} si aprono col lettore` : 'Tasto destro, «Apri con», app predefinite',
+      reg.totale ? (reg.inAttesa ? `Regola pronta: riaccedi a Windows (ora ${reg.impostati} tipi su ${reg.totale})` : `${reg.impostati} tipi su ${reg.totale} si aprono col lettore`) : 'Tasto destro, «Apri con», app predefinite',
       { testo: aPosto === voci.length ? 'Impostazioni' : 'Aggiusta', fai: () => apriImpostazioni() }, aPosto === voci.length),
     scheda('Versione', st.versione, s.aggiornamento ? `Aggiornamento ${s.aggiornamento} disponibile` : 'Aggiornamenti da soli',
       s.aggiornamento ? { testo: 'Installa', fai: () => { void chiedi('aggiorna', { installa: true }); mostraAvviso('Scarico e riapro il programma…'); } } : undefined));

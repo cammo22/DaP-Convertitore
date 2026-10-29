@@ -116,7 +116,7 @@ export function apriImpostazioni() {
     ...(m?.supportato ? [{ nome: 'Tasto destro di Windows 11', ok: m.registrato }] : []),
     { nome: 'Menu «Apri con» e icone dei file', ok: imp.apriCon },
     { nome: 'App predefinite', ok: regola.totale > 0 && regola.impostati === regola.totale,
-      nota: regola.totale ? `${regola.impostati} tipi su ${regola.totale} si aprono col lettore` : undefined },
+      nota: regola.totale ? (regola.inAttesa ? `Regola pronta: Windows la applica al prossimo accesso (ora ${regola.impostati} su ${regola.totale})` : `${regola.impostati} tipi su ${regola.totale} si aprono col lettore`) : undefined },
   ];
   const tuttoOk = stati.every((x) => x.ok);
   const bAggiusta = h<HTMLButtonElement>('button.tasto.su.grande', { onclick: () => void aggiustaTutto(bAggiusta) }, h('i.led.verde'), tuttoOk ? 'Controlla di nuovo' : 'Aggiusta tutto');
@@ -126,6 +126,9 @@ export function apriImpostazioni() {
         h('p', null, 'Un tasto solo: mette il convertitore nel tasto destro, il lettore in «Apri con» e prepara le app predefinite, così i file si aprono da soli. Windows può chiedere il permesso di amministratore (una volta).')),
       bAggiusta),
     h('ul.imp-stati', null, ...stati.map((x) => h(`li${x.ok ? '.ok' : ''}`, null, h('i.puntino'), h('span', null, x.nome), x.nota ? h('small', null, x.nota) : null))),
+    regola.inAttesa ? h('div.imp-attesa', null,
+      h('span', null, 'Le app predefinite si cambiano all\'accesso a Windows: ti basta disconnetterti e riaccedere.'),
+      h('button.tasto', { onclick: () => { clac(); if (confirm('Windows ti disconnette adesso: salva il lavoro negli altri programmi. Continuare?')) void chiedi('disconnetti'); } }, 'Disconnettiti ora')) : null,
     h('button.link', { title: 'Toglie le voci dal tasto destro e da «Apri con»', onclick: async () => {
       const r = await chiedi<{ menu11: StatoMenu11; regola: typeof regola }>('togliTutto');
       imp.menu = false; imp.apriCon = false;

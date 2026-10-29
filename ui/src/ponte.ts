@@ -155,7 +155,7 @@ export interface Stato {
 }
 
 /** La regola delle app predefinite di Windows e quanti tipi hanno davvero il lettore come programma (UserChoice). */
-export interface RegolaPredefiniti { supportata: boolean; attiva: boolean; diAltri: boolean; impostati: number; totale: number }
+export interface RegolaPredefiniti { supportata: boolean; attiva: boolean; diAltri: boolean; impostati: number; totale: number; /** la regola è scritta ma Windows la applica al prossimo accesso */ inAttesa?: boolean }
 
 /** Com'è andato ogni passo di «Aggiusta tutto». */
 export interface PassoSistema { nome: string; esito: 'ok' | 'gia' | 'negato' | 'errore' | 'pagina'; nota?: string | null }
