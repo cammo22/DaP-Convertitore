@@ -2,6 +2,16 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.2.3 — 29 ottobre 2026
+
+- **Il player della musica sull'avatar è più bello.** I comandi (indietro, **play/pausa grande e tondo**, avanti) stanno **al centro**;
+  «Apri nell'app», «⋯» e chiudi sono piccoli in alto a destra; il tempo sta sotto la barra (a sinistra quanto è passato, a destra la durata).
+- **Il README è nuovo**: la card di Discord in alto, una testata grande, le carte per **scaricare ogni versione** (Windows installer e
+  portatile subito, Linux e macOS «in arrivo»), le funzioni, le schermate grandi, l'avatar, i tre passi per installare, com'è fatto e come
+  viene sviluppato. Le immagini sono in `risorse/readme`. La guida lunga è in `docs/GUIDA.md`.
+- **Una pagina di presentazione** in `docs/index.html` (stile DaProd): vetrina con Ottieni, galleria, funzioni, avatar e informazioni.
+  Si pubblica con GitHub Pages.
+
 ## 2.2.2 — 29 ottobre 2026
 
 - **La musica sull'avatar.** Trascini uno o più brani sull'avatar e **partono subito**, con il loro piccolo player attaccato all'avatar
@@ -14,8 +24,6 @@ Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
   c'è sempre **Apri nell'app intera**, che è la cosa che conta di più; nel fumetto c'è anche il link «Apri nell'app intera».
 - **L'avatar si ingrandisce e si rimpicciolisce.** Ci passi sopra e giri **la rotella**: cambia subito la misura (da molto piccolo a più
   del doppio), senza blocchi né attese. La misura si ricorda.
-- **Il README è corto e per chi usa l'app**: banner, pulsanti **Ottieni** (download diretto), poche schermate e tre passi per installare.
-  Quello lungo, con tutti i dettagli, è in `docs/GUIDA.md`. Linux e macOS risultano «in arrivo».
 - Dentro: `MiniPlayer` e il ridimensionamento in `Avatar.cs`; la richiesta «compatta» (`Richiesta.Compatto/Scelta/Preset`), `Finestra.Compatta`,
   il comando `finestra completa` e `#app.compatto` nell'interfaccia.
 

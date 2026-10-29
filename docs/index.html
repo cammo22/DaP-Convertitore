@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DaP Convertitore · DaProd Produzioni</title>
+<meta name="description" content="DaP Convertitore: tasto destro su un file e scegli il formato. Video, audio, foto, PDF, documenti e archivi, tutto sul tuo PC.">
+<link rel="icon" href="img/icona.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fondo:#07060d; --pannello:#100d1b; --vetro:rgba(255,255,255,.045); --linea:rgba(255,255,255,.09);
+  --testo:#ece8f7; --spento:#a19db0; --oro:#ffd54a; --magenta:#ff3df2; --ciano:#35e8ff; --verde:#5dffb4; --rosso:#ff4d6d;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--fondo);color:var(--testo);font:500 19px/1.55 Rajdhani,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+.alone{position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:radial-gradient(900px 600px at 8% -5%,rgba(255,61,242,.22),transparent 60%),
+             radial-gradient(900px 700px at 100% 30%,rgba(53,232,255,.14),transparent 60%),
+             radial-gradient(700px 500px at 40% 110%,rgba(255,213,74,.10),transparent 60%)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+
+/* barra in alto */
+header.barra{position:sticky;top:0;z-index:10;backdrop-filter:blur(18px);background:rgba(7,6,13,.72);border-bottom:1px solid var(--linea)}
+header.barra .wrap{display:flex;align-items:center;justify-content:space-between;height:68px}
+.marchio{display:flex;align-items:center;gap:12px;font:900 15px Orbitron;letter-spacing:.22em;color:var(--oro)}
+.marchio img{width:34px;height:34px}
+.marchio small{font:600 14px Rajdhani;letter-spacing:.18em;color:var(--spento);margin-left:2px}
+nav.menu{display:flex;gap:26px;font-weight:700;letter-spacing:.06em;color:var(--spento)}
+nav.menu a:hover{color:var(--testo)}
+.btn{display:inline-flex;align-items:center;gap:10px;font:700 18px Rajdhani;letter-spacing:.08em;text-transform:uppercase;padding:13px 26px;border-radius:14px;transition:.18s}
+.btn.oro{background:linear-gradient(135deg,#ffd54a,#ffb23d);color:#16110a;box-shadow:0 10px 34px -10px rgba(255,213,74,.7)}
+.btn.oro:hover{transform:translateY(-2px);box-shadow:0 16px 40px -10px rgba(255,213,74,.9)}
+.btn.vetro{background:var(--vetro);border:1px solid var(--linea);color:var(--testo)}
+.btn.vetro:hover{border-color:var(--ciano);color:var(--ciano)}
+.btn.spento{background:var(--vetro);border:1px dashed var(--linea);color:var(--spento);cursor:default}
+
+/* vetrina */
+.eroe{padding:70px 0 40px;display:grid;grid-template-columns:1.05fr .95fr;gap:30px;align-items:center}
+.eroe .app{display:flex;gap:22px;align-items:center;margin-bottom:26px}
+.eroe .app img{width:104px;height:104px;border-radius:26px;box-shadow:0 0 0 1px var(--linea),0 18px 50px -12px rgba(255,213,74,.45)}
+.eroe .app b{display:block;font:900 clamp(34px,5vw,56px)/1.05 Orbitron;letter-spacing:-.01em}
+.eroe .app b i{font-style:normal;background:linear-gradient(90deg,var(--oro),var(--magenta));-webkit-background-clip:text;color:transparent}
+.eroe .app span{color:var(--spento);font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:15px}
+.eroe h1{font:900 clamp(22px,2.6vw,30px)/1.25 Orbitron;letter-spacing:.14em;color:var(--ciano);text-shadow:0 0 30px rgba(53,232,255,.45);margin-bottom:18px}
+.eroe p{color:#cfc9de;font-size:22px;max-width:560px}
+.azioni{display:flex;flex-wrap:wrap;gap:14px;margin:30px 0 14px}
+.nota{font-size:15px;color:var(--spento)}
+.oggetti{position:relative;height:430px}
+.oggetti img{position:absolute;filter:drop-shadow(0 22px 34px rgba(0,0,0,.7));animation:fluttua 7s ease-in-out infinite}
+.oggetti img:nth-child(1){left:6%;top:4%;width:62%;transform:rotate(-8deg)}
+.oggetti img:nth-child(2){right:2%;top:46%;width:36%;transform:rotate(9deg);animation-delay:-2s}
+.oggetti img:nth-child(3){left:20%;top:62%;width:32%;transform:rotate(-5deg);animation-delay:-4s}
+.oggetti img:nth-child(4){right:6%;top:0;width:26%;transform:rotate(12deg);animation-delay:-1s}
+@keyframes fluttua{50%{translate:0 -14px}}
+@media (prefers-reduced-motion:reduce){.oggetti img{animation:none}}
+
+.dati{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--linea);border-radius:20px;background:var(--vetro);backdrop-filter:blur(10px);margin:30px 0 80px}
+.dati div{padding:22px 24px;text-align:center;border-left:1px solid var(--linea)}
+.dati div:first-child{border-left:0}
+.dati b{display:block;font:900 24px Orbitron;color:var(--oro)}
+.dati span{color:var(--spento);font-size:15px;letter-spacing:.1em;text-transform:uppercase}
+
+/* sezioni */
+section{padding:46px 0}
+.titolo{font:900 clamp(26px,3.4vw,38px)/1.15 Orbitron;letter-spacing:.02em;margin-bottom:10px}
+.titolo i{font-style:normal;color:var(--oro)}
+.sotto{color:var(--spento);font-size:21px;max-width:680px;margin-bottom:34px}
+
+/* galleria */
+.galleria{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 28px 26px;margin:0 -28px}
+.galleria::-webkit-scrollbar{height:8px}.galleria::-webkit-scrollbar-thumb{background:var(--linea);border-radius:8px}
+.galleria figure{flex:0 0 min(860px,86vw);scroll-snap-align:center}
+.galleria img{width:100%;border-radius:18px;border:1px solid var(--linea);box-shadow:0 30px 70px -28px rgba(0,0,0,.9)}
+.galleria figcaption{margin-top:14px;color:var(--spento);font-size:17px}
+.galleria figcaption b{color:var(--testo);margin-right:8px}
+
+/* funzioni */
+.funzioni{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.carta{background:var(--vetro);border:1px solid var(--linea);border-radius:20px;padding:28px;backdrop-filter:blur(10px);transition:.2s}
+.carta:hover{border-color:rgba(255,213,74,.45);transform:translateY(-3px)}
+.carta .ico{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:22px;margin-bottom:16px;background:rgba(255,213,74,.12);border:1px solid rgba(255,213,74,.3)}
+.carta:nth-child(3n+2) .ico{background:rgba(255,61,242,.12);border-color:rgba(255,61,242,.3)}
+.carta:nth-child(3n) .ico{background:rgba(53,232,255,.12);border-color:rgba(53,232,255,.3)}
+.carta h3{font:700 22px Rajdhani;letter-spacing:.04em;margin-bottom:6px}
+.carta p{color:#bdb7cd;font-size:18px;line-height:1.5}
+
+/* avatar */
+.avatar{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;background:linear-gradient(135deg,rgba(255,61,242,.10),rgba(53,232,255,.07));border:1px solid var(--linea);border-radius:28px;padding:40px}
+.avatar img.f{border-radius:18px;border:1px solid var(--linea)}
+.avatar ul{list-style:none;padding:0;margin-top:16px;display:grid;gap:10px}
+.avatar li{padding-left:28px;position:relative;color:#cfc9de}
+.avatar li::before{content:"";position:absolute;left:0;top:.5em;width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--oro),var(--magenta))}
+.fila{display:flex;gap:14px;margin-top:22px}.fila img{width:64px;opacity:.95}
+
+/* come è fatto */
+.fatto{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.fatto .carta p b{color:var(--oro);font-weight:700}
+.sigle{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.sigle span{font-weight:700;letter-spacing:.05em;font-size:15px;padding:7px 14px;border-radius:999px;border:1px solid var(--linea);background:var(--vetro);color:var(--spento)}
+
+/* requisiti e novità */
+.due{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.due dl{display:grid;grid-template-columns:150px 1fr;gap:12px 18px}
+.due dt{color:var(--spento);font-size:16px;letter-spacing:.08em;text-transform:uppercase}
+.due dd{font-weight:600}
+.novita{color:#cfc9de;font-size:18px;display:grid;gap:10px}
+.novita strong{color:var(--oro)}
+.stato{display:inline-block;margin-left:8px;font-size:13px;letter-spacing:.14em;padding:3px 10px;border-radius:999px;color:#07130d;background:var(--verde);font-weight:700;text-transform:uppercase;vertical-align:middle}
+
+.chiusura{margin:60px 0 40px;text-align:center;padding:60px 28px;border-radius:30px;border:1px solid var(--linea);background:radial-gradient(600px 300px at 50% 0,rgba(255,213,74,.14),transparent 70%),var(--vetro)}
+.chiusura h2{font:900 clamp(26px,3.6vw,40px)/1.15 Orbitron;margin-bottom:12px}
+.chiusura p{color:var(--spento);margin-bottom:26px;font-size:21px}
+.chiusura .azioni{justify-content:center}
+footer.piede{border-top:1px solid var(--linea);padding:34px 0 50px;color:var(--spento);font-size:16px}
+footer.piede .wrap{display:flex;flex-wrap:wrap;gap:18px 40px;justify-content:space-between;align-items:center}
+footer.piede nav{display:flex;gap:24px;flex-wrap:wrap}
+footer.piede a:hover{color:var(--oro)}
+
+@media (max-width:900px){
+  nav.menu{display:none}
+  .eroe{grid-template-columns:1fr;padding-top:40px}.oggetti{height:340px}
+  .dati{grid-template-columns:1fr 1fr}.dati div:nth-child(3){border-left:0}.dati div:nth-child(n+3){border-top:1px solid var(--linea)}
+  .funzioni,.fatto,.due,.avatar{grid-template-columns:1fr}.avatar{padding:26px}
+}
+</style>
+</head>
+<body>
+<div class="alone"></div>
+
+<header class="barra">
+  <div class="wrap">
+    <a class="marchio" href="#"><img src="img/icona.png" alt=""> DAPROD <small>PRODUZIONI</small></a>
+    <nav class="menu"><a href="#schermate">Schermate</a><a href="#funzioni">Cosa fa</a><a href="#avatar">Avatar</a><a href="#com-e-fatto">Com'è fatto</a><a href="#info">Informazioni</a></nav>
+    <a class="btn oro" href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe">Ottieni</a>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="eroe">
+    <div>
+      <div class="app">
+        <img src="img/icona.png" alt="Icona di DaP Convertitore">
+        <div><b>DaP <i>Convertitore</i></b><span>Utilità · Video, audio, foto e documenti</span></div>
+      </div>
+      <h1>TASTO DESTRO. FATTO.</h1>
+      <p>Clicchi su un file, scegli il formato, e il file nuovo compare accanto all'originale. Video, audio, foto, PDF, documenti e archivi: <b style="color:var(--oro)">tutto sul tuo PC</b>, senza account e senza cloud.</p>
+      <div class="azioni">
+        <a class="btn oro" href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe">⬇ Scarica per Windows</a>
+        <a class="btn vetro" href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Portable.zip">Versione portatile</a>
+        <span class="btn spento">Linux · in arrivo</span>
+        <span class="btn spento">macOS · in arrivo</span>
+      </div>
+      <p class="nota">Si installa solo per il tuo utente, senza amministratore, e si aggiorna da solo.</p>
+    </div>
+    <div class="oggetti" aria-hidden="true">
+      <img src="img/obj-cassetta.png" alt=""><img src="img/obj-vinile.png" alt=""><img src="img/obj-cd.png" alt=""><img src="img/obj-floppy.png" alt="">
+    </div>
+  </div>
+
+  <div class="dati">
+    <div><b id="versione">2.2.3</b><span>versione</span></div>
+    <div><b>100%</b><span>offline</span></div>
+    <div><b>0 €</b><span>gratis, senza pubblicità</span></div>
+    <div><b>Win 10 · 11</b><span>piattaforma</span></div>
+  </div>
+
+  <section id="schermate">
+    <h2 class="titolo">Guardalo <i>all'opera</i></h2>
+    <p class="sotto">Scorri di lato: la home, il lettore con l'anteprima che segue il cursore, gli archivi con le miniature e lo slider della compressione.</p>
+    <div class="galleria">
+      <figure><img src="img/home.png" alt="La home" loading="lazy"><figcaption><b>La home</b>le sei strade, gli ultimi file convertiti e come sta il PC.</figcaption></figure>
+      <figure><img src="img/lettore-video.png" alt="Il lettore video" loading="lazy"><figcaption><b>Il lettore</b>passi il cursore sulla linea del tempo e vedi il fotogramma, fluido come in QuickTime.</figcaption></figure>
+      <figure><img src="img/lettore-archivio.png" alt="Un archivio aperto" loading="lazy"><figcaption><b>Dentro gli archivi</b>7Z, ZIP, RAR, TAR… con le miniature delle foto e dei video.</figcaption></figure>
+      <figure><img src="img/compressione.png" alt="Lo slider della compressione" loading="lazy"><figcaption><b>La compressione</b>uno slider dal «solo archivia» al massimo, con la password se vuoi.</figcaption></figure>
+      <figure><img src="img/lettore-musica.png" alt="Il lettore musica" loading="lazy"><figcaption><b>La musica</b>la scaletta, l'onda di tutto il brano e il suono del punto dove sei.</figcaption></figure>
+      <figure><img src="img/impostazioni.png" alt="Le impostazioni" loading="lazy"><figcaption><b>Le impostazioni</b>un solo pulsante, «Aggiusta tutto», sistema menu e app predefinite.</figcaption></figure>
+    </div>
+  </section>
+
+  <section id="funzioni">
+    <h2 class="titolo">Cosa <i>sa fare</i></h2>
+    <p class="sotto">Un programma solo al posto di cinque, e ci arrivi dal tasto destro.</p>
+    <div class="funzioni">
+      <div class="carta"><div class="ico">🖱️</div><h3>Dal tasto destro</h3><p>Su qualsiasi file: scegli il formato e il risultato sta accanto all'originale come «nome (convertito)». Anche su tanti file insieme.</p></div>
+      <div class="carta"><div class="ico">🎬</div><h3>Video e audio</h3><p>MP4, MKV, WEBM, GIF, MP3, FLAC, OPUS… con uno slider per il peso finale. Sfrutta la scheda video NVIDIA (NVENC, anche AV1).</p></div>
+      <div class="carta"><div class="ico">🖼️</div><h3>Foto</h3><p>HEIC dell'iPhone, RAW, WEBP, AVIF, JXL, ICO, PDF. Anche qui scegli il peso e vedi la stima prima di convertire.</p></div>
+      <div class="carta"><div class="ico">📄</div><h3>PDF e documenti</h3><p>PDF in foto o testo (anche le scansioni, con l'OCR), unisci PDF, Word, Excel e PowerPoint da e verso PDF.</p></div>
+      <div class="carta"><div class="ico">🗜️</div><h3>Archivi con 7-Zip</h3><p>Apri e sfoglia 7Z, ZIP, RAR, TAR…; crea 7Z e ZIP con la password che vuoi. Le voci si trascinano fuori come da una cartella.</p></div>
+      <div class="carta"><div class="ico">👁️</div><h3>Un lettore per tutto</h3><p>Foto, video, musica, PDF, testi e codice si aprono con un doppio clic, con anteprima, scaletta e ricerca.</p></div>
+    </div>
+  </section>
+
+  <section id="avatar">
+    <div class="avatar">
+      <div>
+        <h2 class="titolo">Il tuo <i>avatar</i> sul desktop</h2>
+        <p class="sotto" style="margin-bottom:0">Una musicassetta DaProd che sta in un angolo e ogni tanto si trasforma in un VHS, un floppy, un CD, un vinile…</p>
+        <ul>
+          <li>Ci trascini sopra un file: lo apre, lo converte o lo comprime.</li>
+          <li>La musica parte subito, con il suo piccolo player.</li>
+          <li>Con la rotella lo fai grande o piccolo.</li>
+          <li>Sta fermo quando guardi un video o giochi a schermo intero.</li>
+        </ul>
+        <div class="fila"><img src="img/obj-vhs.png" alt=""><img src="img/obj-floppy.png" alt=""><img src="img/obj-cd.png" alt=""><img src="img/obj-bobina.png" alt=""><img src="img/obj-vinile.png" alt=""></div>
+      </div>
+      <img class="f" src="img/avatar.png" alt="L'avatar sul desktop" loading="lazy">
+    </div>
+  </section>
+
+  <section id="com-e-fatto">
+    <h2 class="titolo">Com'è <i>fatto</i></h2>
+    <p class="sotto">Niente scorciatoie: ogni conversione la fa un motore vero, installato dentro il programma.</p>
+    <div class="fatto">
+      <div class="carta"><h3>Il motore</h3><p>Scritto in <b>.NET 10</b>, senza finestre. Un solo catalogo dice cosa si converte in cosa: lo leggono l'interfaccia, il menu del tasto destro e le prove. Per i video c'è <b>FFmpeg</b>, per gli archivi <b>7-Zip</b>, per le foto il motore immagini di Windows.</p></div>
+      <div class="carta"><h3>L'interfaccia</h3><p>Una finestra <b>WPF</b> con dentro <b>WebView2</b> (il motore di Edge) e una pagina in <b>TypeScript</b>, nello stile DaProd: viola notte, oro e magenta. È vetro, è fluida, e funziona senza internet.</p></div>
+      <div class="carta"><h3>Il menu di Windows 11</h3><p>Una piccola libreria in C++ mette DaP Convertitore nel menu del tasto destro nuovo, non solo in quello «Mostra altre opzioni». Con «Aggiusta tutto» sistemi anche le app predefinite.</p></div>
+      <div class="carta"><h3>Come viene sviluppato</h3><p>Ogni versione ha una voce nel registro delle novità e <b>oltre 170 prove automatiche</b> che convertono file veri. Quando una versione è pronta, una pipeline compila, impacchetta con <b>Velopack</b> e pubblica da sola.</p></div>
+      <div class="carta"><h3>L'avatar</h3><p>Gli oggetti sono modelli 3D creati con <b>Meshy</b> e fotografati in animazione: nel programma ci sono solo le immagini, quindi pesa poco e funziona offline.</p></div>
+      <div class="carta"><h3>Aperto e senza spie</h3><p>Il codice è su GitHub con licenza <b>MIT</b>. Non manda niente da nessuna parte: i tuoi file restano sul tuo computer.</p></div>
+    </div>
+    <div class="sigle"><span>.NET 10</span><span>WPF</span><span>WebView2</span><span>TypeScript</span><span>Vite</span><span>FFmpeg</span><span>7-Zip</span><span>Velopack</span><span>C++ · menu Windows 11</span><span>GitHub Actions</span><span>xUnit</span></div>
+  </section>
+
+  <section id="info">
+    <h2 class="titolo"><i>Informazioni</i></h2>
+    <div class="due" style="margin-top:26px">
+      <div class="carta">
+        <dl>
+          <dt>Versione</dt><dd id="versione2">2.2.3</dd>
+          <dt>Sviluppatore</dt><dd>DaProd Produzioni</dd>
+          <dt>Sistema</dt><dd>Windows 10 e 11 (64 bit)</dd>
+          <dt>Lingua</dt><dd>Italiano</dd>
+          <dt>Prezzo</dt><dd>Gratis</dd>
+          <dt>Licenza</dt><dd>MIT</dd>
+          <dt>Linux · macOS</dt><dd>In arrivo</dd>
+        </dl>
+      </div>
+      <div class="carta">
+        <h3>Prima di installare</h3>
+        <div class="novita">
+          <p><strong>1.</strong> Scarica «Scarica per Windows» e aprilo: si installa da solo.</p>
+          <p><strong>2.</strong> Windows può dire «ha protetto il PC», perché l'installatore non ha ancora la firma a pagamento: premi <b>Ulteriori informazioni → Esegui comunque</b>.</p>
+          <p><strong>3.</strong> Tasto destro su un file → <b>DaP Convertitore</b>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="chiusura">
+    <h2>Provalo, ci vuole un minuto</h2>
+    <p>Gratis, offline, e il primo file lo converti con due clic.</p>
+    <div class="azioni">
+      <a class="btn oro" href="https://github.com/cammo22/DaP-Convertitore/releases/latest/download/DaPConvertitore-win-Setup.exe">⬇ Scarica per Windows</a>
+      <a class="btn vetro" href="https://discord.gg/Njs52aacwq">Entra su Discord</a>
+    </div>
+  </div>
+</main>
+
+<footer class="piede">
+  <div class="wrap">
+    <span>© DaProd Produzioni · fatto con cura, in italiano</span>
+    <nav>
+      <a href="https://github.com/cammo22/DaP-Convertitore">Codice su GitHub</a>
+      <a href="https://github.com/cammo22/DaP-Convertitore/blob/main/docs/GUIDA.md">Guida completa</a>
+      <a href="https://github.com/cammo22/DaP-Convertitore/blob/main/CHANGELOG.md">Novità</a>
+      <a href="https://github.com/cammo22/DaP-Convertitore/blob/main/TERZE-PARTI.md">Software di terzi</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+// la versione vera, se GitHub risponde; se no resta quella scritta
+fetch("https://api.github.com/repos/cammo22/DaP-Convertitore/releases/latest")
+  .then(function(r){return r.ok ? r.json() : null})
+  .then(function(j){ if(!j||!j.tag_name) return; var v=j.tag_name.replace(/^v/,""); document.getElementById("versione").textContent=v; document.getElementById("versione2").textContent=v })
+  .catch(function(){});
+</script>
+</body>
+</html>

@@ -444,9 +444,10 @@ public sealed class MiniPlayer : Window
     readonly IReadOnlyList<string> brani;
     readonly FinestraAvatar avatar;
     readonly TextBlock titolo = new() { Foreground = Brushes.White, FontWeight = FontWeights.Bold, FontSize = 13.5, TextTrimming = TextTrimming.CharacterEllipsis };
-    readonly TextBlock tempo = new() { Foreground = new SolidColorBrush(Color.FromRgb(0xa1, 0x9d, 0xb0)), FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Right };
+    readonly TextBlock tempo = new() { Foreground = new SolidColorBrush(Color.FromRgb(0xa1, 0x9d, 0xb0)), FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Left };
+    readonly TextBlock durata = new() { Foreground = new SolidColorBrush(Color.FromRgb(0xa1, 0x9d, 0xb0)), FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Right };
     readonly Border riempimento = new() { Background = new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)), CornerRadius = new CornerRadius(3), HorizontalAlignment = HorizontalAlignment.Left, Width = 0 };
-    readonly Border barra = new() { Height = 6, CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), Cursor = Cursors.Hand, Margin = new Thickness(0, 6, 0, 4) };
+    readonly Border barra = new() { Height = 6, CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), Cursor = Cursors.Hand, Margin = new Thickness(0, 8, 0, 5) };
     readonly Button bPlay;
     readonly DispatcherTimer orologio;
     int i;
@@ -460,27 +461,32 @@ public sealed class MiniPlayer : Window
         Topmost = true; ShowInTaskbar = false; ShowActivated = false; ResizeMode = ResizeMode.NoResize;
         SizeToContent = SizeToContent.Height; Width = 330;
 
-        bPlay = Tasto("⏸", "Pausa", () => Gira());
+        bPlay = Tasto("⏸", "Pausa", () => Gira(), lato: 46, tondo: true, pieno: true);
         barra.Child = riempimento;
         barra.MouseLeftButtonDown += (_, e) => { var f = e.GetPosition(barra).X / Math.Max(1, barra.ActualWidth); if (mp.NaturalDuration.HasTimeSpan) mp.Position = TimeSpan.FromSeconds(mp.NaturalDuration.TimeSpan.TotalSeconds * Math.Clamp(f, 0, 1)); };
 
-        var tasti = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
-        if (brani.Count > 1) tasti.Children.Add(Tasto("⏮", "Precedente", () => Vai(i - 1)));
+        // i comandi del brano stanno al centro; apri/altro/chiudi sono piccoli in alto a destra
+        var tasti = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 2) };
+        if (brani.Count > 1) tasti.Children.Add(Tasto("⏮", "Precedente", () => Vai(i - 1), lato: 36, tondo: true));
         tasti.Children.Add(bPlay);
-        if (brani.Count > 1) tasti.Children.Add(Tasto("⏭", "Successivo", () => Vai(i + 1)));
-        var destra = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        destra.Children.Add(Tasto("↗", "Apri nell'app (con tutto il lettore)", () => { mp.Pause(); Regia.Gestisci(new Richiesta(null, [brani[i]], false, true)); Close(); }, true));
-        destra.Children.Add(Tasto("⋯", "Apri, converti, comprimi", () => avatar.ApriFumetto(brani)));
-        destra.Children.Add(Tasto("✕", "Chiudi", () => Close()));
-        var riga = new Grid();
-        riga.Children.Add(tasti);
-        riga.Children.Add(destra);
+        if (brani.Count > 1) tasti.Children.Add(Tasto("⏭", "Successivo", () => Vai(i + 1), lato: 36, tondo: true));
+        var angolo = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
+        angolo.Children.Add(Tasto("↗", "Apri nell'app (con tutto il lettore)", () => { mp.Pause(); Regia.Gestisci(new Richiesta(null, [brani[i]], false, true)); Close(); }, true, 26, true));
+        angolo.Children.Add(Tasto("⋯", "Apri, converti, comprimi", () => avatar.ApriFumetto(brani), lato: 26, tondo: true));
+        angolo.Children.Add(Tasto("✕", "Chiudi", () => Close(), lato: 26, tondo: true));
+        titolo.Margin = new Thickness(0, 4, 100, 0);
+        var testa = new Grid();
+        testa.Children.Add(titolo);
+        testa.Children.Add(angolo);
+        var tempi = new Grid();
+        tempi.Children.Add(tempo);
+        tempi.Children.Add(durata);
 
-        var pila = new StackPanel { Margin = new Thickness(14, 10, 14, 10) };
-        pila.Children.Add(titolo);
+        var pila = new StackPanel { Margin = new Thickness(16, 12, 16, 12) };
+        pila.Children.Add(testa);
         pila.Children.Add(barra);
-        pila.Children.Add(tempo);
-        pila.Children.Add(riga);
+        pila.Children.Add(tempi);
+        pila.Children.Add(tasti);
         Content = new Border
         {
             CornerRadius = new CornerRadius(16), Margin = new Thickness(14), Child = pila,
@@ -503,22 +509,22 @@ public sealed class MiniPlayer : Window
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); else if (e.Key == Key.Space) Gira(); };
     }
 
-    Button Tasto(string glifo, string tip, Action fai, bool oro = false)
+    Button Tasto(string glifo, string tip, Action fai, bool oro = false, double lato = 34, bool tondo = false, bool pieno = false)
     {
         var b = new Button
         {
-            Content = new TextBlock { Text = glifo, FontFamily = new FontFamily("Segoe UI Symbol"), FontSize = 15, Foreground = oro ? new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)) : Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
-            Width = 34, Height = 30, Margin = new Thickness(0, 0, 4, 0), ToolTip = tip, Cursor = Cursors.Hand, Focusable = false, BorderThickness = new Thickness(0),
-            Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
+            Content = new TextBlock { Text = glifo, FontFamily = new FontFamily("Segoe UI Symbol"), FontSize = lato >= 40 ? 19 : lato <= 26 ? 12 : 15, Foreground = pieno ? new SolidColorBrush(Color.FromRgb(0x09, 0x08, 0x0d)) : oro ? new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)) : Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+            Width = lato, Height = tondo ? lato : 30, Margin = new Thickness(tondo ? 5 : 0, 0, tondo ? 5 : 4, 0), ToolTip = tip, Cursor = Cursors.Hand, Focusable = false, BorderThickness = new Thickness(0),
+            Background = pieno ? new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)) : new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
         };
         var t = new ControlTemplate(typeof(Button));
         var bordo = new FrameworkElementFactory(typeof(Border)) { Name = "b" };
-        bordo.SetValue(Border.CornerRadiusProperty, new CornerRadius(9));
+        bordo.SetValue(Border.CornerRadiusProperty, new CornerRadius(tondo ? lato / 2 : 9));
         bordo.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding("Background") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
         bordo.AppendChild(new FrameworkElementFactory(typeof(ContentPresenter)));
         t.VisualTree = bordo;
         var su = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
-        su.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Color.FromArgb(60, 255, 213, 74)), "b"));
+        su.Setters.Add(new Setter(Border.BackgroundProperty, pieno ? new SolidColorBrush(Color.FromRgb(0xff, 0xe6, 0x8a)) : new SolidColorBrush(Color.FromArgb(60, 255, 213, 74)), "b"));
         t.Triggers.Add(su);
         b.Template = t;
         b.Click += (_, _) => fai();
@@ -559,7 +565,8 @@ public sealed class MiniPlayer : Window
     {
         if (!mp.NaturalDuration.HasTimeSpan) { tempo.Text = Tm(mp.Position); return; }
         var tot = mp.NaturalDuration.TimeSpan;
-        tempo.Text = $"{Tm(mp.Position)} / {Tm(tot)}" + (brani.Count > 1 ? $"  ·  {i + 1} di {brani.Count}" : "");
+        tempo.Text = Tm(mp.Position);
+        durata.Text = (brani.Count > 1 ? $"{i + 1} di {brani.Count}  ·  " : "") + Tm(tot);
         riempimento.Width = tot.TotalSeconds > 0 ? barra.ActualWidth * Math.Clamp(mp.Position.TotalSeconds / tot.TotalSeconds, 0, 1) : 0;
     }
 }
