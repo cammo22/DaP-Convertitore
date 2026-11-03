@@ -1,0 +1,55 @@
+# Ogni pull request: su Linux si compila l'app, si fanno le prove e si impacchetta l'AppImage.
+# L'app di Windows non passa di qui.
+name: Prove Linux
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: WebKit
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-0 || sudo apt-get install -y libwebkit2gtk-4.0-37 || true
+
+      - name: FFmpeg
+        run: chmod +x scripts/prendi-ffmpeg-linux.sh && ./scripts/prendi-ffmpeg-linux.sh
+
+      - name: 7-Zip
+        run: chmod +x scripts/prendi-7zip-linux.sh && ./scripts/prendi-7zip-linux.sh
+
+      - name: Interfaccia
+        working-directory: ui
+        run: |
+          if [ ! -d node_modules ]; then npm ci --no-audit --no-fund; fi
+          npm run build
+
+      - name: Prove
+        run: dotnet test test/DaPConvertitore.Prove.Linux -c Release -nologo
+
+      - name: Versione
+        run: |
+          dotnet build src/DaPConvertitore.Linux/DaPConvertitore.Linux.csproj -c Release -nologo
+          ./src/DaPConvertitore.Linux/bin/Release/net10.0/linux-x64/DaPConvertitore --versione
+
+      - name: AppImage
+        run: chmod +x linux/appimage.sh && ./linux/appimage.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DaPConvertitore-linux
+          path: Releases/DaPConvertitore-linux.AppImage
+          if-no-files-found: error

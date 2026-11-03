@@ -9,9 +9,6 @@ using Windows.Storage;
 
 namespace DaP.Convertitore.Lettore;
 
-/// <summary>Una voce di un archivio, per l'albero del lettore.</summary>
-public sealed record VoceArchivio(string Percorso, long Peso, bool Cartella, DateTime? Data);
-
 /// <summary>
 /// Quello che c'è dentro i file che non sono né video né carta: testi, tabelle, archivi, foto (con i dati della
 /// macchina fotografica) e, per tutto il resto, i byte.

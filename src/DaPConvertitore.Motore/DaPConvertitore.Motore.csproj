@@ -5,7 +5,37 @@
   <PropertyGroup>
     <RootNamespace>DaP.Convertitore</RootNamespace>
     <AssemblyName>DaPConvertitore.Motore</AssemblyName>
+    <!-- Windows: lo stesso di sempre. net10.0: la versione Linux, senza le API di Windows. -->
+    <TargetFrameworks>net10.0;net10.0-windows10.0.22621.0</TargetFrameworks>
+    <TargetFramework></TargetFramework>
+    <SupportedOSPlatformVersion Condition="$(TargetFramework.Contains('-windows'))">10.0.19041.0</SupportedOSPlatformVersion>
   </PropertyGroup>
+
+  <ItemGroup Condition="!$(TargetFramework.Contains('-windows'))">
+    <!-- Queste usano WIC, il PDF di Windows, l'OCR o il menu di Windows 11: su Linux ci sono i sostituti in Linux\. -->
+    <Compile Remove="Immagini.cs" />
+    <Compile Remove="Pdf.cs" />
+    <Compile Remove="Anteprime.cs" />
+    <Compile Remove="StimaImmagini.cs" />
+    <Compile Remove="IndiceAnteprima.cs" />
+    <Compile Remove="Menu11.cs" />
+    <Compile Remove="Lettore\Contenuti.cs" />
+    <Compile Remove="Lettore\Carte.cs" />
+    <Compile Remove="Lettore\Modifiche.cs" />
+    <Compile Remove="Lettore\Ritocco.cs" />
+    <Compile Remove="Lettore\Scrittura.cs" />
+    <Compile Remove="Lettore\Trascinamento.cs" />
+    <Compile Remove="Lettore\MiniatureArchivio.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework.Contains('-windows'))">
+    <!-- Su Windows le immagini e i PDF restano quelli di sempre: i file in Linux\ non entrano. -->
+    <Compile Remove="Linux\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DaPConvertitore.Prove.Linux" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Markdig" Version="1.4.0" />

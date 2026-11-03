@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- La finestra di Linux: la stessa interfaccia (ui/) dentro WebKit, tramite Photino.
+       L'app di Windows non passa di qui. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <AssemblyName>DaPConvertitore</AssemblyName>
+    <RootNamespace>DaP.Convertitore.Linux</RootNamespace>
+    <ApplicationIcon></ApplicationIcon>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DaPConvertitore.Motore\DaPConvertitore.Motore.csproj" />
+    <PackageReference Include="Photino.NET" Version="4.0.16" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\ui\dist\**" LinkBase="ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\CHANGELOG.md" Link="CHANGELOG.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\risorse\icona-256.png" Link="icona.png" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\motori\ffmpeg-linux\**" LinkBase="motori\ffmpeg-linux" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\motori\7zip-linux\**" LinkBase="motori\7zip-linux" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

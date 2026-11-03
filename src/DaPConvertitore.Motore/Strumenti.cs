@@ -16,7 +16,7 @@ public sealed class Strumenti
     public bool PowerPoint { get; init; }
     /// <summary>7z.exe (con 7z.dll accanto): il motore di tutti gli archivi. Viaggia con l'app.</summary>
     public string? SetteZip { get; init; }
-    public string Tar { get; init; } = Path.Combine(Environment.SystemDirectory, "tar.exe");
+    public string Tar { get; init; } = OperatingSystem.IsWindows() ? Path.Combine(Environment.SystemDirectory, "tar.exe") : "tar";
 
     /// <summary>%LocalAppData%\DaProd\Convertitore: impostazioni, cache dell'hardware, registro, profilo di LibreOffice.</summary>
     public static string CartellaDati
@@ -48,7 +48,7 @@ public sealed class Strumenti
         return new Strumenti
         {
             Ffmpeg = ffmpeg,
-            Ffprobe = Path.Combine(Path.GetDirectoryName(ffmpeg) ?? "", "ffprobe.exe"),
+            Ffprobe = Path.Combine(Path.GetDirectoryName(ffmpeg) ?? "", OperatingSystem.IsWindows() ? "ffprobe.exe" : "ffprobe"),
             SetteZip = CercaSetteZip(),
             LibreOffice = CercaLibreOffice(),
             Word = ComRegistrato("Word.Application"),
@@ -60,22 +60,50 @@ public sealed class Strumenti
     static string CercaFfmpeg()
     {
         // accanto all'exe (installato), poi su per le cartelle fino al repo (sviluppo e prove)
+        var nome = OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg";
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         for (var d = dir; d is not null; d = d.Parent)
         {
-            var p = Path.Combine(d.FullName, "motori", "ffmpeg", "ffmpeg.exe");
-            if (File.Exists(p)) return p;
+            foreach (var sotto in OperatingSystem.IsWindows() ? new[] { "ffmpeg" } : new[] { "ffmpeg-linux", "ffmpeg" })
+            {
+                var p = Path.Combine(d.FullName, "motori", sotto, nome);
+                if (File.Exists(p)) return p;
+            }
         }
-        foreach (var cartella in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries))
+        var sep = OperatingSystem.IsWindows() ? ';' : Path.PathSeparator;
+        foreach (var cartella in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(sep, StringSplitOptions.RemoveEmptyEntries))
         {
-            var p = Path.Combine(cartella.Trim(), "ffmpeg.exe");
+            var p = Path.Combine(cartella.Trim(), nome);
             if (File.Exists(p)) return p;
         }
-        return Path.Combine(AppContext.BaseDirectory, "motori", "ffmpeg", "ffmpeg.exe");
+        var cartellaMotori = OperatingSystem.IsWindows() ? "ffmpeg" : "ffmpeg-linux";
+        return Path.Combine(AppContext.BaseDirectory, "motori", cartellaMotori, nome);
     }
 
     static string? CercaSetteZip()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            for (var d = new DirectoryInfo(AppContext.BaseDirectory); d is not null; d = d.Parent)
+            {
+                foreach (var nome in new[] { "7zz", "7z" })
+                {
+                    var p = Path.Combine(d.FullName, "motori", "7zip-linux", nome);
+                    if (File.Exists(p)) return p;
+                    var accanto = Path.Combine(d.FullName, "motori", "7zip", nome);
+                    if (File.Exists(accanto)) return accanto;
+                }
+            }
+            foreach (var cartella in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+            {
+                foreach (var nome in new[] { "7zz", "7z" })
+                {
+                    var p = Path.Combine(cartella.Trim(), nome);
+                    if (File.Exists(p)) return p;
+                }
+            }
+            return null;
+        }
         // accanto all'exe (installato), poi su per le cartelle fino al repo (sviluppo e prove)
         for (var d = new DirectoryInfo(AppContext.BaseDirectory); d is not null; d = d.Parent)
         {
@@ -107,6 +135,16 @@ public sealed class Strumenti
         {
             var p = Path.Combine(pf, "LibreOffice", "program", "soffice.exe");
             if (File.Exists(p)) return p;
+        }
+        if (!OperatingSystem.IsWindows())
+        {
+            foreach (var p in new[] { "/usr/bin/soffice", "/usr/lib/libreoffice/program/soffice" })
+                if (File.Exists(p)) return p;
+            foreach (var cartella in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var p = Path.Combine(cartella.Trim(), "soffice");
+                if (File.Exists(p)) return p;
+            }
         }
         return null;
     }

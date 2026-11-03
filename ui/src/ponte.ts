@@ -202,7 +202,19 @@ type Ascoltatore = (dati: any) => void;
 interface WebView { postMessage(m: unknown): void; addEventListener(t: 'message', f: (e: { data: any }) => void): void }
 const webview: WebView | undefined = (window as any).chrome?.webview;
 
-export const dentroApp = !!webview;
+/** Su Linux la finestra è Photino (WebKit): parla con sendMessage, non con chrome.webview. Su Windows non si usa. */
+function photino(): WebView | undefined {
+  if (webview) return undefined;
+  const ext = (window as any).external;
+  if (!ext || typeof ext.sendMessage !== 'function' || typeof ext.receiveMessage !== 'function') return undefined;
+  ext.receiveMessage((dati: string) => {
+    try { arriva(typeof dati === 'string' ? JSON.parse(dati) : dati); } catch { /* un messaggio storto si ignora */ }
+  });
+  return { postMessage: (m) => ext.sendMessage(JSON.stringify(m)), addEventListener: () => {} };
+}
+const finestraLinux = photino();
+
+export const dentroApp = !!webview || !!finestraLinux;
 
 let contatore = 0;
 const attese = new Map<number, { ok: (v: any) => void; no: (e: Error) => void }>();
@@ -224,7 +236,7 @@ let finto: ((cmd: string, args: any, emetti: (e: string, d: any) => void) => Pro
 if (webview) webview.addEventListener('message', (e) => arriva(e.data));
 
 export async function avviaFinto() {
-  if (webview) return;
+  if (dentroApp) return;
   const m = await import('./finto');
   finto = m.rispondi;
 }
@@ -232,11 +244,12 @@ export async function avviaFinto() {
 /** Una domanda all'app; la risposta arriva come promessa. */
 export function chiedi<T = any>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
   if (finto) return finto(cmd, args, (evento, dati) => arriva({ evento, dati }));
-  if (!webview) return Promise.reject(new Error('fuori dall\'app'));
+  const ponte = webview ?? finestraLinux;
+  if (!ponte) return Promise.reject(new Error('fuori dall\'app'));
   const id = ++contatore;
   return new Promise<T>((ok, no) => {
     attese.set(id, { ok, no });
-    webview.postMessage({ id, cmd, args });
+    ponte.postMessage({ id, cmd, args });
   });
 }
 
