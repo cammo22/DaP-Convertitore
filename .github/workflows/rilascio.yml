@@ -1,7 +1,7 @@
 # Ogni volta che su main arriva una versione nuova (il <Version> di Directory.Build.props) GitHub fa le prove,
 # compila, impacchetta con Velopack e pubblica la release vX.Y.Z con Setup.exe, portatile e i pacchetti per gli
-# aggiornamenti automatici. Le prove girano ma non fermano la release (come in DaProd Video): i runner di GitHub
-# non hanno LibreOffice né le estensioni HEIF, quindi qualche prova lì può dire cose che sul PC vero non succedono.
+# aggiornamenti automatici. Le prove devono passare: se sono rosse la release non esce. LibreOffice e le estensioni
+# HEIF sui runner non ci sono: quelle prove, se il pezzo manca, escono da sole (non sono un fallimento).
 name: Rilascio
 
 on:
@@ -61,16 +61,8 @@ jobs:
         run: ./scripts/compila-menu.ps1
 
       - name: Prove
-        id: prove
-        continue-on-error: true
         shell: pwsh
         run: dotnet test test/DaPConvertitore.Prove -nologo
-
-      - name: Esito delle prove
-        if: steps.prove.outcome == 'failure'
-        shell: pwsh
-        run: |
-          Write-Host "::warning title=Prove::Qualche prova non è passata, guarda il passo Prove (la release esce lo stesso)"
 
       - name: Pacchetto
         if: steps.versione.outputs.esiste == 'no'

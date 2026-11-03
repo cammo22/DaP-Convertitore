@@ -271,7 +271,25 @@ public sealed class ScegliPersonaggio : Window
         Loaded += (_, _) => Posiziona();
         avatar.Spostato += Posiziona;
         avatar.Trasformato += Evidenzia;
-        Deactivated += (_, _) => Close();
+        // un clic fuori chiude. Ma Deactivated arriva anche mentre la finestra si sta già chiudendo
+        // (la X, Esc): richiamare Close() lì lancia InvalidOperationException.
+        bool inChiusura = false;
+        Closing += (_, _) => inChiusura = true;
+        Deactivated += (_, _) =>
+        {
+            if (inChiusura) return;
+            try
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    if (inChiusura) return;
+                    inChiusura = true;
+                    try { Close(); }
+                    catch (InvalidOperationException) { /* già in chiusura */ }
+                });
+            }
+            catch (InvalidOperationException) { /* il dispatcher sta chiudendo */ }
+        };
         Closed += (_, _) => { avatar.Spostato -= Posiziona; avatar.Trasformato -= Evidenzia; };
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); };
     }

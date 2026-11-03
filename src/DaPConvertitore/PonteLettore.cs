@@ -72,21 +72,27 @@ public sealed class PonteLettore
     {
         JsonNode? m;
         try { m = JsonNode.Parse(e.WebMessageAsJson); }
-        catch { return; }
+        catch { return; /* non è JSON: si ignora */ }
         if (m is null) return;
         var cmd = (string?)m["cmd"] ?? "";
         var id = m["id"]?.GetValue<int>();
         var args = m["args"] as JsonObject ?? [];
-        if (cmd == "lasciati")
-        {
-            var percorsi = e.AdditionalObjects?.OfType<CoreWebView2File>().Select(f => f.Path).Where(File.Exists).ToList() ?? [];
-            if (percorsi.Count > 0) Apri(percorsi);
-            return;
-        }
         try
         {
+            if (cmd == "lasciati")
+            {
+                // nel try: questo metodo è async void, un'eccezione qui fuori chiuderebbe l'app
+                var percorsi = e.AdditionalObjects?.OfType<CoreWebView2File>().Select(f => f.Path).Where(File.Exists).ToList() ?? [];
+                if (percorsi.Count > 0) Apri(percorsi);
+                if (id is not null) Rispondi(id.Value, true, percorsi.Count, null);
+                return;
+            }
             var dati = await Esegui(cmd, args);
             if (id is not null) Rispondi(id.Value, true, dati, null);
+        }
+        catch (Exception ex) when (!EccezioniPonte.DaRegistro(ex))
+        {
+            if (id is not null) Rispondi(id.Value, false, null, null);
         }
         catch (Exception ex)
         {

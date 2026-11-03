@@ -189,23 +189,30 @@ public sealed class Ponte
     {
         JsonNode? m;
         try { m = JsonNode.Parse(e.WebMessageAsJson); }
-        catch { return; }
+        catch { return; /* non è JSON: si ignora */ }
         if (m is null) return;
         var cmd = (string?)m["cmd"] ?? "";
         var id = m["id"]?.GetValue<int>();
         var args = m["args"] as JsonObject ?? [];
 
-        if (cmd == "lasciati")
-        {
-            // i file trascinati dentro: WebView2 ci dà i percorsi veri
-            var percorsi = e.AdditionalObjects?.OfType<CoreWebView2File>().Select(f => f.Path).ToList() ?? [];
-            Gestisci(new Richiesta(null, percorsi, true));
-            return;
-        }
         try
         {
+            if (cmd == "lasciati")
+            {
+                // i file trascinati dentro: WebView2 ci dà i percorsi veri. Sta nel try: è un async void,
+                // un'eccezione qui fuori chiuderebbe l'app.
+                var percorsi = e.AdditionalObjects?.OfType<CoreWebView2File>().Select(f => f.Path).ToList() ?? [];
+                Gestisci(new Richiesta(null, percorsi, true));
+                if (id is not null) Rispondi(id.Value, true, percorsi.Count, null);
+                return;
+            }
             var dati = await Esegui(cmd, args);
             if (id is not null) Rispondi(id.Value, true, dati, null);
+        }
+        catch (Exception ex) when (!EccezioniPonte.DaRegistro(ex))
+        {
+            // la stima nuova ha fermato la vecchia: la pagina non aspetta più questo risultato
+            if (id is not null) Rispondi(id.Value, false, null, null);
         }
         catch (Exception ex)
         {
