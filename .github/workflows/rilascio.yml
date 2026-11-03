@@ -80,3 +80,44 @@ jobs:
           $v = "${{ steps.versione.outputs.numero }}"
           dotnet vpk upload github --repoUrl https://github.com/${{ github.repository }} --token ${{ github.token }} `
             -o Releases --publish --releaseName "DaP Convertitore $v" --tag "v$v"
+
+  linux:
+    needs: rilascio
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: FFmpeg
+        run: chmod +x scripts/prendi-ffmpeg-linux.sh && ./scripts/prendi-ffmpeg-linux.sh
+
+      - name: 7-Zip
+        run: chmod +x scripts/prendi-7zip-linux.sh && ./scripts/prendi-7zip-linux.sh
+
+      - name: Interfaccia
+        working-directory: ui
+        run: |
+          if [ ! -d node_modules ]; then npm ci --no-audit --no-fund; fi
+          npm run build
+
+      - name: AppImage
+        run: chmod +x linux/appimage.sh && ./linux/appimage.sh
+
+      - name: Pubblica l'AppImage
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props | head -1)
+          if gh release view "v$v" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "v$v" Releases/DaPConvertitore-linux.AppImage --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            echo "La release v$v non c'è (versione già pubblicata o prove fallite): non carico l'AppImage"
+          fi

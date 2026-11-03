@@ -43,7 +43,8 @@ public static class Ffmpeg
     {
         var e = errori.ToLowerInvariant();
         if (e.Contains("no space left")) return "Il disco è pieno.";
-        if (e.Contains("permission denied") || e.Contains("access is denied")) return "Windows non mi lascia scrivere in quella cartella.";
+        if (e.Contains("permission denied") || e.Contains("access is denied"))
+            return OperatingSystem.IsWindows() ? "Windows non mi lascia scrivere in quella cartella." : "Non ho il permesso di scrivere in quella cartella.";
         if (e.Contains("invalid data found") || e.Contains("moov atom not found")) return "Il file è rovinato o incompleto.";
         if (e.Contains("openencodesessionex failed") || e.Contains("nvenc") && e.Contains("failed")) return "La scheda video non è riuscita a codificare.";
         if (e.Contains("subtitle") && (e.Contains("bitmap") || e.Contains("not supported"))) return "Questi sottotitoli sono immagini: non diventano testo.";

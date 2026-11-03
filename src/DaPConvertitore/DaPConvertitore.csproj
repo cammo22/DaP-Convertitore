@@ -4,6 +4,8 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <UseWPF>true</UseWPF>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <AssemblyName>DaPConvertitore</AssemblyName>
     <RootNamespace>DaP.Convertitore.App</RootNamespace>
     <ApplicationIcon>..\..\risorse\icona.ico</ApplicationIcon>

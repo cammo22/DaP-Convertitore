@@ -2,6 +2,15 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.3.0 — 3 novembre 2026
+
+- **DaP Convertitore si apre anche su Linux.** È la stessa finestra di Windows. Si scarica un file solo (AppImage), lo si rende avviabile e si apre.
+  Dentro ci sono FFmpeg e 7-Zip. Video, musica, sottotitoli, foto, testo e archivi si convertono. I PDF si uniscono e se ne legge il testo;
+  i documenti di Word passano se c'è LibreOffice. Il tasto destro c'è in Nautilus, Nemo e Dolphin («Aggiusta tutto» nelle Impostazioni, oppure
+  `--menu`). Se esce una versione nuova, l'avviso sta nella barra in alto, come su Windows.
+- **Su Windows non cambia niente** di quello che già faceva: l'avatar, il lettore e l'OCR restano lì.
+- Come si installa, detto corto: `linux/LEGGIMI.md`.
+
 ## 2.2.6 — 3 novembre 2026
 
 - **Le miniature dei documenti Word non vanno più in errore.** Disegnando la pagina si chiedeva «zero righe» di testo e Windows rifiutava
