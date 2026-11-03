@@ -2,6 +2,22 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.2.6 — 3 novembre 2026
+
+- **Le miniature dei documenti Word non vanno più in errore.** Disegnando la pagina si chiedeva «zero righe» di testo e Windows rifiutava
+  (nel registro, ArgumentOutOfRangeException, sei volte su un `.docx`). Ora si disegnano le righe che ci stanno. Vale anche per le diapositive.
+- **«Scegli il personaggio» si chiude senza errore.** Chiudendo la finestrella, la chiusura richiamava se stessa e Windows rispondeva che la
+  finestra era già in chiusura (InvalidOperationException).
+- **Gli aggiornamenti non si pestano i piedi, e un 403 di GitHub non è più un errore rosso.** Due controlli insieme litigavano per il
+  lucchetto di Velopack («Failed to acquire exclusive lock»): ora ne parte uno alla volta. Il controllo legge il file della release
+  (`releases.win.json`), non l'API di GitHub, che senza accesso si ferma dopo poche richieste. Se la rete manca, o se GitHub chiede comunque
+  di aspettare, si riprova più tardi (dopo un limite, dopo ore, non ogni 20 minuti) e nel registro non finisce come errore. L'avviso resta
+  nella barra in alto; dopo l'aggiornamento le novità si aprono da sole, come prima.
+- **Spostare lo slider del peso di una foto non scrive più un errore.** La stima vecchia si ferma quando ne parte una nuova: era una
+  cancellazione normale e finiva nel registro come TaskCanceledException.
+- **Trascinare un file dentro non può più far cadere il programma** se qualcosa va storto in quel passaggio.
+- **Le prove fermano la release** se sono rosse, e ogni pull request le fa girare (prima partivano solo su main e un rosso non bloccava niente).
+
 ## 2.2.5 — 29 ottobre 2026
 
 - **App predefinite: ora si capisce cosa succede.** Windows applica la regola «apri tutto con DaProd» solo **all'accesso**: finché non ti

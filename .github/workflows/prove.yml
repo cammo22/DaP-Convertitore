@@ -1,0 +1,48 @@
+# Ogni pull request: si compila l'app e si fanno le prove, su Windows. Se sono rosse non si unisce.
+# Il menu di Windows 11 (Zig) lo compila il flusso di rilascio: qui, se la DLL non c'è, quella prova esce da sola.
+name: Prove
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: FFmpeg
+        shell: pwsh
+        run: ./scripts/prendi-ffmpeg.ps1
+
+      - name: 7-Zip
+        shell: pwsh
+        run: ./scripts/prendi-7zip.ps1
+
+      - name: Interfaccia
+        shell: pwsh
+        working-directory: ui
+        run: |
+          if (-not (Test-Path node_modules)) {
+            npm ci --no-audit --no-fund
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: App
+        shell: pwsh
+        run: dotnet build src/DaPConvertitore/DaPConvertitore.csproj -c Release -nologo
+
+      - name: Prove
+        shell: pwsh
+        run: dotnet test test/DaPConvertitore.Prove -c Release -nologo

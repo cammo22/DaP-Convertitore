@@ -40,7 +40,14 @@ public static class Documenti
         ZipArchive? zip = null;
         try
         {
-            try { zip = ZipFile.OpenRead(percorso); } catch { zip = null; }
+            // un .doc vecchio, o un file rovinato, non è uno zip: si disegna la pagina senza il testo
+            try { zip = ZipFile.OpenRead(percorso); }
+            catch (Exception e)
+            {
+                zip = null;
+                if (e is not InvalidDataException and not IOException)
+                    Registro.Scrivi($"Miniatura di {Path.GetFileName(percorso)}: {e.GetType().Name}: {e.Message}");
+            }
             // 1. l'anteprima che il programma ha messo dentro al file
             if (zip is not null)
                 foreach (var nome in new[] { "docProps/thumbnail.jpeg", "docProps/thumbnail.jpg", "docProps/thumbnail.png", "Thumbnails/thumbnail.png" })
@@ -114,7 +121,9 @@ public static class Documenti
                 dc.DrawText(titolo, new Point(margine, y));
                 y += titolo.Height + fs * 0.7;
                 var corpo = Scritte.Testo(string.Join("\n", righe.Skip(1)), Scritte.Corpo, fs, scuro, W - margine * 2);
-                corpo.MaxLineCount = 0;
+                // con la larghezza, Scritte.Testo mette una riga sola. 0 vorrebbe dire «quante ce ne stanno
+                // in altezza», ma WPF rifiuta MaxLineCount <= 0 (ArgumentOutOfRangeException sui .docx)
+                corpo.MaxLineCount = RigheTesto.Massimo(0);
                 corpo.MaxTextWidth = W - margine * 2;
                 corpo.MaxTextHeight = Math.Max(fs, H - y - margine * 0.5);
                 corpo.Trimming = TextTrimming.CharacterEllipsis;
@@ -158,7 +167,7 @@ public static class Documenti
                 if (righe.Count > 1)
                 {
                     var sotto = Scritte.Testo(string.Join("\n", righe.Skip(1)), Scritte.Corpo, H * 0.085, Tavolozza.P(Colors.White, 0.7), W - m * 1.6);
-                    sotto.MaxLineCount = 0;
+                    sotto.MaxLineCount = RigheTesto.Massimo(0);
                     sotto.MaxTextHeight = H * 0.32;
                     sotto.Trimming = TextTrimming.CharacterEllipsis;
                     dc.DrawText(sotto, new Point(m, H * 0.2 + Math.Min(t.Height, H * 0.45) + H * 0.06));
