@@ -2,6 +2,17 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.2.7 — 4 novembre 2026
+
+- **La colonna di mezzo non si rompe più con l'anteprima aperta.** Si regolava sulla larghezza della finestra, non sulla sua: con
+  l'anteprima a destra la colonna diventava stretta e i tasti PESO FINALE · QUALITÀ · VELOCE andavano a capo una parola per riga (VELOCE
+  finiva tagliato), il contatore a sette segmenti del peso finale usciva dal riquadro e compariva una barra di scorrimento orizzontale col
+  quadratino bianco nell'angolo. Ora tutto si adatta alla colonna: la nota del modo va sotto il nome (o sparisce, e resta nel suggerimento),
+  il contatore e la lancetta vanno uno sotto l'altro e le cifre crescono con lo spazio, i tasti delle regolazioni vanno a capo.
+- **Le cassette dei formati**: i due fori in basso hanno la loro fascia e non finiscono più sopra la descrizione.
+- **L'anteprima del video** non mostra più due immagini una sopra l'altra: la foto e il video stanno nello stesso posto.
+- **L'invito del tasto destro di Windows 11** con la colonna stretta mette i tasti sotto il testo, invece di diventare altissimo.
+
 ## 2.2.6 — 3 novembre 2026
 
 - **Le miniature dei documenti Word non vanno più in errore.** Disegnando la pagina si chiedeva «zero righe» di testo e Windows rifiutava
