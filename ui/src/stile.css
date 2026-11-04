@@ -711,3 +711,55 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 #app.compatto .banco { zoom: 0.74; }
 #app.compatto .piede { zoom: 0.82; }
 #app.compatto .testa { zoom: 0.85; }
+
+/* ——— 2.2.7: la colonna di mezzo si regola sulla sua larghezza, non su quella della finestra ———
+   Con l'anteprima aperta la colonna diventa stretta: prima i tasti dei modi andavano a capo una parola per riga,
+   il contatore a sette segmenti usciva dal riquadro e i fori delle cassette finivano sopra le scritte. */
+.banco { container: banco / inline-size; }
+.banco::-webkit-scrollbar-corner { background: transparent; }
+
+/* i modi (peso finale, qualità, veloce): mai più larghi della loro parte di riga */
+.modi { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.modi.due { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.modo { min-width: 0; overflow: hidden; }
+.modo small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+@container banco (max-width: 620px) {
+  /* la nota va sotto il nome */
+  .modo { height: auto; min-height: 46px; padding: 7px 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; row-gap: 2px; align-items: center; }
+  .modo small { grid-column: 2; margin-left: 0; font-size: 11px; }
+}
+@container banco (max-width: 440px) {
+  .modo { font-size: 12px; letter-spacing: 0.04em; padding: 0 10px; }
+  .modo small { display: none; }
+}
+
+/* il contatore e lo strumento: uno sotto l'altro quando non ci stanno affiancati, le cifre crescono con lo spazio */
+@container banco (max-width: 620px) { .quadro { grid-template-columns: minmax(0, 1fr); } }
+.display { min-width: 0; }
+.sette { font-size: clamp(30px, 9cqi, 52px); min-width: 0; }
+.display-unita { font-size: clamp(16px, 3.6cqi, 22px); }
+.display-sotto { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* le cassette: i due fori stanno nella loro fascia in basso, il testo sopra (al massimo due righe) */
+.cassetta {
+  height: auto; min-height: 88px; padding-bottom: 24px;
+  background:
+    radial-gradient(circle at 30% calc(100% - 12px), #0b0a0f 0 5px, transparent 5.5px),
+    radial-gradient(circle at 70% calc(100% - 12px), #0b0a0f 0 5px, transparent 5.5px),
+    linear-gradient(180deg, #2c2b35 0%, #1f1e26 60%, #1a1920 100%);
+}
+.cassetta .descr { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* le regolazioni vanno a capo invece di allargare la colonna (era la barra di scorrimento orizzontale) */
+@container banco (max-width: 620px) { .fila-regolazioni .bottoni { flex-wrap: wrap; } }
+.pannello-peso, .regolazioni, .fila-regolazioni, .sotto-gruppo { min-width: 0; }
+
+/* l'anteprima: la foto e il video stanno nello stesso posto, mai uno sopra l'altro */
+.cl-figura > * { grid-area: 1 / 1; }
+
+/* l'invito del tasto destro di Windows 11: con la colonna stretta i tasti vanno sotto il testo */
+@container banco (max-width: 620px) {
+  .banco .invito { grid-template-columns: 44px minmax(0, 1fr); }
+  .banco .invito-figura svg { width: 40px; height: 40px; }
+  .banco .invito-tasti { grid-column: 1 / -1; justify-content: flex-end; }
+}
