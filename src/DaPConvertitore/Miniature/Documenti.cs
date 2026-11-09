@@ -498,6 +498,7 @@ public static class Documenti
     {
         var tinta = Tavolozza.Tinta(gruppo);
         var est = estensione.TrimStart('.').ToUpperInvariant();
+        if (L <= 32) return Tela.Fai(L, L, dc => Glifi.Mattonella(dc, gruppo, new Rect(0, 0, L, L)));
         return Tela.Fai(L, L, dc =>
         {
             var r = new Rect(0, 0, L, L);

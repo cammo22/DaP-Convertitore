@@ -4,9 +4,10 @@ using System.Windows.Media;
 namespace DaP.Convertitore.App.Miniature;
 
 /// <summary>
-/// Le icone dei tipi di file (quelle che si vedono nell'elenco, nei file piccoli, sul desktop): un foglio col
-/// bordo piegato, viola notte, col disegnino del tipo nella sua tinta (magenta i video, verde la musica, ciano le foto…).
-/// Si disegnano al volo a tutte le misure e si scrivono in file .ico accanto ai dati dell'app.
+/// Le icone dei tipi di file (quelle che si vedono nell'elenco, nei file piccoli, sul desktop). Dalle 32 pixel in su
+/// è un foglio col bordo piegato, viola notte, col disegnino del tipo nella sua tinta. A 16, 20 e 24 il foglio non
+/// si legge: è una mattonella tonda con la sagoma piena. Si disegnano al volo e si scrivono in file .ico accanto ai
+/// dati dell'app.
 /// </summary>
 public static class Icone
 {
@@ -15,10 +16,12 @@ public static class Icone
     /// <summary>Il disegno di un'icona a una misura.</summary>
     static Quadro Disegna(string gruppo, int S)
     {
+        if (S <= 24) return Tela.Fai(S, S, dc => Glifi.Mattonella(dc, gruppo, new Rect(0, 0, S, S)));
+
         var tinta = Tavolozza.Tinta(gruppo);
         return Tela.Fai(S, S, dc =>
         {
-            double x = S * 0.14, y = S * 0.05, w = S * 0.72, h = S * 0.9, taglio = S * 0.24;
+            double x = S * 0.12, y = S * 0.05, w = S * 0.76, h = S * 0.9, taglio = S * 0.22;
             var pagina = new StreamGeometry();
             using (var g = pagina.Open())
             {
@@ -31,10 +34,9 @@ public static class Icone
             pagina.Freeze();
             var fondo = new LinearGradientBrush(Tavolozza.C("#3a2268"), Tavolozza.C("#150f27"), 100);
             fondo.Freeze();
-            var bordo = Math.Max(1, S * 0.035);
+            var bordo = Math.Max(1, S * 0.028);
             dc.DrawGeometry(fondo, new Pen(Tavolozza.P(tinta, 0.95), bordo) { LineJoin = PenLineJoin.Round }, pagina);
 
-            // l'angolo piegato
             var piega = new StreamGeometry();
             using (var g = piega.Open())
             {
@@ -43,13 +45,14 @@ public static class Icone
                 g.LineTo(new Point(x + w - taglio, y + taglio), true, true);
             }
             piega.Freeze();
-            dc.DrawGeometry(Tavolozza.P(tinta, 0.9), null, piega);
+            dc.DrawGeometry(Tavolozza.P(tinta, 0.92), null, piega);
 
-            // il disegnino del tipo, grande: nelle misure piccole deve restare leggibile
-            var lato = S * (S <= 24 ? 0.5 : 0.46);
+            // il disegnino sta nella parte bassa del foglio, lontano dalla piega. Il tratto è in pixel, non in
+            // unità della griglia: prima a 32 pixel diventava un blob.
+            var lato = S * (S <= 48 ? 0.50 : 0.46);
             var scala = lato / 24.0;
-            var spessore = Math.Max(1.8, 1.45 / scala);
-            Glifi.Disegna(dc, gruppo, new Rect(x + (w - lato) / 2 - (S <= 24 ? 0 : 0), y + h * 0.4, lato, lato), tinta, spessore);
+            var pixel = S <= 48 ? 1.6 : Math.Min(4.4, 1.25 + S * 0.011);
+            Glifi.Disegna(dc, gruppo, new Rect(x + (w - lato) / 2, y + h * 0.36, lato, lato), tinta, pixel / scala);
         });
     }
 
