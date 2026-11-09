@@ -40,6 +40,24 @@ public class ProveCopertine
     }
 
     [Fact]
+    public void IlVideoTieneLaCopertinaDentroIlFile()
+    {
+        Assert.True(Copertine.VideoNelFile("film.mp4"));
+        Assert.True(Copertine.VideoNelFile("film.MKV"));
+        Assert.True(Copertine.DentroIlFile("film.mov"));
+        Assert.False(Copertine.VideoNelFile("film.webm"));
+        Assert.False(Copertine.AudioNelFile("film.mp4"));
+    }
+
+    [Fact]
+    public void LaCartellaDeiLavoriStaFraLeImmagini()
+    {
+        var p = CartellaLavori.DiSistema();
+        Assert.EndsWith(CartellaLavori.Nome, p);
+        Assert.Contains("DaPConvertitore", p);
+    }
+
+    [Fact]
     public void ICampiSonoQuelliCheIlFormatoTiene()
     {
         Assert.Contains("copertina", Metadati.Campi(".mp3"));
@@ -117,6 +135,25 @@ public class ProveScheda(Banco b)
         var orig = await Media.Leggi(b.Strumenti, wav);
         Assert.False(orig.Info.Copertina);
         Assert.True(new FileInfo(wav).Length > 0);
+    }
+
+    [Fact]
+    public async Task LaCopertinaDelVideoEUnFotogrammaAllegato()
+    {
+        var mp4 = b.Ffmpeg("film-cover.mp4", "-f", "lavfi", "-i", "testsrc2=s=160x90:r=15:d=1", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "ultrafast");
+        var png = Path.Combine(b.Cartella, "cover-video.png");
+        await File.WriteAllBytesAsync(png, Copertine.Genera("Film", 1, null));
+        var prima = await File.ReadAllBytesAsync(mp4);
+        await Copertine.ScriviNelFile(b.Strumenti, mp4, png);
+        Assert.NotEqual(prima, await File.ReadAllBytesAsync(mp4));
+        var info = await Sonda.Leggi(b.Strumenti, mp4);
+        Assert.True(info.Copertina);
+        Assert.True(info.IndiceCopertina >= 0);
+        Assert.Equal(1, info.VideoVeri);
+        var jpg = await Copertine.EstraiAllegata(b.Strumenti, mp4, info.IndiceCopertina, 160, true);
+        Assert.NotNull(jpg);
+        Assert.True(jpg!.Length > 80);
+        Assert.InRange(info.Durata, 0.4, 2.5);
     }
 
     [Fact]

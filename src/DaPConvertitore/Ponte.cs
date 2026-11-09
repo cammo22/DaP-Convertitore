@@ -35,7 +35,15 @@ public sealed class Ponte
     // la stampante arriva quando WebView2 è pronto; un lavoro che parte prima la aspetta
     readonly TaskCompletionSource<IStampante> stampante = new(TaskCreationOptions.RunContinuationsAsynchronously);
     bool pronta;
+    bool chiediImpostazioni;
     readonly HashSet<string> giro = [];
+
+    /// <summary>Dal vassoio: apri le impostazioni appena la pagina è pronta.</summary>
+    public void ApriImpostazioni()
+    {
+        chiediImpostazioni = true;
+        if (pronta) finestra.Dispatcher.BeginInvoke(() => { chiediImpostazioni = false; Manda("apriImpostazioni", null); });
+    }
 
     public Coda Coda { get; }
 
@@ -236,6 +244,11 @@ public sealed class Ponte
                 }
                 pronta = true;
                 timerCarico.Start();
+                if (chiediImpostazioni)
+                {
+                    chiediImpostazioni = false;
+                    _ = finestra.Dispatcher.BeginInvoke(() => Manda("apriImpostazioni", null), System.Windows.Threading.DispatcherPriority.Background);
+                }
                 return new
                 {
                     versione = Versione,
@@ -388,6 +401,17 @@ public sealed class Ponte
                 {
                     var v = (string?)cc;
                     imp.CodificaCon = v is "gpu" or "cpu" ? v : null;
+                }
+                if (a["cartellaMia"] is { } cm)
+                {
+                    var p = ((string?)cm)?.Trim();
+                    imp.CartellaMia = string.IsNullOrEmpty(p) ? null : p;
+                    try { CartellaLavori.Percorso(imp.CartellaMia); } catch (Exception e) { Registro.Errore("cartella", e); }
+                }
+                if (a["scorciatoiaSchermo"] is { } ss)
+                {
+                    imp.ScorciatoiaSchermo = string.IsNullOrWhiteSpace((string?)ss) ? null : (string)ss!;
+                    Schermata.ApplicaScorciatoia();
                 }
                 if (a["formati"] is JsonObject fo) imp.Formati = fo.ToDictionary(kv => kv.Key, kv => (string?)kv.Value ?? "");
                 if (a["scelte"] is JsonObject sc) imp.Scelte = (JsonObject)sc.DeepClone();
@@ -550,7 +574,7 @@ public sealed class Ponte
             {
                 // solo i posti che conosciamo: l'interfaccia non apre indirizzi a caso
                 var url = (string?)a["url"] ?? "";
-                if (url.StartsWith("https://it.libreoffice.org/") || url.StartsWith("https://github.com/cammo22/DaP-Convertitore"))
+                if (url.StartsWith("https://it.libreoffice.org/") || url.StartsWith("https://github.com/cammo22/"))
                     Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
                 return true;
             }
@@ -582,6 +606,37 @@ public sealed class Ponte
                     elenco.Add(new EsitoCopertina(Copertine.Genera(titolo, n, null), null, false, null).ComeDataUrl()!);
                 return elenco;
             }
+            case "cartellaMia":
+            {
+                var p = CartellaLavori.Assicura();
+                return new { percorso = p, file = CartellaLavori.Recenti(p).Select(v => new { v.Nome, v.Peso, v.Percorso }) };
+            }
+            case "apriCartellaMia":
+                Programma.Mostra(CartellaLavori.Assicura());
+                return true;
+            case "scegliCartellaMia":
+            {
+                string? scelto = null;
+                await finestra.Dispatcher.InvokeAsync(() =>
+                {
+                    var d = new Microsoft.Win32.OpenFolderDialog { Title = "Dove metto quello che faccio", InitialDirectory = CartellaLavori.Assicura() };
+                    if (d.ShowDialog(finestra) == true) scelto = d.FolderName;
+                });
+                if (scelto is null) return new { percorso = (string?)null };
+                imp.CartellaMia = scelto;
+                imp.Salva();
+                CartellaLavori.Percorso(scelto);
+                return new { percorso = scelto };
+            }
+            case "scorciatoia":
+                Schermata.ApplicaScorciatoia();
+                return true;
+            case "cattura":
+                _ = finestra.Dispatcher.BeginInvoke(() => Schermata.Cattura());
+                return true;
+            case "registra":
+                Registrazione.Alterna();
+                return new { inCorso = Registrazione.InCorso };
         }
         throw new InvalidOperationException($"Comando sconosciuto: {cmd}");
     }

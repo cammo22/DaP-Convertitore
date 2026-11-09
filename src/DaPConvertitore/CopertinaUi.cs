@@ -15,13 +15,15 @@ namespace DaP.Convertitore.App;
 public sealed class FinestraCopertina : Window
 {
     readonly string audio;
+    readonly double? fotogramma;
     readonly TaskCompletionSource<EsitoCopertina?> fatto = new();
     readonly WrapPanel varianti = new() { Margin = new Thickness(0, 8, 0, 0) };
     bool chiuso;
 
-    FinestraCopertina(string audio)
+    FinestraCopertina(string audio, double? fotogramma)
     {
         this.audio = audio;
+        this.fotogramma = fotogramma;
         Title = "Copertina";
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
@@ -33,9 +35,12 @@ public sealed class FinestraCopertina : Window
         Width = 440;
 
         var titolo = new TextBlock { Text = "Copertina", Foreground = Brushes.White, FontSize = 18, FontWeight = FontWeights.Bold };
+        var video = Copertine.VideoNelFile(audio);
         var nota = new TextBlock
         {
-            Text = "MP3, M4A e FLAC la tengono dentro il file. Gli altri: la salvo accanto, e l'originale resta com'è se qualcosa va storto.",
+            Text = video
+                ? "MP4, MOV e MKV tengono la copertina dentro (è la miniatura). Gli altri: la salvo accanto. Se qualcosa va storto, il file resta com'è."
+                : "MP3, M4A e FLAC la tengono dentro il file. Gli altri: la salvo accanto, e l'originale resta com'è se qualcosa va storto.",
             Foreground = Col("#a19db0"), FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 12),
         };
         var salva = Tasto("Salva nella cartella", true, () => _ = Salva());
@@ -43,6 +48,8 @@ public sealed class FinestraCopertina : Window
         var fila = new StackPanel { Orientation = Orientation.Horizontal };
         fila.Children.Add(salva);
         fila.Children.Add(carica);
+        if (video && fotogramma is not null)
+            fila.Children.Add(Tasto("Questo fotogramma", false, () => _ = DalFotogramma(fotogramma.Value)));
         var disegnate = new TextBlock { Text = "OPPURE UNA DISEGNATA", Foreground = Col("#ffd54a"), FontSize = 11, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 14, 0, 0) };
         var chiudi = Tasto("Chiudi", false, () => Close());
         chiudi.HorizontalAlignment = HorizontalAlignment.Right;
@@ -66,9 +73,9 @@ public sealed class FinestraCopertina : Window
         Loaded += (_, _) => _ = Disegna();
     }
 
-    public static Task<EsitoCopertina?> Mostra(Window sopra, string audio)
+    public static Task<EsitoCopertina?> Mostra(Window sopra, string audio, double? fotogramma = null)
     {
-        var w = new FinestraCopertina(audio) { Owner = sopra };
+        var w = new FinestraCopertina(audio, fotogramma) { Owner = sopra };
         w.WindowStartupLocation = WindowStartupLocation.CenterOwner;
         w.Show();
         return w.fatto.Task;
@@ -115,6 +122,20 @@ public sealed class FinestraCopertina : Window
         if (d.ShowDialog(this) != true) return;
         try { await Finisci(await Copertine.Applica(Strumenti.Trova(), audio, d.FileName)); }
         catch (Exception e) { notaErrore(e.Message); }
+    }
+
+    async Task DalFotogramma(double secondo)
+    {
+        var tmp = Path.Combine(Strumenti.CartellaTemporanea, $"frame-{Guid.NewGuid():N}.png");
+        try
+        {
+            var n = secondo.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+            var r = await Processi.Esegui(Strumenti.Trova().Ffmpeg, ["-hide_banner", "-loglevel", "error", "-y", "-ss", n, "-i", audio, "-frames:v", "1", tmp], CancellationToken.None, tieniUscita: false);
+            if (r.Codice != 0 || !File.Exists(tmp)) throw new ErroreConversione("Non ho preso il fotogramma.", r.Errori);
+            await Finisci(await Copertine.Applica(Strumenti.Trova(), audio, tmp));
+        }
+        catch (Exception e) { notaErrore(e.Message); }
+        finally { try { File.Delete(tmp); } catch { } }
     }
 
     Task Finisci(EsitoCopertina esito)

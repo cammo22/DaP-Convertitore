@@ -1,9 +1,9 @@
 // Le regolazioni di ogni formato: il pannello giusto per il formato scelto.
 
-import type { Categoria, Formato } from '../../ponte';
-import { h } from '../../util';
-import { s, eVideoVero } from '../stato';
-import { gruppo, bottoni, interruttore } from '../controlli';
+import type { Categoria, Formato, InfoFile } from '../../ponte';
+import { h, peso } from '../../util';
+import { s, eVideoVero, fileDi } from '../stato';
+import { gruppo, bottoni, interruttore, faderPeso } from '../controlli';
 import { sezioneScheda } from './scheda';
 import { regolazioniVideo } from './video';
 import { regolazioniImmagine } from './immagine';
@@ -16,6 +16,49 @@ export function regolazioni(c: Categoria, f?: Formato): Node {
     if (extra) n.append(extra);
   }
   return n;
+}
+
+/** Il brano (o il video da cui si tira l'audio) di cui si stima il peso. */
+function sorgenteAudio(): InfoFile | undefined {
+  const attivo = s.fileAttivo ? s.file.get(s.fileAttivo) : undefined;
+  if (attivo && (attivo.categoria === 'audio' || attivo.categoria === 'video')) return attivo;
+  return fileDi('audio')[0] ?? fileDi('video')[0];
+}
+
+/** Lo slider del peso finale, sempre visibile: dai byte si ricava il kbit/s (o i bit, se non si perde niente). */
+function sliderPesoAudio(senzaPerdite: boolean, kbps: number[], partenza: number) {
+  const o = s.opzioni.audio;
+  const file = sorgenteAudio();
+  const dur = file?.dettagli?.durata || 0;
+  const secondi = dur > 0 ? dur : 180;
+  const circa = dur <= 0 ? 'circa ' : '';
+  if (senzaPerdite) {
+    const canali = Math.max(1, file?.dettagli?.canali || 2);
+    const byteDi = (bit: number) => secondi * 44100 * canali * (bit / 8);
+    const min = byteDi(16);
+    const max = Math.max(min + 1, byteDi(24));
+    const bit = o.bit >= 24 ? 24 : 16;
+    const etichetta = h('div.peso-ora', null, `${circa}${peso(byteDi(bit))} · ${bit} bit`);
+    const fader = faderPeso(min, max, byteDi(bit), (b) => {
+      o.bit = b >= (min + max) / 2 ? 24 : 16;
+      etichetta.textContent = `${circa}${peso(byteDi(o.bit))} · ${o.bit} bit`;
+    }, peso(max, 0));
+    return gruppo('PESO FINALE', fader, etichetta);
+  }
+  const scala = kbps.length ? kbps : [64, 320];
+  const minK = scala[0];
+  const maxK = scala[scala.length - 1];
+  const byteDi = (k: number) => (secondi * k * 1000) / 8;
+  const attuale = o.kbps || partenza || minK;
+  const min = byteDi(minK);
+  const max = Math.max(min + 1, byteDi(maxK));
+  const etichetta = h('div.peso-ora', null, `${circa}${peso(byteDi(attuale))} · ${attuale} kbit/s`);
+  const fader = faderPeso(min, max, Math.min(max, Math.max(min, byteDi(attuale))), (b) => {
+    const k = Math.round((b * 8) / secondi / 1000);
+    o.kbps = Math.max(minK, Math.min(maxK, k));
+    etichetta.textContent = `${circa}${peso(byteDi(o.kbps))} · ${o.kbps} kbit/s`;
+  }, peso(max, 0));
+  return gruppo('PESO FINALE', fader, etichetta);
 }
 
 function corpoRegolazioni(c: Categoria, f?: Formato): Node {
@@ -33,6 +76,7 @@ function corpoRegolazioni(c: Categoria, f?: Formato): Node {
     const kbps = { '.mp3': [128, 192, 256, 320], '.m4a': [128, 192, 256, 320], '.opus': [64, 96, 128, 160, 192], '.ogg': [128, 192, 256, 320], '.wma': [128, 192, 256] }[f.estensione] ?? [];
     const partenza = { '.mp3': 256, '.m4a': 256, '.opus': 160, '.ogg': 192, '.wma': 192 }[f.estensione] ?? 0;
     return h('div.regolazioni', null,
+      sliderPesoAudio(senzaPerdite, kbps, partenza),
       senzaPerdite
         ? gruppo('PROFONDITÀ', bottoni([{ v: 16, testo: '16 bit', nota: 'CD' }, { v: 24, testo: '24 bit', nota: 'studio' }], o.audio.bit, (v) => (o.audio.bit = v)))
         : gruppo('QUALITÀ', bottoni(kbps.map((v) => ({ v, testo: `${v}`, nota: 'kbit/s' })), o.audio.kbps || partenza, (v) => (o.audio.kbps = v))),

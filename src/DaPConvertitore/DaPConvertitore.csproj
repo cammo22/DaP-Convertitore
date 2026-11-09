@@ -4,6 +4,10 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <UseWPF>true</UseWPF>
+    <!-- il vassoio (NotifyIcon). Gli using globali di Forms e Drawing pestano i piedi a WPF: si tolgono, e il vassoio li importa da sé. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- il manifesto ha già PerMonitorV2, per WPF: WinForms non deve riscriverlo -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <AssemblyName>DaPConvertitore</AssemblyName>
     <RootNamespace>DaP.Convertitore.App</RootNamespace>
     <ApplicationIcon>..\..\risorse\icona.ico</ApplicationIcon>
@@ -11,6 +15,11 @@
     <SelfContained>true</SelfContained>
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Drawing" />
+    <Using Remove="System.Windows.Forms" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />

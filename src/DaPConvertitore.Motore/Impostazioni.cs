@@ -46,6 +46,10 @@ public sealed class Impostazioni
     public bool Menu11Chiesto { get; set; }
     /// <summary>Con cosa codificare i video: "gpu" o "cpu". Vuoto = la scheda video se c'è, se no il processore.</summary>
     public string? CodificaCon { get; set; }
+    /// <summary>Dove finiscono screenshot, registrazioni e il resto che fa l'app. Vuoto = Immagini\DaPConvertitore.</summary>
+    public string? CartellaMia { get; set; }
+    /// <summary>La scorciatoia globale dello screenshot. Vuota = Ctrl+Maiusc+S.</summary>
+    public string? ScorciatoiaSchermo { get; set; }
     /// <summary>L'ultimo formato scelto per ogni categoria ("video" → "video.mp4").</summary>
     public Dictionary<string, string> Formati { get; set; } = [];
     /// <summary>Le ultime scelte dell'interfaccia (codec, qualità, motore…), tali e quali.</summary>

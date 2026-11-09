@@ -100,6 +100,7 @@ public sealed class FinestraAvatar : Window
     double angolo;                  // quanto è girato, in radianti (0 = di fronte)
     MenuAvatar? menu;
     MiniPlayer? player;
+    MiniVideo? video;
     Cronometro? cronometro;
     ScegliPersonaggio? scelta;
     public event Action? Spostato;
@@ -308,6 +309,9 @@ public sealed class FinestraAvatar : Window
         m.Items.Add(new Separator());
         m.Items.Add(Voce("Apri DaP Convertitore", () => Regia.Gestisci(new Richiesta(null, [], true))));
         m.Items.Add(new Separator());
+        m.Items.Add(Voce("Screenshot", Schermata.Cattura));
+        m.Items.Add(Voce(Registrazione.InCorso ? "Ferma la registrazione" : "Registra lo schermo", Registrazione.Alterna));
+        m.Items.Add(new Separator());
         m.Items.Add(Voce("Nascondi l'avatar", () => Regia.Avatar(false)));
         m.IsOpen = true;
     }
@@ -317,8 +321,9 @@ public sealed class FinestraAvatar : Window
     void Chiedi(IReadOnlyList<string> file)
     {
         if (file.Count == 0) return;
-        // solo musica: parte subito, col suo piccolo player sull'avatar, senza aprire l'app (foto e video si aprono come sempre)
+        // musica e video partono subito, col loro piccolo player sull'avatar, senza aprire l'app
         if (file.All(f => File.Exists(f) && Catalogo.CategoriaDi(f) == Categoria.Audio)) { RiproduciMusica(file); return; }
+        if (file.All(f => File.Exists(f) && Catalogo.CategoriaDi(f) == Categoria.Video)) { RiproduciVideo(file); return; }
         ApriFumetto(file);
     }
 
@@ -329,7 +334,8 @@ public sealed class FinestraAvatar : Window
         menu = new MenuAvatar(file, this);
         // il player (se c'è) si nasconde, ma la musica va avanti; quando si torna indietro riappare
         player?.Hide();
-        menu.Closed += (_, _) => { menu = null; player?.Show(); };
+        video?.Hide();
+        menu.Closed += (_, _) => { menu = null; player?.Show(); video?.Show(); };
         menu.Show();
     }
 
@@ -337,11 +343,24 @@ public sealed class FinestraAvatar : Window
     public void RiproduciMusica(IReadOnlyList<string> brani)
     {
         player?.Close();
+        video?.Close();
         menu?.Close();
         player = new MiniPlayer(brani, this);
         player.Closed += (_, _) => { player = null; this.Suona("idle", true); };
         player.StatoCambiato += (inRiproduzione) => this.Suona(inRiproduzione ? "attento" : "idle", true);
         player.Show();
+    }
+
+    /// <summary>Fa partire il video sul piccolo player attaccato all'avatar.</summary>
+    public void RiproduciVideo(IReadOnlyList<string> filmati)
+    {
+        video?.Close();
+        player?.Close();
+        menu?.Close();
+        video = new MiniVideo(filmati, this);
+        video.Closed += (_, _) => { video = null; this.Suona("idle", true); };
+        video.StatoCambiato += (inRiproduzione) => this.Suona(inRiproduzione ? "attento" : "idle", true);
+        video.Show();
     }
 
     /// <summary>Il cronometro dal tasto destro: se c'è lo chiude, se no lo apre e lo fa partire.</summary>

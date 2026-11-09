@@ -64,6 +64,13 @@ public static class Regia
     /// <summary>Dal convertitore al lettore.</summary>
     public static void ApriNelLettore(string percorso) => Gestisci(new Richiesta(null, [percorso], false, true));
 
+    /// <summary>Dal vassoio: la finestra del convertitore, aperta sulle impostazioni.</summary>
+    public static void ApriImpostazioni()
+    {
+        Gestisci(new Richiesta(null, [], true));
+        convertitore?.Ponte.ApriImpostazioni();
+    }
+
     /// <summary>L'avatar sul desktop: acceso o spento (e ricordato). Finché c'è, il programma resta aperto anche senza finestre.</summary>
     /// <summary>L'avatar si è acceso o spento (da dove sia successo): la pagina aggiorna il suo simbolo.</summary>
     public static event Action<bool>? AvatarCambiato;

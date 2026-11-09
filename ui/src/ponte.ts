@@ -82,6 +82,10 @@ export interface Impostazioni {
   gruppiPredefiniti?: string[] | null;
   /** Con cosa codificare i video: la scheda o il processore. Si ricorda. */
   codificaCon?: 'gpu' | 'cpu' | null;
+  /** Cartella dove finiscono screenshot, registrazioni e il resto che fa l'app. Vuota = Immagini/DaPConvertitore. */
+  cartellaMia?: string | null;
+  /** Scorciatoia globale dello screenshot, per esempio «Ctrl+Maiusc+S». */
+  scorciatoiaSchermo?: string | null;
   formati: Record<string, string>;
   scelte?: Record<string, unknown> | null;
 }

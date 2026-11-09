@@ -76,6 +76,11 @@ public static class Media
     {
         if (dentro)
         {
+            // un video: solo la copertina allegata, non un fotogramma del film
+            if (Copertine.VideoNelFile(percorso))
+                return await Copertine.ProvaAllegata(s, percorso, lato, silenzioso);
+            var allegata = await Copertine.ProvaAllegata(s, percorso, lato, silenzioso: true);
+            if (allegata is not null) return allegata;
             var jpg = Path.Combine(Strumenti.CartellaTemporanea, $"copertina-{Guid.NewGuid():N}.jpg");
             try
             {

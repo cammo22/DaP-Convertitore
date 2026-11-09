@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
+using DaP.Convertitore.Lettore;
 using Windows.Graphics.Imaging;
 
 namespace DaP.Convertitore;
@@ -23,6 +24,8 @@ public static class Anteprime
             {
                 case Categoria.Video:
                 {
+                    var cover = await Copertine.ProvaAllegata(s, percorso, (int)lato);
+                    if (cover is not null) return new Anteprima(cover, "image/jpeg");
                     var jpg = Path.Combine(Strumenti.CartellaTemporanea, $"anteprima-{Guid.NewGuid():N}.jpg");
                     try
                     {

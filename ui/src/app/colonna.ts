@@ -21,7 +21,6 @@ export interface Colonna {
 const LATO_FIGURINA = 160;
 const LATO_GRANDE = 720;
 /** Quanto dura il «tic» di suono quando il cursore scorre su un brano senza che tu abbia cliccato. */
-const SUONO_BREVE_MS = 260;
 const SALTO = 5;
 
 export function creaColonna(apri: () => void, pronto: () => void = () => {}): Colonna {
@@ -39,13 +38,16 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
   const bPlay = h('button.cl-play', { type: 'button', title: 'Play / pausa', html: icone.play, onclick: () => alterna() });
   const tempoSuono = h('div.cl-tempo', null, '—');
   const vol = h<HTMLInputElement>('input.cl-vol', { type: 'range', min: '0', max: '1', step: '0.01', value: '1', 'aria-label': 'Volume' });
-  vol.addEventListener('input', () => { if (audio) audio.volume = +vol.value; });
+  const audioEl = h<HTMLAudioElement>('audio.cl-audio', { preload: 'auto' });
+  audioEl.hidden = true;
+  vol.addEventListener('input', () => { audioEl.volume = +vol.value; });
   const suono = h('div.cl-suono', null,
     bPlay,
     tempoSuono,
     h('div.cl-vol-etichetta', null, 'VOLUME'),
-    vol);
-  const el = h('div.ap-colonna', null, grande, strisce, suono);
+    vol,
+    audioEl);
+  const el = h('div.ap-colonna', null, grande, suono, strisce);
 
   let gettone = 0;                              // cambia a ogni file: le risposte in ritardo si scartano
   let file: InfoFile | null = null;
@@ -63,13 +65,13 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
   let scrub: 'video' | 'foto' | 'audio' | 'muto' | null = null;
   let audio: HTMLAudioElement | null = null;
   let suona = false;                            // il clic ha fatto partire la riproduzione
+  let vuoleSuonare = false;                     // play premuto prima che il file sia pronto
   let posizione = 0;                            // secondi
   let ultimaRichiesta = -1;
   let inVolo = false;
   let pendenteFoto: number | null = null;
   let pendenteSeek: number | null = null;
   let rafSeek = 0;
-  let spegniSuono = 0;
   let ondaPiena = false;                        // l'onda intera del brano è arrivata
   const durataTot = () => (indice?.tipo === 'tempo' ? indice.totale : 0);
   const media = (): HTMLMediaElement | null => (scrub === 'video' ? video : scrub === 'audio' ? audio : null);
@@ -92,7 +94,7 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
 
   function mostraPosizione(t: number) {
     const tot = durataTot();
-    if (!tot) return;
+    if (!tot) { posizione = Math.max(0, t); tempoSuono.textContent = durata(posizione); return; }
     posizione = Math.max(0, Math.min(tot, t));
     const p = `${((posizione / tot) * 100).toFixed(2)}%`;
     riempi.style.width = p;
@@ -110,7 +112,7 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
   }
 
   /** Il fotogramma (o il punto del brano) di quel secondo: se ne chiede uno solo per volta, conta l'ultimo. */
-  function vaiA(t: number, suonoBreve: boolean) {
+  function vaiA(t: number) {
     mostraPosizione(t);
     if (scrub === 'video' || scrub === 'audio') {
       pendenteSeek = posizione;
@@ -124,12 +126,7 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
         pendenteSeek = null;
       });
       if (scrub === 'video') { video.hidden = false; img.hidden = true; segnaposto.hidden = true; }
-      if (scrub === 'audio' && suonoBreve && !suona && audio) {
-        // si sente il punto dove sta il cursore, poi tace da solo
-        if (audio.paused) void audio.play().catch(() => {});
-        clearTimeout(spegniSuono);
-        spegniSuono = window.setTimeout(() => { if (!suona) audio?.pause(); }, SUONO_BREVE_MS);
-      }
+      // l'audio non si sente passando il cursore: ci si sposta dalla timeline, e si sente solo col play
     } else if (scrub === 'foto') {
       pendenteFoto = posizione;
       void pompaFoto();
@@ -156,10 +153,10 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
 
   function parti(t: number) {
     const m = media();
-    if (!m) return;
+    if (!m) { vuoleSuonare = true; return; }
+    vuoleSuonare = false;
     suona = true;
     bPlay.innerHTML = icone.pausa;
-    clearTimeout(spegniSuono);
     m.muted = false;
     try { m.currentTime = t; } catch { /* sotto */ }
     mostraPosizione(t);
@@ -171,25 +168,24 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
   function pausa() {
     suona = false;
     bPlay.innerHTML = icone.play;
-    clearTimeout(spegniSuono);
     media()?.pause();
     figura.classList.remove('suona');
     barra.classList.remove('suona');
     mostraPosizione(posizione);
   }
 
-  const alterna = (t = posizione) => { if (suona) pausa(); else parti(t); };
+  const alterna = (t = posizione) => { if (suona) { vuoleSuonare = false; pausa(); } else parti(t); };
 
   function spegniMedia() {
     suona = false;
     bPlay.innerHTML = icone.play;
-    clearTimeout(spegniSuono);
     cancelAnimationFrame(rafSeek);
     rafSeek = 0;
     pendenteSeek = null;
     pendenteFoto = null;
     ultimaRichiesta = -1;
-    for (const m of [video, audio]) if (m) { m.pause(); m.removeAttribute('src'); m.load(); }
+    vuoleSuonare = false;
+    for (const m of [video, audioEl]) { m.pause(); m.removeAttribute('src'); m.load(); }
     audio = null;
     scrub = null;
     ondaPiena = false;
@@ -202,15 +198,19 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
 
   /** Il file vero per il tag video/audio: se la pagina lo suona lo scrub è al volo, se no resta quello di FFmpeg. */
   async function preparaScrub(f: InfoFile, g: number) {
-    scrub = f.categoria === 'video' ? 'foto' : 'muto';
+    const eAudio = f.categoria === 'audio';
+    scrub = eAudio ? 'audio' : 'foto';
     barra.hidden = false;
-    testina.hidden = f.categoria !== 'audio';
-    figura.classList.add('scorre');
-    figura.classList.toggle('onda', f.categoria === 'audio');
-    mostraPosizione(indice!.punti[0] ?? 0);
+    testina.hidden = true;
+    figura.classList.toggle('scorre', !eAudio);
+    figura.classList.toggle('onda', eAudio);
+    mostraPosizione(eAudio ? 0 : (indice!.punti[0] ?? 0));
     let fonte: string | null = null;
     try { fonte = (await chiedi<{ url: string | null }>('fonteAnteprima', { id: f.id })).url; } catch { /* resta com'è */ }
-    if (g !== gettone || !fonte) return;
+    if (g !== gettone || !fonte) {
+      if (eAudio && g === gettone) tempoSuono.textContent = 'non si sente';
+      return;
+    }
     if (f.categoria === 'video') {
       video.onloadeddata = () => { if (g === gettone && scrub === 'foto') { scrub = 'video'; } };
       video.onerror = () => { if (g === gettone && scrub === 'video') { scrub = 'foto'; video.hidden = true; img.hidden = false; } };
@@ -218,15 +218,27 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
       video.onended = () => { if (g === gettone) pausa(); };
       video.src = fonte;
     } else {
-      const a = new Audio();
+      const a = audioEl;
       a.preload = 'auto';
       a.volume = +vol.value;
       audio = a;
-      a.onloadedmetadata = () => { if (g === gettone && audio === a) scrub = 'audio'; };
-      a.onerror = () => { if (g === gettone && audio === a) { scrub = 'muto'; suona = false; } };
+      scrub = 'audio';
+      const pronto = () => {
+        if (g !== gettone || audio !== a) return;
+        scrub = 'audio';
+        if (isFinite(a.duration) && a.duration > 0 && indice) {
+          indice.totale = a.duration;
+          mostraPosizione(Math.min(posizione, a.duration));
+        }
+        if (vuoleSuonare) parti(posizione);
+      };
+      a.onloadedmetadata = pronto;
+      a.oncanplay = pronto;
+      a.onerror = () => { if (g === gettone && audio === a) { scrub = 'muto'; suona = false; vuoleSuonare = false; tempoSuono.textContent = 'non si sente'; } };
       a.ontimeupdate = () => { if (g === gettone && suona && audio === a) mostraPosizione(a.currentTime); };
       a.onended = () => { if (g === gettone && audio === a) pausa(); };
       a.src = fonte;
+      if (a.readyState >= 1) pronto();
       // l'onda di tutto il brano: il cursore ci scorre sopra
       try {
         const r = await chiedi<{ url: string | null }>('scrubAnteprima', { id: f.id, lato: LATO_GRANDE });
@@ -279,7 +291,7 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
     etichetta.textContent = didascalia(n);
     if (indice.tipo === 'tempo') {
       // video e brani: la figurina porta il cursore in quel punto (se sta suonando, la riproduzione prosegue da lì)
-      if (scrub === 'video' || (scrub === 'audio' && ondaPiena)) { if (suona) { parti(indice.punti[n]); } else vaiA(indice.punti[n], false); return; }
+      if (scrub === 'video' || (scrub === 'audio' && ondaPiena)) { if (suona) { parti(indice.punti[n]); } else vaiA(indice.punti[n]); return; }
       mostraPosizione(indice.punti[n]);
       if (scrub === 'audio' || (scrub === 'muto' && ondaPiena)) return;
     }
@@ -302,23 +314,39 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
     else if ((e.key === ' ' || e.key === 'Enter') && indice.tipo === 'tempo' && media()) { e.preventDefault(); alterna(); }
   });
 
-  // ——— il cursore sulla figura e sulla barra: scorre; il clic riproduce ———
+  // ——— il cursore sulla figura e sulla barra: il video scorre; l'audio no (ci si sposta dalla timeline) ———
   const puoScorrere = () => !!indice && indice.tipo === 'tempo' && !!scrub && scrub !== 'muto';
-  figura.addEventListener('pointermove', (e) => { if (puoScorrere() && !suona) vaiA(tempoDa(e, figura), true); });
-  barra.addEventListener('pointermove', (e) => { if (puoScorrere() && !suona) vaiA(tempoDa(e, barra), true); });
-  figura.addEventListener('pointerleave', () => { if (!suona) { clearTimeout(spegniSuono); audio?.pause(); } });
-  barra.addEventListener('pointerleave', () => { if (!suona) { clearTimeout(spegniSuono); audio?.pause(); } });
+  let tiraAudio = false;
+  figura.addEventListener('pointermove', (e) => { if (scrub === 'audio' || !puoScorrere() || suona) return; vaiA(tempoDa(e, figura)); });
+  barra.addEventListener('pointerdown', (e) => {
+    if (file?.categoria !== 'audio') return;
+    tiraAudio = true;
+    barra.setPointerCapture(e.pointerId);
+    vaiA(tempoDa(e, barra));
+    if (suona) parti(tempoDa(e, barra));
+  });
+  barra.addEventListener('pointermove', (e) => {
+    if (file?.categoria === 'audio') { if (tiraAudio) { const t = tempoDa(e, barra); if (suona) parti(t); else vaiA(t); } return; }
+    if (puoScorrere() && !suona) vaiA(tempoDa(e, barra));
+  });
+  barra.addEventListener('pointerup', () => { tiraAudio = false; });
+  figura.addEventListener('pointerleave', () => { if (!suona && scrub !== 'audio') audio?.pause(); });
+  barra.addEventListener('pointerleave', () => { if (!suona && scrub !== 'audio') audio?.pause(); });
   figura.addEventListener('click', (e) => {
-    // dove si può suonare il clic fa partire (o ferma) la riproduzione; altrimenti apre il lettore come prima
+    // l'audio: il clic sulla figura fa play/pausa. Il video, dove si può suonare, parte dal punto. Altrimenti si apre il lettore.
+    if (file?.categoria === 'audio') { alterna(); return; }
     if (indice?.tipo === 'tempo' && media()) { if (suona) pausa(); else parti(tempoDa(e, figura)); }
     else apri();
   });
-  figura.addEventListener('dblclick', () => { if (indice?.tipo === 'tempo' && media()) { pausa(); apri(); } });
-  barra.addEventListener('click', (e) => { if (puoScorrere() && media()) parti(tempoDa(e, barra)); });
+  figura.addEventListener('dblclick', () => { if (indice?.tipo === 'tempo' && (media() || file?.categoria === 'audio')) { pausa(); apri(); } });
+  barra.addEventListener('click', (e) => {
+    if (file?.categoria === 'audio') return;
+    if (puoScorrere() && media()) parti(tempoDa(e, barra));
+  });
   barra.addEventListener('keydown', (e) => {
     if (!puoScorrere()) return;
     const passo = e.shiftKey ? 30 : SALTO;
-    const vai = (t: number) => { e.preventDefault(); if (suona) parti(t); else vaiA(t, true); };
+    const vai = (t: number) => { e.preventDefault(); if (suona) parti(t); else vaiA(t); };
     if (e.key === 'ArrowRight') vai(posizione + passo);
     else if (e.key === 'ArrowLeft') vai(posizione - passo);
     else if (e.key === 'Home') vai(0);
@@ -367,6 +395,9 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
       inCorso = false;
       file = f;
       el.classList.toggle('audio', f.categoria === 'audio');
+      figura.title = f.categoria === 'audio'
+        ? 'Clic: play o pausa. La timeline sotto sposta il punto, senza far sentire il passaggio.'
+        : 'Passa il cursore: scorre. Clic: riproduce. Doppio clic: apre nel lettore';
       bPlay.innerHTML = icone.play;
       tempoSuono.textContent = '—';
       indice = null;
@@ -386,10 +417,11 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
           if (g !== gettone) return;
           // un brano non ha i pezzi nel tempo: si ascolta da qui, con play, posizione e volume
           if (f.categoria === 'audio') {
-            indice = i;
+            // anche se la durata letta è zero: il tag audio, quando è pronto, dice quanto dura davvero
+            indice = i.tipo === 'tempo' ? i : { tipo: 'tempo', voci: 1, totale: f.dettagli?.durata || 0, punti: [0] };
             tipoDescritto = 'si ascolta da qui';
             strisce.replaceChildren();
-            if (i.tipo === 'tempo') void preparaScrub(f, g);
+            void preparaScrub(f, g);
             pronto();
             return;
           }
@@ -398,7 +430,18 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
           void scegli(0);
           pronto();
         })
-        .catch(() => { if (g !== gettone) return; costruisci({ tipo: 'singola', voci: 1, totale: 1, punti: [0] }); void scegli(0); pronto(); });
+        .catch(() => {
+          if (g !== gettone) return;
+          if (f.categoria === 'audio') {
+            indice = { tipo: 'tempo', voci: 1, totale: f.dettagli?.durata || 0, punti: [0] };
+            void preparaScrub(f, g);
+            pronto();
+            return;
+          }
+          costruisci({ tipo: 'singola', voci: 1, totale: 1, punti: [0] });
+          void scegli(0);
+          pronto();
+        });
     },
   };
 }

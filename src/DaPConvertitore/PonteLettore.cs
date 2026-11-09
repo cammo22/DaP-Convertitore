@@ -346,7 +346,13 @@ public sealed class PonteLettore
             case "taglia":
             {
                 var p = P(a);
-                var nuovo = await Modifiche.TagliaVideo(strumenti, p, a["da"]!.GetValue<double>(), a["a"]!.GetValue<double>());
+                string nuovo;
+                if (a["pezzi"] is JsonArray arr && arr.Count > 0)
+                {
+                    var pezzi = arr.Select(x => (x!["da"]!.GetValue<double>(), x["a"]!.GetValue<double>())).ToList();
+                    nuovo = await Modifiche.TagliaPezzi(strumenti, p, pezzi);
+                }
+                else nuovo = await Modifiche.TagliaVideo(strumenti, p, a["da"]!.GetValue<double>(), a["a"]!.GetValue<double>());
                 return new { percorso = nuovo, nome = Path.GetFileName(nuovo) };
             }
             case "ruotaPdf":
@@ -416,6 +422,21 @@ public sealed class PonteLettore
                 for (var n = 2; File.Exists(uscita); n++) uscita = $"{radice} {n}.png";
                 await File.WriteAllBytesAsync(uscita, b);
                 return uscita;
+            }
+            case "copertinaPng":
+            {
+                var p = P(a);
+                var dati = (string?)a["png"] ?? "";
+                var b = Convert.FromBase64String(dati[(dati.IndexOf(',') + 1)..]);
+                var tmp = Path.Combine(Strumenti.CartellaTemporanea, $"frame-{Guid.NewGuid():N}.png");
+                await File.WriteAllBytesAsync(tmp, b);
+                try
+                {
+                    var esito = await Copertine.Applica(strumenti, p, tmp);
+                    schede.Remove(p);
+                    return new { copertina = esito.ComeDataUrl(), dentro = esito.Dentro, nota = esito.Nota };
+                }
+                finally { try { File.Delete(tmp); } catch { } }
             }
             case "salvaCopertina":
             {

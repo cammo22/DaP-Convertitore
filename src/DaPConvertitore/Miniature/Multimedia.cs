@@ -29,7 +29,8 @@ public static class Multimedia
         if (info is null) return null;
         var durata = info.Durata;
         var t = durata > 4 ? durata * 0.1 : 0;
-        var img = Tela.Immagine(Fotogramma(s, percorso, L, t)) ?? (t > 0 ? Tela.Immagine(Fotogramma(s, percorso, L, 0)) : null);
+        byte[]? prima = info.IndiceCopertina >= 0 ? Aspetta(() => Copertine.EstraiAllegata(s, percorso, info.IndiceCopertina, L, silenzioso: true)) : null;
+        var img = Tela.Immagine(prima) ?? Tela.Immagine(Fotogramma(s, percorso, L, t)) ?? (t > 0 ? Tela.Immagine(Fotogramma(s, percorso, L, 0)) : null);
         if (img is null) return null;
 
         var scala = (double)L / Math.Max(img.PixelWidth, img.PixelHeight);

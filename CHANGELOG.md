@@ -8,9 +8,19 @@ Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 - **«Di seguito» si chiama «Riproduci coda».**
 - **Il fulmine non sta più nella barra del lettore.** Le conversioni rapide restano col tasto U.
 - **Info del file**, nella colonna di mezzo, in una sezione che si apre e si chiude. Per la musica: titolo, artista, album, anno, traccia, copertina. Per il video (MP4, MOV, MKV): titolo e commento. Per la foto (JPG e TIFF): data dello scatto, descrizione, autore. Quello che scrivi finisce **nel file convertito**; l'originale resta com'è. Se il formato non le tiene, la sezione lo dice.
-- **L'anteprima di un brano** non ha più la colonna dei pezzi nel tempo: al suo posto ci sono play, pausa, la posizione e il volume. Video, foto e PDF restano come prima.
-- **Novità**, sulla barra bianca, è scura e si legge. Le icone della barra stanno scure, perché la barra è sempre bianca.
-- **Una bolla sola** al posto delle due (scheda video e processore). Il clic passa da GPU a CPU, si vede quella scelta e la prossima volta è ancora lì.
+- **L'anteprima di un brano** ha play e pausa, il volume e una timeline, tutti sotto la copertina e l'onda. Il play parte anche quando la durata letta è zero: la dice il brano stesso, appena è pronto. La timeline sposta il punto; non fa sentire il passaggio sotto il cursore. Video, foto e PDF si scorrono come prima.
+- **Il peso finale** dell'audio si vede sempre, con lo slider, anche se il formato non perde niente. I tasti dei kbit/s restano, come scorciatoie.
+- **Le carte dei formati e la colonna Sorgente** sono più piccole, così entra più schermo.
+- **Novità**, sulla barra bianca, è scura e si legge. La testata resta ferma e il testo scorre sotto, senza finirci dentro. Un link scritto come in markdown (per esempio DaProd Editor Video) diventa un link vero. Le icone della barra stanno scure, perché la barra è sempre bianca.
+- **Impostazioni** ha la stessa testata, ferma, ed è larga: due colonne, così sta in una schermata.
+- **La bolla in alto** elenca le schede video che sanno codificare e il processore. Si sceglie da lì, e la bolla mostra quella scelta. La prossima volta è ancora lì.
+- **Chiudi**, nel menu della copertina, è un tasto come gli altri, non un tondo schiacciato.
+- **Un video sull'avatar** parte come la musica, nella finestrella. Se Windows non lo sa suonare, lo apre il lettore. Da lì, e dal lettore intero, si mette la copertina: un fotogramma, un'immagine, o una disegnata. Su MP4, MOV e MKV entra nel file (è la miniatura, anche per Esplora file e per le icone di DaP). Il video vero non si ricodifica.
+- **I tagli del video**, nel lettore: una striscia sotto la timeline. 1 taglia in quel punto, 2 toglie il pezzo, Q accorcia la testa, W la coda, e si riordinano trascinandoli. Salva li mette accanto, col nome «(tagliato)». L'originale non si tocca. Z e X, per un pezzo solo, restano.
+- **La cartella DaPConvertitore** sta in Immagini. Ci finiscono screenshot e registrazioni. Si crea all'avvio se manca, e all'installazione. Dalle Impostazioni si vede, si apre e si può cambiare.
+- **L'icona nell'area di notifica**, finché l'app è aperta: Apri, Screenshot, Registra lo schermo, Impostazioni, Esci.
+- **Lo screenshot** (Ctrl+Maiusc+S, e si cambia dalle Impostazioni): lo schermo si scurisce, si sceglie la zona o la finestra sotto il cursore, si vedono le misure e la lente, poi il PNG va nella cartella, negli appunti e in un'anteprima in basso a destra. Esc annulla.
+- **Registra lo schermo** (dal vassoio o dal menu dell'avatar): lo schermo principale e, se c'è, il microfono. Si ferma con lo stesso comando. Il file è un MP4 nella cartella. Non è il montaggio di DaProd Editor Video: niente scelta della zona, solo lo schermo intero del monitor principale.
 
 ## 2.2.8 — 9 novembre 2026
 

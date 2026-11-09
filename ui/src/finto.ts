@@ -116,7 +116,7 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
         regolaPredefiniti: { supportata: true, attiva: false, diAltri: false, impostati: 0, totale: 40 },
         apriConGruppi: [{ id: 'Video', nome: 'Video', esempi: '.mp4 .mkv .mov' }, { id: 'Audio', nome: 'Audio', esempi: '.mp3 .flac .wav' }, { id: 'Immagine', nome: 'Immagine', esempi: '.jpg .png .heic' }, { id: 'Pdf', nome: 'Documento PDF', esempi: '.pdf' }],
         categorie: [{ id: 'video', nome: 'Video' }, { id: 'audio', nome: 'Audio' }, { id: 'immagine', nome: 'Immagini' }, { id: 'pdf', nome: 'PDF' }, { id: 'documento', nome: 'Documenti' }, { id: 'testo', nome: 'Testi' }, { id: 'archivio', nome: 'Archivi' }],
-        impostazioni: { scritta: 'convertito', menu: true, alMassimo: false, suoniAccesi: false, apriCartella: false, cestinoDaSolo: false, apriCon: true, menu11Chiesto: false, formati: {}, codificaCon },
+        impostazioni: { scritta: 'convertito', menu: true, alMassimo: false, suoniAccesi: false, apriCartella: false, cestinoDaSolo: false, apriCon: true, menu11Chiesto: false, formati: {}, codificaCon, scorciatoiaSchermo: 'Ctrl+Maiusc+S' },
         modo,
         file: modo === 'rapido' ? [esempi[0]] : esempi,
         lavori: [],
@@ -175,9 +175,18 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
       if (c === 'video' || c === 'audio') return { tipo: 'tempo', voci: 12, totale: 240, punti: Array.from({ length: 12 }, (_, n) => 10 + n * 20) };
       return { tipo: 'singola', voci: 1, totale: 1, punti: [0] };
     }
+    case 'novita':
+      return {
+        versione: '2.2.8', nuova: false,
+        testo: '- **Le icone dei file sono rifatte.** A 16 pixel si leggono.\n- In arrivo, senza fretta: i tagli piccoli. Il montaggio vero resta [DaProd Editor Video](https://github.com/cammo22/DaProdEditorVideo). I dettagli sono in `docs/ROADMAP.md`.',
+      };
     case 'impostazioni':
       if (args.codificaCon === 'gpu' || args.codificaCon === 'cpu') codificaCon = args.codificaCon;
       return true;
+    case 'cartellaMia':
+      return { percorso: 'C:\\Users\\cammo\\Pictures\\DaPConvertitore', file: [{ nome: 'schermo.png', peso: 120000, percorso: 'C:\\Users\\cammo\\Pictures\\DaPConvertitore\\schermo.png' }] };
+    case 'scegliCartellaMia':
+      return { percorso: 'D:\\DaP' };
     case 'schedaFile': {
       const file = esempi.find((e) => e.id === args.id);
       const est = formati.find((x) => x.id === args.formato)?.estensione ?? '';

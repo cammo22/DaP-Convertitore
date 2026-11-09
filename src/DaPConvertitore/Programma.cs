@@ -58,7 +58,7 @@ public static class Programma
         // Velopack per primo: installazione, aggiornamento e disinstallazione passano da qui e finiscono subito
         VelopackApp.Build()
             .SetAppUserModelId(MenuContestuale.Aumid)
-            .OnAfterInstallFastCallback(_ => { Registra(); RegistraWindows11(); RegistraApriCon(); })
+            .OnAfterInstallFastCallback(_ => { Registra(); RegistraWindows11(); RegistraApriCon(); try { CartellaLavori.Assicura(); } catch { } })
             .OnAfterUpdateFastCallback(_ =>
             {
                 var imp = Impostazioni.Carica();
@@ -95,8 +95,11 @@ public static class Programma
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         app.DispatcherUnhandledException += (_, e) => { Registro.Errore("interfaccia", e.Exception); e.Handled = true; };
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Registro.Errore("app", (Exception)e.ExceptionObject);
-        app.Exit += (_, _) => Aggiornamenti.AllaChiusura();
+        app.Exit += (_, _) => { Vassoio.Chiudi(); Aggiornamenti.AllaChiusura(); };
         Regia.Avvia(app);
+        try { CartellaLavori.Assicura(); } catch (Exception e) { Registro.Errore("cartella", e); }
+        Vassoio.Avvia(app);
+        Schermata.Avvia();
         if (!soloAvatar) Regia.Gestisci(richiesta);
         if (soloAvatar || Impostazioni.Comune.AvatarAttivo) Regia.Avatar(true);
         Aggiornamenti.Avvia(); // guarda le release in silenzio, all'avvio e poi ogni qualche ora

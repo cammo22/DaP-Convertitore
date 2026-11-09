@@ -74,9 +74,15 @@ public static class Copertine
 
     static string G(params string[] righe) => string.Concat(righe);
 
-    /// <summary>MP3, M4A e FLAC tengono la copertina dentro il file. Gli altri no.</summary>
-    public static bool DentroIlFile(string percorso) =>
-        Path.GetExtension(percorso).ToLowerInvariant() is ".mp3" or ".m4a" or ".flac";
+    static string Est(string percorso) => Path.GetExtension(percorso).ToLowerInvariant();
+
+    /// <summary>MP3, M4A e FLAC tengono la copertina dentro, come un video MP4, MOV o MKV (attached_pic).</summary>
+    public static bool AudioNelFile(string percorso) => Est(percorso) is ".mp3" or ".m4a" or ".flac";
+
+    /// <summary>MP4, MOV e MKV: la copertina è un fotogramma allegato, quello che Esplora file e i lettori usano come miniatura.</summary>
+    public static bool VideoNelFile(string percorso) => Est(percorso) is ".mp4" or ".m4v" or ".mov" or ".mkv";
+
+    public static bool DentroIlFile(string percorso) => AudioNelFile(percorso) || VideoNelFile(percorso);
 
     /// <summary>«Brano (copertina).jpg», poi «(copertina 2)», «(copertina 3)»… non si scrive mai sopra un file che c'è già.</summary>
     public static string NomeLibero(string cartella, string radice, string estensione)
@@ -106,9 +112,10 @@ public static class Copertine
     /// </summary>
     public static async Task ScriviNelFile(Strumenti s, string audio, string immagine, CancellationToken ct = default)
     {
-        if (!DentroIlFile(audio)) throw new ErroreConversione("Solo MP3, M4A e FLAC tengono la copertina dentro il file.");
+        if (!DentroIlFile(audio)) throw new ErroreConversione("Questo formato non tiene la copertina dentro il file.");
         if (!File.Exists(immagine)) throw new ErroreConversione("L'immagine non c'è.");
-        var est = Path.GetExtension(audio).ToLowerInvariant();
+        if (VideoNelFile(audio)) { await ScriviNelVideo(s, audio, immagine, ct); return; }
+        var est = Est(audio);
         var bozza = Nomi.Bozza(audio);
         try
         {
@@ -133,6 +140,74 @@ public static class Copertine
         finally { try { if (File.Exists(bozza)) File.Delete(bozza); } catch { } }
     }
 
+    /// <summary>
+    /// La copertina di un video: un fotogramma allegato (attached_pic), copiando il film così com'è.
+    /// Esplora file e i lettori la usano come miniatura. La bozza prende il posto del file solo alla fine.
+    /// </summary>
+    static async Task ScriviNelVideo(Strumenti s, string video, string immagine, CancellationToken ct)
+    {
+        var info = await Sonda.Leggi(s, video, ct);
+        if (info.Video is null || info.VideoVeri < 1) throw new ErroreConversione("In questo file non c'è un video.");
+        var veri = info.VideoVeri;
+        var est = Est(video);
+        var bozza = Nomi.Bozza(video);
+        try
+        {
+            var a = new List<string>
+            {
+                "-hide_banner", "-loglevel", "error", "-y", "-i", video, "-i", immagine,
+                "-map", "0:V", "-map", "1:0",
+            };
+            if (info.Audio.Count > 0) a.AddRange(["-map", "0:a?"]);
+            if (info.Sottotitoli.Count > 0) a.AddRange(["-map", "0:s?"]);
+            // niente «-frames» sul video copiato: con +faststart FFmpeg 6 si teneva solo la copertina e perdeva il film
+            for (var i = 0; i < veri; i++) a.AddRange(["-c:v:" + i, "copy", "-disposition:v:" + i, "default"]);
+            a.AddRange(["-c:v:" + veri, "mjpeg", "-disposition:v:" + veri, "attached_pic"]);
+            a.AddRange(["-metadata:s:v:" + veri, "title=Cover", "-metadata:s:v:" + veri, "comment=Cover (front)"]);
+            if (info.Audio.Count > 0) a.AddRange(["-c:a", "copy"]);
+            if (info.Sottotitoli.Count > 0) a.AddRange(["-c:s", "copy"]);
+            a.AddRange(["-map_metadata", "0", "-map_chapters", "0"]);
+            if (est is ".mp4" or ".m4v" or ".mov") a.AddRange(["-movflags", "+faststart"]);
+            a.AddRange(["-f", est == ".mkv" ? "matroska" : est == ".mov" ? "mov" : "mp4", bozza]);
+            var r = await Processi.Esegui(s.Ffmpeg, a, ct, tieniUscita: false);
+            if (r.Codice != 0 || !File.Exists(bozza) || new FileInfo(bozza).Length == 0)
+                throw new ErroreConversione("Non sono riuscito a mettere la copertina nel video.", r.Errori);
+            var creato = File.GetCreationTime(video);
+            Modifiche.Sposta(bozza, video);
+            try { File.SetCreationTime(video, creato); } catch { /* la data non è il punto */ }
+        }
+        finally { try { if (File.Exists(bozza)) File.Delete(bozza); } catch { } }
+    }
+
+    /// <summary>Il fotogramma allegato, se c'è. È la miniatura, non un fotogramma a caso del film.</summary>
+    public static async Task<byte[]?> EstraiAllegata(Strumenti s, string percorso, int indice, int lato = 480, bool silenzioso = false)
+    {
+        if (indice < 0) return null;
+        var jpg = Path.Combine(Strumenti.CartellaTemporanea, $"allegata-{Guid.NewGuid():N}.jpg");
+        try
+        {
+            var scala = $"scale='min({Math.Clamp(lato, 32, 800)},iw)':-2";
+            var r = await Processi.Esegui(s.Ffmpeg, ["-hide_banner", "-loglevel", "error", "-y", "-i", percorso,
+                "-map", "0:" + indice, "-frames:v", "1", "-vf", scala, "-q:v", "3", "-update", "1", jpg],
+                CancellationToken.None, tieniUscita: false, silenzioso: silenzioso);
+            if (r.Codice == 0 && File.Exists(jpg)) return await File.ReadAllBytesAsync(jpg);
+            return null;
+        }
+        finally { try { File.Delete(jpg); } catch { } }
+    }
+
+    /// <summary>Guarda se il file ha una copertina allegata e, se sì, la tira fuori.</summary>
+    public static async Task<byte[]?> ProvaAllegata(Strumenti s, string percorso, int lato = 480, bool silenzioso = true)
+    {
+        try
+        {
+            var info = await Sonda.Leggi(s, percorso, silenzioso: silenzioso);
+            if (info.IndiceCopertina < 0) return null;
+            return await EstraiAllegata(s, percorso, info.IndiceCopertina, lato, silenzioso);
+        }
+        catch { return null; }
+    }
+
     /// <summary>Mette l'immagine nel file se il formato la tiene, se no la salva accanto e lo dice.</summary>
     public static async Task<EsitoCopertina> Applica(Strumenti s, string audio, string immagine, CancellationToken ct = default)
     {
@@ -146,8 +221,8 @@ public static class Copertine
         var est = EstensioneImmagine(immagine);
         var dove = NomeLibero(Path.GetDirectoryName(Path.GetFullPath(audio))!, Nomi.Radice(audio), est);
         await File.WriteAllBytesAsync(dove, bytes, ct);
-        var formato = Path.GetExtension(audio).TrimStart('.').ToUpperInvariant();
-        return new EsitoCopertina(bytes, dove, false, $"{formato} non tiene la copertina dentro. L'ho salvata accanto al brano.");
+        var formato = Est(audio).TrimStart('.').ToUpperInvariant();
+        return new EsitoCopertina(bytes, dove, false, $"{formato} non tiene la copertina dentro. L'ho salvata accanto.");
     }
 
     /// <summary>Una delle copertine disegnate, scritta nel file (o accanto, se il formato non la tiene).</summary>

@@ -80,16 +80,22 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
 - **La barra bianca**: `.testa` (convertitore) e `.l-barra` (lettore) hanno **sempre** uno sfondo bianco, il resto è
   scuro. Non è la barra di Windows (la finestra è senza cornice): è disegnata dalla pagina. Le icone e le scritte
   della barra vanno scure, che si leggano sul bianco: un'icona oro o chiara lì sopra sparisce (è successo al tasto Novità).
-- **Con cosa si codifica**: in alto c'è una bolla sola, scheda video o processore. Il clic passa dall'una all'altra
-  e la scelta sta in `Impostazioni.CodificaCon` (`gpu` / `cpu`). La CPU forza il motore del video a `cpu`; la GPU usa
-  la scheda (nvidia, amd o intel).
+- **Con cosa si codifica**: in alto c'è una bolla. Il clic apre il menu delle schede che hanno un encoder
+  (nvidia, amd, intel) e del processore, e segna quella in uso. La scelta sta in `Impostazioni.CodificaCon`
+  (`gpu` / `cpu`) e in `video.motore`. Due schede della stessa marca condividono lo stesso encoder. La scritta
+  della bolla è l'unità scelta, non sempre la prima NVIDIA.
 - **La scheda del file** sta nella colonna di mezzo, sezione richiudibile «Info del file», e si scrive **nel file
   convertito** (l'originale non si tocca). Musica: titolo, artista, album, anno, traccia e, su MP3, M4A e FLAC, la
   copertina. OGG, OPUS e WMA tengono i testi, non la copertina. Video MP4, MOV e MKV: titolo e commento. JPG e TIFF:
   data dello scatto, descrizione, autore. Se il formato non le tiene, la sezione lo dice e non inventa campi.
-  La copertina del brano che stai ascoltando, invece, si cambia sul file vero (lettore e player dell'avatar): bozza
-  accanto e poi si sostituisce, come la rotazione (`Copertine.cs`). Download la salva nella cartella del brano,
-  senza chiedere dove e senza sovrascrivere.
+  La copertina del brano che stai ascoltando, e quella di un video MP4, MOV o MKV, si cambia sul file vero
+  (lettore e player dell'avatar): bozza accanto e poi si sostituisce, come la rotazione (`Copertine.cs`).
+  Nel video è un fotogramma allegato (`-disposition attached_pic`, flusso `0:V` per non copiare quello vecchio):
+  `Sonda.IndiceCopertina` lo trova e le miniature (`Anteprime`, `Multimedia.Video`) usano quello, non un fotogramma
+  a caso. Download la salva nella cartella del brano, senza chiedere dove e senza sovrascrivere.
+- **I tagli del video** (`Modifiche.TagliaPezzi`): nel lettore, 1 taglia, 2 toglie, Q e W accorciano testa e coda,
+  si riordinano sulla striscia. Il comando `taglia` accetta `pezzi`. Un pezzo solo è `TagliaVideo`. Il risultato
+  sta accanto, «(tagliato)»; l'originale non si tocca. Senza fotogrammi chiave vicini la copia può fallire: si dice, e il file resta.
 - **Ritocco delle foto** (dalla 1.5.0): `ui/src/lettore/ritocco.ts` disegna su due fogli canvas (`base` = segni fissati,
   `viva` = segno in corso) grandi quanto la foto, dentro un wrapper che prende lo stesso `transform` della foto
   (`rit.segui`). Si salva componendo foto + segni in un canvas, codificato **dalla pagina** (JPG 0.97, PNG, WEBP) e
@@ -141,5 +147,13 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
   `1.45/scala` (quel conto a 32 pixel gonfiava il segno). La miniatura audio (`Multimedia.Audio`) mette la copertina
   a sinistra — `Media.Copertina`, dentro il file o `cover.jpg` / `folder.jpg`, in silenzio — e l'onda vera a destra
   (`Onde.Barre`). Sotto i 48 la copertina sta sopra e l'onda è una striscia; a 16–24 senza copertina si torna null e
-  resta il .ico. Il nome del file .ico porta la versione: al cambio si buttano i vecchi. Cosa non si fa ora (scheda
-  del file, tagli piccoli, niente montaggio: quello è DaProd Editor Video) sta in `docs/ROADMAP.md`.
+  resta il .ico. Il nome del file .ico porta la versione: al cambio si buttano i vecchi. Se il video ha una
+  copertina allegata, la miniatura è quella. Il montaggio vero resta DaProd Editor Video (`docs/ROADMAP.md`).
+- **Quello che l'app produce** (screenshot, registrazioni) va in Immagini\DaPConvertitore (`CartellaLavori`).
+  Si crea all'avvio e nel hook di Velopack. `Impostazioni.CartellaMia` la sposta. Dalle Impostazioni si apre e si vedono gli ultimi file.
+- **Il vassoio** (`Vassoio.cs`) c'è finché l'app è aperta e non la tiene in vita da solo. Menu: apri, screenshot, registra, impostazioni, esci.
+- **Lo screenshot** (`Schermata.cs`): scorciatoia globale (`Impostazioni.ScorciatoiaSchermo`, di partenza Ctrl+Maiusc+S),
+  schermo fermo e scurito, zona o finestra sotto il cursore, misure, lente, PNG nella cartella e negli appunti, anteprima in basso a destra.
+  Lo schermo si fotografa prima dell'oscuramento. Su più monitor con DPI diversi il ritaglio può slittare di un pixel.
+- **La registrazione** (`Registrazione.cs`) è gdigrab del desktop principale più il primo microfono DirectShow, se c'è.
+  Si ferma con «q» su stdin. Non sceglie una zona. Il video sull'avatar è un `MediaElement`: se Windows non lo sa suonare, lo apre il lettore.

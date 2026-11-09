@@ -146,6 +146,20 @@ public class ProveModifiche(Banco b)
     }
 
     [Fact]
+    public async Task IPezziSiRimontanoAccantoELoriginaleResta()
+    {
+        var mp4 = b.Ffmpeg("pezzi.mp4", "-f", "lavfi", "-i", "testsrc2=s=160x90:r=25:d=2", "-c:v", "libx264", "-g", "1", "-pix_fmt", "yuv420p", "-preset", "ultrafast");
+        var prima = (await Sonda.Leggi(b.Strumenti, mp4)).Durata;
+        var dest = await Modifiche.TagliaPezzi(b.Strumenti, mp4, [(0, 0.4), (1.2, 1.8)]);
+        Assert.Contains("(tagliato)", dest);
+        Assert.True(File.Exists(mp4));
+        var dopo = await Sonda.Leggi(b.Strumenti, dest);
+        Assert.InRange(dopo.Durata, 0.55, 1.5);
+        var orig = await Sonda.Leggi(b.Strumenti, mp4);
+        Assert.InRange(orig.Durata, prima - 0.15, prima + 0.15);
+    }
+
+    [Fact]
     public async Task IlPdfSiGiraPaginaPerPagina()
     {
         var a = b.Ffmpeg("p1.png", "-f", "lavfi", "-i", "testsrc2=s=800x1100", "-frames:v", "1");

@@ -241,6 +241,57 @@ public static class Modifiche
         finally { Nomi.Libera(uscita); }
     }
 
+    /// <summary>
+    /// Tiene i pezzi indicati, nell'ordine dato, e li mette uno dopo l'altro accanto all'originale
+    /// (nome «tagliato»). L'originale non si tocca. Un pezzo solo è il taglio di sempre.
+    /// </summary>
+    public static async Task<string> TagliaPezzi(Strumenti s, string percorso, IReadOnlyList<(double Da, double A)> pezzi, CancellationToken ct = default)
+    {
+        var utili = pezzi.Where(p => p.A > p.Da + 0.05).ToList();
+        if (utili.Count == 0) throw new ErroreConversione("Non c'è niente da tenere.");
+        if (utili.Count == 1) return await TagliaVideo(s, percorso, utili[0].Da, utili[0].A, ct);
+
+        var dir = Path.Combine(Strumenti.CartellaTemporanea, "tagli-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var uscita = Nomi.Prenota(percorso, Path.GetExtension(percorso), "tagliato");
+        var bozza = Nomi.Bozza(uscita);
+        try
+        {
+            string N(double v) => v.ToString("0.###", CultureInfo.InvariantCulture);
+            var pezziFile = new List<string>();
+            for (var i = 0; i < utili.Count; i++)
+            {
+                var pezzo = Path.Combine(dir, $"p{i}{Path.GetExtension(percorso)}");
+                var r = await Processi.Esegui(s.Ffmpeg, ["-hide_banner", "-loglevel", "error", "-y",
+                    "-ss", N(utili[i].Da), "-to", N(utili[i].A), "-i", percorso,
+                    "-map", "0", "-c", "copy", "-avoid_negative_ts", "make_zero", "-reset_timestamps", "1",
+                    "-f", FormatoFfmpeg(percorso), pezzo], ct);
+                if (r.Codice != 0 || !File.Exists(pezzo)) throw new ErroreConversione("Non sono riuscito a staccare un pezzo.", r.Errori);
+                pezziFile.Add(pezzo);
+            }
+            var lista = Path.Combine(dir, "lista.txt");
+            await File.WriteAllLinesAsync(lista, pezziFile.Select(p => "file '" + p.Replace('\\', '/').Replace("'", "'\\''") + "'"), ct);
+            var unione = await Processi.Esegui(s.Ffmpeg, ["-hide_banner", "-loglevel", "error", "-y",
+                "-f", "concat", "-safe", "0", "-i", lista, "-c", "copy", "-fflags", "+genpts",
+                "-f", FormatoFfmpeg(percorso), bozza], ct);
+            if (unione.Codice != 0 || !File.Exists(bozza)) throw new ErroreConversione("Non sono riuscito a rimettere insieme i pezzi.", unione.Errori);
+            File.Move(bozza, uscita);
+            return uscita;
+        }
+        catch
+        {
+            try { if (File.Exists(bozza)) File.Delete(bozza); } catch { }
+            try { if (File.Exists(uscita)) File.Delete(uscita); } catch { }
+            Nomi.Libera(uscita);
+            throw;
+        }
+        finally
+        {
+            Nomi.Libera(uscita);
+            try { Directory.Delete(dir, true); } catch { }
+        }
+    }
+
     static string FormatoFfmpeg(string p) => Path.GetExtension(p).ToLowerInvariant() switch
     {
         ".mp4" or ".m4v" => "mp4", ".mov" => "mov", ".mkv" => "matroska", ".webm" => "webm", ".avi" => "avi", ".ts" or ".m2ts" or ".mts" => "mpegts",
