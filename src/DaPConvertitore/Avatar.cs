@@ -310,13 +310,20 @@ public sealed class FinestraAvatar : Window
         m.Items.Add(Voce("Apri DaP Convertitore", () => Regia.Gestisci(new Richiesta(null, [], true))));
         m.Items.Add(new Separator());
         m.Items.Add(Voce("Screenshot", Schermata.Cattura));
+        var apriRegistra = false;
         m.Items.Add(Voce(Registrazione.Attiva ? "La registrazione è in corso" : "Registra…", () =>
         {
-            if (Registrazione.Attiva) BarraRegistrazione.PortaDavanti();
-            else MenuRegistrazione.Mostra(this);
+            apriRegistra = true;
+            Registro.Scrivi("registrazione: clic su Registra nell'avatar");
         }));
         m.Items.Add(new Separator());
         Registrazione.EscludiMenu(m);
+        m.Closed += (_, _) =>
+        {
+            if (!apriRegistra) return;
+            try { Registrazione.Chiedi("avatar", this); }
+            catch (Exception e) { Registro.Errore("registrazione: avatar", e); }
+        };
         m.Items.Add(Voce("Nascondi l'avatar", () => Regia.Avatar(false)));
         m.IsOpen = true;
     }

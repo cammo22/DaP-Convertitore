@@ -7,7 +7,7 @@ import { h, peso, pesoDisplay, numero, clamp, MB, GB } from '../../util';
 import { icone } from '../../icone';
 import { Lancetta } from '../../grafica';
 import { clac } from '../../suoni';
-import { s, ui, fileDi, sceltaPer, eVideoVero } from '../stato';
+import { s, ui, fileDi, sceltaPer, eVideoVero, scelteDaRicordare } from '../stato';
 import { gruppo, bottoni, cursore, faderPeso, mostraPeso } from '../controlli';
 
 let lancettaQualita: Lancetta | null = null;
@@ -116,7 +116,7 @@ export function regolazioniVideo(f: Formato) {
           ], o.motore, (v) => {
             o.motore = v;
             s.stato.impostazioni.codificaCon = v === 'cpu' ? 'cpu' : 'gpu';
-            void chiedi('impostazioni', { codificaCon: s.stato.impostazioni.codificaCon });
+            void chiedi('impostazioni', { codificaCon: s.stato.impostazioni.codificaCon, scelte: scelteDaRicordare() });
             s.piano = null;
             ui.testa();
           })),

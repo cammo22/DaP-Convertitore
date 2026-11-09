@@ -643,7 +643,8 @@ public sealed class Ponte
                 _ = finestra.Dispatcher.BeginInvoke(() => Schermata.Cattura());
                 return true;
             case "registra":
-                Registrazione.Alterna();
+                // stessa strada del vassoio e dell'avatar: ComandiRegistrazione.CosaFa
+                Registrazione.Chiedi("ponte");
                 return new { inCorso = Registrazione.Attiva };
             case "tornaLettore":
                 Regia.TornaAlLettore();

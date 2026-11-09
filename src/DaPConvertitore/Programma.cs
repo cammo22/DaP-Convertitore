@@ -89,15 +89,32 @@ public static class Programma
         using var mutex = new Mutex(true, $@"Local\{MenuContestuale.Aumid}", out var primo);
         // Esplora file lancia un processo per ogni file scelto: il primo apre la finestra, gli altri gli passano i file
         // parte con Windows: se c'è già un programma aperto non serve altro; se no si apre solo l'avatar
-        if (!primo && soloAvatar) return;
-        if (!primo && Istanza.Manda(richiesta)) return;
+        if (!primo && soloAvatar)
+        {
+            Registro.Scrivi($"non parto: l'avatar è già acceso. Questa copia: {Environment.ProcessPath}");
+            return;
+        }
+        if (!primo)
+        {
+            Registro.Scrivi($"non parto: DaP è già aperto ({LeggiIstanza()}). Questa copia: {Environment.ProcessPath}. Chiudi l'icona vicino all'orologio e rilancia, se no provi il processo vecchio.");
+            if (Istanza.Manda(richiesta)) return;
+            Registro.Scrivi("il processo già aperto non risponde: parto lo stesso");
+        }
 
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         app.DispatcherUnhandledException += (_, e) => { Registro.Errore("interfaccia", e.Exception); e.Handled = true; };
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Registro.Errore("app", (Exception)e.ExceptionObject);
+        try
+        {
+            System.Windows.Forms.Application.SetUnhandledExceptionMode(System.Windows.Forms.UnhandledExceptionMode.CatchException);
+            System.Windows.Forms.Application.ThreadException += (_, e) => Registro.Errore("vassoio", e.Exception);
+        }
+        catch (Exception e) { Registro.Scrivi($"eccezioni del vassoio non agganciate: {e.Message}"); }
         app.Exit += (_, _) => { Vassoio.Chiudi(); Aggiornamenti.AllaChiusura(); };
         Regia.Avvia(app);
         try { CartellaLavori.Assicura(); } catch (Exception e) { Registro.Errore("cartella", e); }
+        SegnaIstanza();
+        Registro.Scrivi($"avviato {typeof(Programma).Assembly.GetName().Version} · {Environment.ProcessPath}");
         Vassoio.Avvia(app);
         Schermata.Avvia();
         if (!soloAvatar) Regia.Gestisci(richiesta);
@@ -106,6 +123,27 @@ public static class Programma
         if (primo) Istanza.Ascolta(r => app.Dispatcher.BeginInvoke(() => Regia.Gestisci(r)));
         _ = Task.Run(Lettore.Media.PulisciCache);
         app.Run();
+    }
+
+    /// <summary>Chi è il processo aperto: la copia nuova, se ne trova uno già acceso, lo scrive nel registro.</summary>
+    static void SegnaIstanza()
+    {
+        try
+        {
+            File.WriteAllText(Path.Combine(Strumenti.CartellaDati, "istanza.txt"),
+                $"{Environment.ProcessId} · {Environment.ProcessPath} · {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        }
+        catch { /* il registro dice già che siamo partiti */ }
+    }
+
+    static string LeggiIstanza()
+    {
+        try
+        {
+            var p = Path.Combine(Strumenti.CartellaDati, "istanza.txt");
+            return File.Exists(p) ? File.ReadAllText(p).Trim() : "non segnato";
+        }
+        catch { return "non segnato"; }
     }
 
     /// <summary>Disinstallando, l'avatar non deve più partire con Windows (la voce «Run» dell'utente).</summary>

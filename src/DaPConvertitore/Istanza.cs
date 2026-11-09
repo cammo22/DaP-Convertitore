@@ -47,7 +47,11 @@ public static class Istanza
                     using var r = new StreamReader(s);
                     var testo = r.ReadToEnd();
                     var richiesta = JsonSerializer.Deserialize<Richiesta>(testo);
-                    if (richiesta is not null) arriva(richiesta);
+                    if (richiesta is not null)
+                    {
+                        Registro.Scrivi($"istanza: arriva una richiesta da un altro processo (file {richiesta.Percorsi.Count}, azione {richiesta.Azione ?? "-"})");
+                        arriva(richiesta);
+                    }
                 }
                 catch (Exception e) { Registro.Errore("istanza", e); Thread.Sleep(200); }
             }

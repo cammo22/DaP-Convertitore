@@ -23,10 +23,20 @@ public sealed class BarraRegistrazione : Window
     public static void Mostra()
     {
         if (aperta is not null) { PortaDavanti(); return; }
-        aperta = new BarraRegistrazione();
-        Registrazione.Escludi(aperta);
-        aperta.Closed += (_, _) => { if (aperta is not null) aperta = null; };
-        aperta.Show();
+        try
+        {
+            aperta = new BarraRegistrazione();
+            Registrazione.Escludi(aperta);
+            aperta.Closed += (_, _) => { if (aperta is not null) aperta = null; };
+            aperta.Show();
+            if (!aperta.IsVisible) Registro.Scrivi("registrazione: la barra non è visibile dopo Show()");
+        }
+        catch (Exception e)
+        {
+            aperta = null;
+            Registro.Errore("registrazione: barra", e);
+            Vassoio.Dire("La barra della registrazione non si è aperta", e.Message);
+        }
     }
 
     public static void Chiudi()
@@ -41,22 +51,27 @@ public sealed class BarraRegistrazione : Window
     public static void PortaDavanti()
     {
         if (aperta is null) Mostra();
-        else aperta.Topmost = true;
+        else
+        {
+            aperta.Topmost = true;
+            try { aperta.Activate(); } catch { /* già davanti */ }
+        }
     }
 
     public static void Aggiorna() => aperta?.Rinfresca();
 
     BarraRegistrazione()
     {
+        // opaca, come il menu: una finestra trasparente esclusa dalla cattura su Windows 11 non si vede
         WindowStyle = WindowStyle.None;
         ResizeMode = ResizeMode.NoResize;
         ShowInTaskbar = false;
         ShowActivated = false;
         Topmost = true;
-        AllowsTransparency = true;
         SizeToContent = SizeToContent.WidthAndHeight;
-        Background = Brushes.Transparent;
+        Background = new SolidColorBrush(Color.FromRgb(0x12, 0x10, 0x18));
         Title = "Registrazione";
+        MinWidth = 280;
 
         punto = new Ellipse { Width = 10, Height = 10, Fill = new SolidColorBrush(Color.FromRgb(0xff, 0x3d, 0x6e)), VerticalAlignment = VerticalAlignment.Center };
         tempo = new TextBlock
@@ -82,7 +97,6 @@ public sealed class BarraRegistrazione : Window
             Background = new SolidColorBrush(Color.FromRgb(0x12, 0x10, 0x18)),
             BorderBrush = new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(12),
             Child = riga,
         };
         MouseLeftButtonDown += (_, e) =>
@@ -95,9 +109,21 @@ public sealed class BarraRegistrazione : Window
         orologio.Tick += (_, _) => Rinfresca();
         Loaded += (_, _) =>
         {
+            UpdateLayout();
+            var w = ActualWidth > 8 ? ActualWidth : 420;
+            var h = ActualHeight > 8 ? ActualHeight : 48;
+            if (ActualWidth < 8 || ActualHeight < 8)
+            {
+                Width = w;
+                Height = h;
+                UpdateLayout();
+                if (ActualWidth > 8) w = ActualWidth;
+                if (ActualHeight > 8) h = ActualHeight;
+            }
             var area = SystemParameters.WorkArea;
-            Left = area.Left + (area.Width - ActualWidth) / 2;
-            Top = area.Bottom - ActualHeight - 28;
+            Left = area.Left + Math.Max(0, (area.Width - w) / 2);
+            Top = Math.Max(area.Top, area.Bottom - h - 28);
+            Registro.Scrivi($"registrazione: barra a {Left:0},{Top:0} ({w:0}×{h:0})");
             orologio.Start();
             Rinfresca();
         };

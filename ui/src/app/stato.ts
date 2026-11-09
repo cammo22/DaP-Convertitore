@@ -51,6 +51,16 @@ export const sceltaPer = (c: Categoria): Formato | undefined => {
 };
 export const eVideoVero = (f?: Formato) => !!f && f.categoria === 'video' && ['.mp4', '.mkv', '.webm', '.mov'].includes(f.estensione);
 
+/** Quello che la bolla e il pannello video devono scrivere, se no la scheda scelta si perde chiudendo l'app. */
+export function scelteDaRicordare() {
+  return {
+    video: { ...s.opzioni.video, pesoByte: 0 },
+    audio: s.opzioni.audio,
+    immagine: s.opzioni.immagine,
+    pdf: s.opzioni.pdf,
+  };
+}
+
 /**
  * I pezzi che disegnano si chiamano fra loro (il pannello delle regolazioni ridisegna la piastra, le impostazioni
  * ridisegnano il piede…). Per non far girare gli import in tondo parlano tramite questo: main.ts li collega all'avvio.

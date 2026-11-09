@@ -4,6 +4,9 @@ Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
 ## In lavorazione
 
+- **Registra si apre.** Dal vassoio e dal tasto destro sull'avatar il menu non compariva: la finestra nasceva dentro il clic del menu (e, trasparente, Windows la toglieva anche dallo schermo). Ora si apre dopo, è una finestra normale, e nel registro si legge il clic, l'apertura, la pausa, il comando di FFmpeg e gli errori. Se lanci la build mentre DaP è già aperto, il registro lo dice: chiudi l'icona vicino all'orologio e rilancia, se no provi il processo vecchio.
+- **La scorciatoia dello screenshot**, nelle Impostazioni, ha la stessa altezza e la stessa scritta degli altri tasti. In ascolto resta oro.
+- **La bolla** ricorda la scheda scelta anche se non fai partire una conversione.
 - **La copertina si vede anche sul player dell'avatar.** Prima, trascinando un brano sull'avatar, c'erano solo le barrette: la foto del disco non arrivava. Ora c'è, e passandoci sopra (anche nel lettore intero) escono **Modifica** e **Download**. Download la salva nella stessa cartella del brano, senza chiedere dove; se il nome c'è già ne fa un altro. Modifica la estrae, ne carica una dal disco, oppure ne sceglie una disegnata dall'app (viola, oro, magenta, dal titolo). Su MP3, M4A e FLAC entra nel file: si scrive accanto e poi si sostituisce, e se qualcosa va storto l'originale resta. Gli altri formati non la tengono dentro: viene salvata accanto e te lo dice.
 - **«Di seguito» si chiama «Riproduci coda».**
 - **Il fulmine non sta più nella barra del lettore.** Le conversioni rapide restano col tasto U.

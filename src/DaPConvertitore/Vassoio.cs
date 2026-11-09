@@ -26,11 +26,21 @@ public static class Vassoio
         menu.Items.Add("Apri", null, (_, _) => SulFilo(() => Regia.Gestisci(new Richiesta(null, [], true))));
         menu.Items.Add("Screenshot", null, (_, _) => SulFilo(Schermata.Cattura));
         var registra = new ToolStripMenuItem("Registra…");
-        registra.Click += (_, _) => SulFilo(() =>
+        var apriRegistra = false;
+        registra.Click += (_, _) =>
         {
-            if (Registrazione.Attiva) BarraRegistrazione.PortaDavanti();
-            else MenuRegistrazione.Mostra(null);
-        });
+            apriRegistra = true;
+            Registro.Scrivi("registrazione: clic su Registra nel vassoio");
+        };
+        // il menu di Windows è ancora aperto durante il clic: la finestra si apre quando si è chiuso,
+        // se no nasce dentro quel ciclo e non si vede
+        menu.Closed += (_, _) =>
+        {
+            if (!apriRegistra) return;
+            apriRegistra = false;
+            try { Registrazione.Chiedi("vassoio"); }
+            catch (Exception e) { Registro.Errore("registrazione: vassoio", e); }
+        };
         menu.Items.Add(registra);
         var sistema = false;
         var avatar = new ToolStripMenuItem("Avatar") { CheckOnClick = true, Checked = Regia.AvatarAcceso };

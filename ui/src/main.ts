@@ -14,7 +14,7 @@ import { icone, iconaCategoria, coloreCategoria } from './icone';
 import { clac, accendiSuoni } from './suoni';
 import { disegnaHome } from './app/home';
 import { apriNovita, type DatiNovita } from './app/novita';
-import { s, ui, nomeCat, formato, fileDi, categoriePresenti, sceltaPer, eVideoVero } from './app/stato';
+import { s, ui, nomeCat, formato, fileDi, categoriePresenti, sceltaPer, eVideoVero, scelteDaRicordare } from './app/stato';
 import { app, testa, coda, banco, piede, corpo, logoSvg, mostraAvviso, conservaVista } from './app/scheletro';
 import { regolazioni } from './app/pannelli';
 import { aggiornaPiano, pesoObiettivo } from './app/pannelli/video';
@@ -80,7 +80,7 @@ function scegliUnita(u: Unita) {
   document.querySelector('.menu-motore')?.remove();
   s.stato.impostazioni.codificaCon = u.gpu ? 'gpu' : 'cpu';
   s.opzioni.video.motore = u.motore;
-  void chiedi('impostazioni', { codificaCon: s.stato.impostazioni.codificaCon });
+  void chiedi('impostazioni', { codificaCon: s.stato.impostazioni.codificaCon, scelte: scelteDaRicordare() });
   s.piano = null;
   disegnaTesta();
   if (s.vista === 'scegli' && s.stato.modo === 'finestra') ui.scegli();
@@ -412,7 +412,7 @@ async function converti() {
   if (!elementi.length) return;
   clac(true);
   for (const c of categoriePresenti()) { const f = sceltaPer(c); if (f) s.stato.impostazioni.formati[c] = f.id; }
-  void chiedi('impostazioni', { formati: s.stato.impostazioni.formati, scelte: { video: { ...s.opzioni.video, pesoByte: 0 }, audio: s.opzioni.audio, immagine: s.opzioni.immagine, pdf: s.opzioni.pdf } });
+  void chiedi('impostazioni', { formati: s.stato.impostazioni.formati, scelte: scelteDaRicordare() });
   const ids = await chiedi<string[]>('converti', { elementi });
   s.giro = ids;
   s.vista = 'lavoro';

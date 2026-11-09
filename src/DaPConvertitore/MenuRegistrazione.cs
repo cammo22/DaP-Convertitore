@@ -18,26 +18,44 @@ public sealed class MenuRegistrazione : Window
     readonly Button schermo, solo;
     bool blocco = true;
 
-    public static void Mostra(Window? accanto)
+    public static void Mostra(Window? accanto, string da)
     {
         if (Registrazione.Attiva) { BarraRegistrazione.PortaDavanti(); return; }
-        if (aperta is not null) { aperta.Activate(); return; }
-        aperta = new MenuRegistrazione(accanto);
-        Registrazione.Escludi(aperta);
-        aperta.Closed += (_, _) => aperta = null;
-        aperta.Show();
+        if (aperta is not null) { aperta.Activate(); aperta.Topmost = true; Registro.Scrivi("registrazione: il menu era già aperto, lo porto davanti"); return; }
+        try
+        {
+            aperta = new MenuRegistrazione(accanto, da);
+            Registrazione.Escludi(aperta);
+            aperta.Closed += (_, _) => { Registro.Scrivi("registrazione: menu chiuso"); aperta = null; };
+            aperta.Show();
+            aperta.Activate();
+            aperta.Topmost = true;
+            if (!aperta.IsVisible) Registro.Scrivi("registrazione: Show() è tornato ma il menu non è visibile");
+        }
+        catch (Exception e)
+        {
+            aperta = null;
+            Registro.Errore("registrazione: menu", e);
+            Vassoio.Dire("Registra non si è aperto", e.Message);
+        }
     }
 
-    MenuRegistrazione(Window? accanto)
+    MenuRegistrazione(Window? accanto, string da)
     {
+        // niente AllowsTransparency: con WDA_EXCLUDEFROMCAPTURE una finestra layered su Windows 11
+        // diventa invisibile anche per chi ci clicca. Il menu del vassoio «non apriva niente».
         WindowStyle = WindowStyle.None;
         ResizeMode = ResizeMode.NoResize;
         ShowInTaskbar = false;
         Topmost = true;
+        ShowActivated = true;
         SizeToContent = SizeToContent.WidthAndHeight;
-        AllowsTransparency = true;
-        Background = Brushes.Transparent;
+        Background = new SolidColorBrush(Color.FromRgb(0x12, 0x10, 0x1a));
         Title = "Registra";
+        MinWidth = 320;
+        var area0 = SystemParameters.WorkArea;
+        Left = area0.Right - 380;
+        Top = area0.Bottom - 420;
 
         var pila = new StackPanel { Margin = new Thickness(16, 14, 16, 16), MinWidth = 300, MaxWidth = 380 };
         var testa = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
@@ -62,21 +80,32 @@ public sealed class MenuRegistrazione : Window
         pila.Children.Add(nota);
         Content = new Border
         {
-            CornerRadius = new CornerRadius(16),
-            Background = new SolidColorBrush(Color.FromArgb(230, 18, 16, 26)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(80, 255, 213, 74)),
+            Background = new SolidColorBrush(Color.FromRgb(0x12, 0x10, 0x1a)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)),
             BorderThickness = new Thickness(1),
             Child = pila,
         };
+        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); };
 
         microfono.SelectionChanged += (_, _) => Ricorda();
         uscita.SelectionChanged += (_, _) => Ricorda();
+        ContentRendered += (_, _) =>
+        {
+            Sistema(accanto);
+            Registro.Scrivi($"registrazione: menu aperto da {da} a {Left:0},{Top:0} ({ActualWidth:0}×{ActualHeight:0})");
+        };
         Loaded += async (_, _) =>
         {
             Sistema(accanto);
             DispositiviAudio d;
             try { d = await Task.Run(Registrazione.Elenca); }
-            catch (Exception e) { nota.Text = e.Message; return; }
+            catch (Exception e)
+            {
+                Registro.Errore("registrazione: dispositivi", e);
+                nota.Text = e.Message;
+                schermo.IsEnabled = true;
+                return;
+            }
             if (!IsLoaded) return;
             var imp = Impostazioni.Comune;
             blocco = true;
@@ -94,6 +123,9 @@ public sealed class MenuRegistrazione : Window
     {
         var mic = Valore(microfono);
         var pc = Valore(uscita);
+        var perche = ComandiRegistrazione.MotivoRifiuto(come, mic, pc);
+        if (perche is not null) { nota.Text = perche; Registro.Scrivi("registrazione: " + perche); return; }
+        Registro.Scrivi($"registrazione: scelto {come}, mic «{mic ?? "no"}», pc «{pc ?? "no"}»");
         Close();
         Registrazione.Inizia(come, mic, pc);
     }
@@ -127,17 +159,33 @@ public sealed class MenuRegistrazione : Window
 
     void Sistema(Window? accanto)
     {
-        if (accanto is not null)
+        UpdateLayout();
+        var w = ActualWidth > 8 ? ActualWidth : 340;
+        var h = ActualHeight > 8 ? ActualHeight : 280;
+        if (ActualWidth < 8 || ActualHeight < 8)
         {
-            Left = accanto.Left + accanto.Width + 12;
-            Top = accanto.Top;
-            if (Left + ActualWidth > SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth)
-                Left = Math.Max(SystemParameters.VirtualScreenLeft, accanto.Left - ActualWidth - 12);
-            return;
+            Width = w;
+            Height = h;
+            UpdateLayout();
+            if (ActualWidth > 8) w = ActualWidth;
+            if (ActualHeight > 8) h = ActualHeight;
+            Registro.Scrivi("registrazione: il menu non si era misurato, gli do una misura fissa");
         }
         var area = SystemParameters.WorkArea;
-        Left = area.Right - ActualWidth - 18;
-        Top = area.Bottom - ActualHeight - 18;
+        double left, top;
+        if (accanto is not null)
+        {
+            left = accanto.Left + accanto.Width + 12;
+            top = accanto.Top;
+            if (left + w > area.Right) left = accanto.Left - w - 12;
+        }
+        else
+        {
+            left = area.Right - w - 18;
+            top = area.Bottom - h - 18;
+        }
+        Left = Math.Clamp(left, area.Left, Math.Max(area.Left, area.Right - w));
+        Top = Math.Clamp(top, area.Top, Math.Max(area.Top, area.Bottom - h));
     }
 
     static ComboBox Combo() => new()

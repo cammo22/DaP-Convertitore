@@ -200,15 +200,13 @@ button.chip { cursor: pointer; font: 700 12px var(--ui); letter-spacing: 0.02em;
 .tasto.su small { color: rgba(255, 213, 74, 0.6); }
 .tasto:disabled { opacity: 0.35; }
 .campo-scorciatoia {
-  display: inline-flex; align-items: center; justify-content: center; min-width: 220px; height: 46px; padding: 0 16px;
-  border-radius: 10px; background: #fff8e6; border: 2px solid #e0a020; color: #1a1408;
-  font: 800 16px var(--ui); letter-spacing: 0.02em; box-shadow: 0 0 0 3px rgba(255, 213, 74, 0.28);
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  height: 34px; min-width: 132px; padding: 0 12px; border-radius: 8px;
+  background: #fff8e6; border: 1px solid #e0a020; color: #1a1408;
+  font-family: var(--ui); font-weight: 700; font-size: 13.5px; line-height: 1; letter-spacing: 0;
+  white-space: nowrap;
 }
-.campo-scorciatoia.ascolta {
-  background: #2a1230; color: #ffd54a; border-color: #ff3df2; box-shadow: 0 0 0 3px rgba(255, 61, 242, 0.5);
-  animation: scorciatoia-pulsa 0.9s ease-in-out infinite;
-}
-@keyframes scorciatoia-pulsa { 50% { box-shadow: 0 0 0 7px rgba(255, 61, 242, 0.18); } }
+.campo-scorciatoia.ascolta { background: #2a1230; color: #ffd54a; border-color: #ff3df2; }
 .tasto.piccolo { height: 30px; padding: 0 10px; font-size: 13px; }
 
 .interruttore { display: inline-flex; align-items: center; gap: 10px; padding: 6px 12px 6px 6px; border-radius: 9px; background: var(--gomma); border: 1px solid var(--bordo); color: var(--testo2); font: 700 13.5px var(--ui); text-align: left; }

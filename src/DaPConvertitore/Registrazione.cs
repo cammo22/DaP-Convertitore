@@ -23,6 +23,9 @@ public static class Registrazione
     [DllImport("user32.dll")]
     static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
 
+    [DllImport("dwmapi.dll")]
+    static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int valore, int size);
+
     static readonly List<string> pezzi = [];
     static Process? proc;
     static Task? chiusura;
@@ -60,8 +63,20 @@ public static class Registrazione
     {
         w.SourceInitialized += (_, _) =>
         {
-            var h = new WindowInteropHelper(w).Handle;
-            if (h != IntPtr.Zero) SetWindowDisplayAffinity(h, WdaEscludi);
+            try
+            {
+                var h = new WindowInteropHelper(w).Handle;
+                if (h == IntPtr.Zero) { Registro.Scrivi($"registrazione: {w.Title} senza maniglia, non la escludo"); return; }
+                // angoli tondi di Windows 11 (DWMWCP_ROUND). La finestra non è trasparente: una layered
+                // con WDA_EXCLUDEFROMCAPTURE su Windows 11 diventa invisibile anche a chi la guarda.
+                int tondi = 2;
+                try { DwmSetWindowAttribute(h, 33, ref tondi, 4); } catch { /* Windows 10 non ha gli angoli */ }
+                var ok = SetWindowDisplayAffinity(h, WdaEscludi);
+                Registro.Scrivi(ok
+                    ? $"registrazione: «{w.Title}» non entra nella cattura"
+                    : $"registrazione: «{w.Title}» resta anche nella cattura (Windows prima del 2004, o la chiamata è fallita)");
+            }
+            catch (Exception e) { Registro.Errore("registrazione: esclusione", e); }
         };
     }
 
@@ -75,11 +90,39 @@ public static class Registrazione
         }, DispatcherPriority.Loaded);
     }
 
-    /// <summary>Dal vecchio comando: se non si sta già registrando si apre il menu, se no la barra.</summary>
-    public static void Alterna()
+    /// <summary>
+    /// «Registra» dal vassoio, dall'avatar o dal ponte. Stessa decisione (<see cref="ComandiRegistrazione.CosaFa"/>):
+    /// si apre il menu, oppure si porta davanti la barra se si sta già registrando. Il lavoro vero parte dopo,
+    /// a menu chiuso: aprirlo dentro il clic lo lasciava a misura zero, o lo chiudeva insieme al menu.
+    /// </summary>
+    public static void Chiedi(string da, Window? accanto = null)
     {
-        if (attiva) BarraRegistrazione.PortaDavanti();
-        else MenuRegistrazione.Mostra(null);
+        var cosa = ComandiRegistrazione.CosaFa(da, attiva);
+        Registro.Scrivi($"registrazione: «Registra» da {da} → {cosa}");
+        var d = System.Windows.Application.Current?.Dispatcher;
+        if (d is null)
+        {
+            Registro.Scrivi("registrazione: non c'è l'interfaccia, il menu non si apre");
+            return;
+        }
+        d.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
+        {
+            try
+            {
+                if (attiva)
+                {
+                    Registro.Scrivi("registrazione: è già in corso, porto la barra");
+                    BarraRegistrazione.PortaDavanti();
+                    return;
+                }
+                MenuRegistrazione.Mostra(accanto, da);
+            }
+            catch (Exception e)
+            {
+                Registro.Errore("registrazione: apertura", e);
+                try { Vassoio.Dire("Registra non si è aperto", e.Message); } catch { /* il vassoio può non esserci */ }
+            }
+        });
     }
 
     public static void Inizia(string modoScelto, string? microfono, string? uscitaPc)
@@ -101,11 +144,13 @@ public static class Registrazione
         Directory.CreateDirectory(dir);
         var ext = modo == "audio" ? ".m4a" : ".mp4";
         finale = Path.Combine(CartellaLavori.Assicura(), $"registrazione {DateTime.Now:yyyy-MM-dd HH-mm-ss}{ext}");
+        Registro.Scrivi($"registrazione: parto ({modo}, mic «{mic ?? "no"}», pc «{audioPc ?? "no"}») → {finale}");
         attiva = true;
         if (!ApriPezzo())
         {
             attiva = false;
             PulisciCartella();
+            Registro.Scrivi($"registrazione: non è partita ({(string.IsNullOrWhiteSpace(ultimoErrore) ? "FFmpeg non è partito" : ultimoErrore)})");
             Vassoio.Dire("La registrazione non è partita", string.IsNullOrWhiteSpace(ultimoErrore) ? "FFmpeg non è partito." : ultimoErrore);
             return;
         }
@@ -115,6 +160,7 @@ public static class Registrazione
     public static void Pausa()
     {
         if (!attiva || inPausa || proc is null) return;
+        Registro.Scrivi("registrazione: pausa");
         var p = proc;
         proc = null;
         accumulato += DateTime.UtcNow - inizioPezzo;
@@ -126,6 +172,7 @@ public static class Registrazione
     public static void Riprendi()
     {
         if (!attiva || !inPausa) return;
+        Registro.Scrivi("registrazione: riprendo");
         var attesa = chiusura;
         _ = Task.Run(() =>
         {
@@ -147,6 +194,7 @@ public static class Registrazione
     public static void Salva()
     {
         if (!attiva) return;
+        Registro.Scrivi("registrazione: salvo");
         attiva = false;
         inPausa = false;
         var p = proc;
@@ -173,6 +221,7 @@ public static class Registrazione
                     SulFilo(() => Vassoio.Dire("Registrazione salvata a pezzi", "Il resto non si è unito: ho tenuto il primo pezzo, " + Path.GetFileName(dest)));
                     return;
                 }
+                Registro.Scrivi($"registrazione: salvata {dest}");
                 SulFilo(() => Vassoio.Dire("Registrazione salvata", Path.GetFileName(dest)));
             }
             catch (Exception e)
@@ -187,6 +236,7 @@ public static class Registrazione
     public static void Annulla()
     {
         if (!attiva && proc is null) { BarraRegistrazione.Chiudi(); return; }
+        Registro.Scrivi("registrazione: annullo");
         attiva = false;
         inPausa = false;
         var p = proc;
@@ -203,11 +253,32 @@ public static class Registrazione
         });
     }
 
-    /// <summary>Elenco dispositivi. Su questo PC di prova ffmpeg non ha wasapi né dshow: lì la lista resta vuota.</summary>
+    /// <summary>Elenco dispositivi. Su un ffmpeg senza wasapi né dshow la lista resta vuota, e lo dice il registro.</summary>
     public static DispositiviAudio Elenca()
     {
         var ff = Strumenti.Trova().Ffmpeg;
-        return new DispositiviAudio(NomiDshow(ff), NomiWasapi(ff));
+        var microfoni = ComandiRegistrazione.MicrofoniDaElenco(Leggi(ff, "-hide_banner", "-list_devices", "true", "-f", "dshow", "-i", "dummy"));
+        var uscite = ComandiRegistrazione.UsciteDaElenco(Leggi(ff, "-hide_banner", "-list_devices", "true", "-f", "wasapi", "-i", "dummy"));
+        Registro.Scrivi(microfoni.Count == 0 && uscite.Count == 0
+            ? $"registrazione: nessun dispositivo (ffmpeg {ff}). DirectShow e WASAPI servono su Windows, con l'FFmpeg dell'app."
+            : $"registrazione: {microfoni.Count} microfoni, {uscite.Count} uscite del PC");
+        return new DispositiviAudio(microfoni, uscite);
+    }
+
+    /// <summary>Il monitor principale, in pixel veri. Se non si legge, gdigrab prende tutto il desktop.</summary>
+    public static ComandiRegistrazione.Schermo? SchermoPrincipale()
+    {
+        try
+        {
+            var b = System.Windows.Forms.Screen.PrimaryScreen?.Bounds;
+            if (b is null || b.Value.Width < 2 || b.Value.Height < 2) return null;
+            return new ComandiRegistrazione.Schermo(b.Value.X, b.Value.Y, b.Value.Width, b.Value.Height);
+        }
+        catch (Exception e)
+        {
+            Registro.Scrivi($"registrazione: non leggo il monitor principale ({e.Message}), prendo tutto il desktop");
+            return null;
+        }
     }
 
     static bool ApriPezzo()
@@ -226,7 +297,9 @@ public static class Registrazione
                 RedirectStandardError = true,
                 StandardErrorEncoding = Encoding.UTF8,
             };
-            foreach (var a in Argomenti(path)) psi.ArgumentList.Add(a);
+            var argomenti = ComandiRegistrazione.Argomenti(modo, mic, audioPc, path, modo == "audio" ? null : SchermoPrincipale());
+            Registro.Scrivi($"> ffmpeg {ComandiRegistrazione.Riga(argomenti)}");
+            foreach (var a in argomenti) psi.ArgumentList.Add(a);
             var p = Process.Start(psi);
             if (p is null) return false;
             p.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) ultimoErrore = e.Data!; };
@@ -245,6 +318,7 @@ public static class Registrazione
                         attiva = false;
                         proc = null;
                         BarraRegistrazione.Chiudi();
+                        Registro.Scrivi($"registrazione: FFmpeg si è chiuso subito ({p.ExitCode}) {ultimoErrore}");
                         Vassoio.Dire("La registrazione non è partita", string.IsNullOrWhiteSpace(ultimoErrore) ? "FFmpeg si è chiuso subito." : ultimoErrore);
                         PulisciCartella();
                     });
@@ -257,66 +331,6 @@ public static class Registrazione
             Registro.Errore("registrazione", e);
             return false;
         }
-    }
-
-    static IEnumerable<string> Argomenti(string uscita)
-    {
-        yield return "-hide_banner";
-        yield return "-y";
-        var ingressiAudio = 0;
-        if (modo == "schermo")
-        {
-            yield return "-thread_queue_size"; yield return "1024";
-            yield return "-f"; yield return "gdigrab";
-            yield return "-framerate"; yield return "30";
-            yield return "-draw_mouse"; yield return "1";
-            yield return "-i"; yield return "desktop";
-        }
-        if (!string.IsNullOrWhiteSpace(mic))
-        {
-            yield return "-thread_queue_size"; yield return "1024";
-            yield return "-f"; yield return "dshow";
-            yield return "-i"; yield return "audio=" + mic;
-            ingressiAudio++;
-        }
-        if (!string.IsNullOrWhiteSpace(audioPc))
-        {
-            yield return "-thread_queue_size"; yield return "1024";
-            yield return "-f"; yield return "wasapi";
-            yield return "-loopback"; yield return "1";
-            yield return "-i"; yield return audioPc!;
-            ingressiAudio++;
-        }
-        if (modo == "schermo")
-        {
-            if (ingressiAudio == 2)
-            {
-                yield return "-filter_complex"; yield return "[1:a][2:a]amix=inputs=2:duration=longest:dropout_transition=0[a]";
-                yield return "-map"; yield return "0:v";
-                yield return "-map"; yield return "[a]";
-            }
-            else if (ingressiAudio == 1)
-            {
-                yield return "-map"; yield return "0:v";
-                yield return "-map"; yield return "1:a";
-            }
-            yield return "-c:v"; yield return "libx264";
-            yield return "-preset"; yield return "veryfast";
-            yield return "-crf"; yield return "23";
-            yield return "-pix_fmt"; yield return "yuv420p";
-            if (ingressiAudio > 0) { yield return "-c:a"; yield return "aac"; yield return "-b:a"; yield return "160k"; }
-        }
-        else
-        {
-            if (ingressiAudio == 2)
-            {
-                yield return "-filter_complex"; yield return "[0:a][1:a]amix=inputs=2:duration=longest:dropout_transition=0[a]";
-                yield return "-map"; yield return "[a]";
-            }
-            yield return "-c:a"; yield return "aac";
-            yield return "-b:a"; yield return "192k";
-        }
-        yield return uscita;
     }
 
     static void ChiudiMorbido(Process p)
@@ -345,50 +359,6 @@ public static class Registrazione
         dir = finale = null;
         pezzi.Clear();
         try { if (cartella is not null) Directory.Delete(cartella, true); } catch { /* il temp la toglie dopo */ }
-    }
-
-    static List<string> NomiDshow(string ffmpeg)
-    {
-        var testo = Leggi(ffmpeg, "-hide_banner", "-list_devices", "true", "-f", "dshow", "-i", "dummy");
-        var audio = false;
-        var nomi = new List<string>();
-        foreach (var riga in testo.Split('\n'))
-        {
-            if (riga.Contains("DirectShow audio", StringComparison.OrdinalIgnoreCase)) { audio = true; continue; }
-            if (riga.Contains("DirectShow video", StringComparison.OrdinalIgnoreCase)) { audio = false; continue; }
-            if (!audio || riga.Contains("Alternative name", StringComparison.OrdinalIgnoreCase)) continue;
-            Aggiungi(nomi, riga);
-        }
-        return nomi;
-    }
-
-    static List<string> NomiWasapi(string ffmpeg)
-    {
-        var testo = Leggi(ffmpeg, "-hide_banner", "-list_devices", "true", "-f", "wasapi", "-i", "dummy");
-        var tutti = new List<string>();
-        var playback = new List<string>();
-        foreach (var riga in testo.Split('\n'))
-        {
-            if (riga.Contains("(capture)", StringComparison.OrdinalIgnoreCase)) continue;
-            if (NomeFraVirgolette(riga) is not { } n) continue;
-            if (!tutti.Contains(n)) tutti.Add(n);
-            if (riga.Contains("playback", StringComparison.OrdinalIgnoreCase) && !playback.Contains(n)) playback.Add(n);
-        }
-        return playback.Count > 0 ? playback : tutti;
-    }
-
-    static void Aggiungi(List<string> nomi, string riga)
-    {
-        if (NomeFraVirgolette(riga) is { } n && !nomi.Contains(n)) nomi.Add(n);
-    }
-
-    static string? NomeFraVirgolette(string riga)
-    {
-        var a = riga.IndexOf('"');
-        var b = a >= 0 ? riga.IndexOf('"', a + 1) : -1;
-        if (a < 0 || b <= a) return null;
-        var n = riga[(a + 1)..b].Trim();
-        return n.Length == 0 ? null : n;
     }
 
     static string Leggi(string ffmpeg, params string[] args)
