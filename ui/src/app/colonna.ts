@@ -5,7 +5,7 @@
 import { chiedi } from '../ponte';
 import type { InfoFile } from '../ponte';
 import { h, durata } from '../util';
-import { iconaCategoria, coloreCategoria } from '../icone';
+import { iconaCategoria, coloreCategoria, icone } from '../icone';
 
 interface Indice { tipo: 'pagine' | 'tempo' | 'singola'; voci: number; totale: number; punti: number[] }
 
@@ -36,7 +36,16 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
   const barra = h('div.cl-barra', { tabindex: '0', role: 'slider', 'aria-label': 'Posizione', hidden: true }, riempi);
   const grande = h('div.cl-grande', null, figura, barra, etichetta);
   const strisce = h('div.cl-strisce', { tabindex: '0', role: 'listbox', 'aria-label': 'Indice dell\'anteprima' });
-  const el = h('div.ap-colonna', null, grande, strisce);
+  const bPlay = h('button.cl-play', { type: 'button', title: 'Play / pausa', html: icone.play, onclick: () => alterna() });
+  const tempoSuono = h('div.cl-tempo', null, '—');
+  const vol = h<HTMLInputElement>('input.cl-vol', { type: 'range', min: '0', max: '1', step: '0.01', value: '1', 'aria-label': 'Volume' });
+  vol.addEventListener('input', () => { if (audio) audio.volume = +vol.value; });
+  const suono = h('div.cl-suono', null,
+    bPlay,
+    tempoSuono,
+    h('div.cl-vol-etichetta', null, 'VOLUME'),
+    vol);
+  const el = h('div.ap-colonna', null, grande, strisce, suono);
 
   let gettone = 0;                              // cambia a ogni file: le risposte in ritardo si scartano
   let file: InfoFile | null = null;
@@ -91,6 +100,7 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
     barra.setAttribute('aria-valuenow', String(Math.round(posizione)));
     barra.setAttribute('aria-valuemax', String(Math.round(tot)));
     etichetta.textContent = `${durata(posizione)} di ${durata(tot)}${suona ? ' · in riproduzione' : ''}`;
+    tempoSuono.textContent = `${durata(posizione)}  /  ${durata(tot)}`;
   }
 
   /** Dove cade il cursore sulla figura, in secondi. */
@@ -148,6 +158,7 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
     const m = media();
     if (!m) return;
     suona = true;
+    bPlay.innerHTML = icone.pausa;
     clearTimeout(spegniSuono);
     m.muted = false;
     try { m.currentTime = t; } catch { /* sotto */ }
@@ -159,6 +170,7 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
 
   function pausa() {
     suona = false;
+    bPlay.innerHTML = icone.play;
     clearTimeout(spegniSuono);
     media()?.pause();
     figura.classList.remove('suona');
@@ -170,6 +182,7 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
 
   function spegniMedia() {
     suona = false;
+    bPlay.innerHTML = icone.play;
     clearTimeout(spegniSuono);
     cancelAnimationFrame(rafSeek);
     rafSeek = 0;
@@ -207,6 +220,7 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
     } else {
       const a = new Audio();
       a.preload = 'auto';
+      a.volume = +vol.value;
       audio = a;
       a.onloadedmetadata = () => { if (g === gettone && audio === a) scrub = 'audio'; };
       a.onerror = () => { if (g === gettone && audio === a) { scrub = 'muto'; suona = false; } };
@@ -352,6 +366,9 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
       attesa.length = 0;
       inCorso = false;
       file = f;
+      el.classList.toggle('audio', f.categoria === 'audio');
+      bPlay.innerHTML = icone.play;
+      tempoSuono.textContent = '—';
       indice = null;
       scelta = -1;
       tipoDescritto = '';
@@ -365,7 +382,22 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
       if (f.anteprima) { img.src = f.anteprima; img.hidden = false; segnaposto.hidden = true; } else { img.hidden = true; segnaposto.hidden = false; }
       const g = gettone;
       chiedi<Indice>('indiceAnteprima', { id: f.id })
-        .then((i) => { if (g !== gettone) return; costruisci(i); if (i.tipo === 'tempo') void preparaScrub(f, g); void scegli(0); pronto(); })
+        .then((i) => {
+          if (g !== gettone) return;
+          // un brano non ha i pezzi nel tempo: si ascolta da qui, con play, posizione e volume
+          if (f.categoria === 'audio') {
+            indice = i;
+            tipoDescritto = 'si ascolta da qui';
+            strisce.replaceChildren();
+            if (i.tipo === 'tempo') void preparaScrub(f, g);
+            pronto();
+            return;
+          }
+          costruisci(i);
+          if (i.tipo === 'tempo') void preparaScrub(f, g);
+          void scegli(0);
+          pronto();
+        })
         .catch(() => { if (g !== gettone) return; costruisci({ tipo: 'singola', voci: 1, totale: 1, punti: [0] }); void scegli(0); pronto(); });
     },
   };

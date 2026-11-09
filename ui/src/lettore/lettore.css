@@ -262,7 +262,24 @@ kbd { display: inline-grid; place-items: center; min-width: 24px; height: 23px; 
 .a-fondo.vuoto { background: radial-gradient(700px 480px at 25% 35%, color-mix(in srgb, var(--cop) 24%, transparent), transparent 70%), radial-gradient(600px 420px at 85% 75%, rgba(255, 61, 242, 0.12), transparent); filter: none; opacity: 1; }
 .a-scheda { position: relative; z-index: 1; width: min(1080px, 100%); display: grid; grid-template-columns: minmax(180px, min(36vh, 360px)) minmax(0, 1fr); gap: clamp(22px, 4vw, 56px); align-items: center; }
 .a-sinistra { display: grid; gap: 14px; }
+.a-cover-box { position: relative; }
 .a-cover { width: 100%; aspect-ratio: 1; border-radius: 18px; background-size: cover; background-position: center; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08); transition: transform 0.6s var(--liscio), box-shadow 0.6s; }
+.a-cover-tasti { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; gap: 8px; opacity: 0; transform: translateY(6px); transition: opacity 0.15s, transform 0.15s; pointer-events: none; }
+.a-cover-box:hover .a-cover-tasti, .a-cover-box:focus-within .a-cover-tasti { opacity: 1; transform: none; pointer-events: auto; }
+.a-cover-tasti button { flex: 1; height: 34px; border-radius: 999px; background: rgba(12, 10, 18, 0.86); color: #fff; border: 1px solid rgba(255, 255, 255, 0.28); font: 800 11px var(--marchio); letter-spacing: 0.08em; text-transform: uppercase; }
+.a-cover-tasti button:hover { background: #ffd54a; color: #1a1405; border-color: #ffd54a; }
+.a-scelta { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; background: rgba(5, 4, 8, 0.62); }
+.a-scelta-box { width: min(520px, 92%); background: #16141f; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; padding: 18px 18px 16px; display: grid; gap: 12px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
+.a-scelta-box h2 { margin: 0; font: 800 18px var(--ui); }
+.a-scelta-box p { margin: 0; color: var(--testo2); font-size: 13.5px; line-height: 1.45; }
+.a-scelta-fila { display: flex; flex-wrap: wrap; gap: 8px; }
+.a-scelta-fila button, .a-chiudi { height: 34px; padding: 0 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); color: #fff; border: 1px solid rgba(255, 255, 255, 0.16); font: 700 13px var(--ui); }
+.a-scelta-fila button:first-child { background: #ffd54a; color: #1a1405; border-color: #ffd54a; }
+.a-oppure { font: 800 11px var(--marchio) !important; letter-spacing: 0.14em; color: #ffd54a !important; }
+.a-varianti { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.a-varianti button { aspect-ratio: 1; border-radius: 10px; background: #0c0a12 center/cover no-repeat; border: 2px solid transparent; }
+.a-varianti button:hover { border-color: #ffd54a; }
+.a-chiudi { justify-self: end; }
 .a-stanza.suona .a-cover { transform: scale(1.02); box-shadow: 0 34px 80px rgba(0, 0, 0, 0.65), 0 0 64px color-mix(in srgb, var(--cop) 30%, transparent), 0 0 0 1px rgba(255, 255, 255, 0.1); }
 .a-cover.vuota { display: grid; place-content: center; justify-items: center; gap: 6px; background: radial-gradient(circle at 30% 25%, #ff7bf6, #8a2cff 70%); }
 .a-cover.vuota b { font: 900 clamp(22px, 4vh, 40px) var(--marchio); color: #fffbe0; letter-spacing: 0.04em; }
@@ -537,7 +554,7 @@ kbd { display: inline-grid; place-items: center; min-width: 24px; height: 23px; 
 
 @media (max-width: 760px) {
   .a-scheda { grid-template-columns: 1fr; }
-  .a-cover { width: min(56vw, 34vh); margin: 0 auto; }
+  .a-cover-box { width: min(56vw, 34vh); margin: 0 auto; }
   .l-foglietto-corpo { grid-template-columns: 1fr; }
   .l-converti { padding: 0 9px; font-size: 0; gap: 0; }
   .c-tavolo.con-indice { grid-template-columns: 1fr; }

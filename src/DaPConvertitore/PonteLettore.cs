@@ -137,7 +137,8 @@ public sealed class PonteLettore
                 var p = P(a);
                 var s = await Scheda_(p);
                 var i = s.Info;
-                var copertina = i.Video is null ? await Media.Copertina(strumenti, p, i.Copertina) : null;
+                // si prova sempre la copertina dentro il file: a volte FFprobe non la segna, e dopo una modifica la scheda in cache è vecchia
+                var copertina = i.Video is null ? await Media.Copertina(strumenti, p, true) : null;
                 return new
                 {
                     durata = i.Durata, contenitore = i.Contenitore, bitrate = i.Bitrate,
@@ -153,7 +154,7 @@ public sealed class PonteLettore
                     esterni = Media.SottotitoliAccanto(p).Select(f => new { nome = Path.GetFileName(f), percorso = f }),
                     tag = s.Tag,
                     capitoli = s.Capitoli.Select(c => new { inizio = double.Parse(c.Inizio, CultureInfo.InvariantCulture), titolo = c.Titolo }),
-                    copertina = copertina is null ? null : $"data:image/jpeg;base64,{Convert.ToBase64String(copertina)}",
+                    copertina = new EsitoCopertina(copertina, null, true, null).ComeDataUrl(),
                 };
             }
             case "audioCache":
@@ -415,6 +416,38 @@ public sealed class PonteLettore
                 for (var n = 2; File.Exists(uscita); n++) uscita = $"{radice} {n}.png";
                 await File.WriteAllBytesAsync(uscita, b);
                 return uscita;
+            }
+            case "salvaCopertina":
+            {
+                var dove = await Copertine.SalvaAccanto(strumenti, P(a));
+                return new { percorso = dove, nome = Path.GetFileName(dove) };
+            }
+            case "scegliCopertina":
+            {
+                string? scelto = null;
+                await finestra.Dispatcher.InvokeAsync(() =>
+                {
+                    var d = new Microsoft.Win32.OpenFileDialog { Title = "Scegli la copertina", Filter = "Immagini|*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.tif;*.tiff" };
+                    if (d.ShowDialog(finestra) == true) scelto = d.FileName;
+                });
+                if (scelto is null) return null;
+                var esito = await Copertine.Applica(strumenti, P(a), scelto);
+                schede.Remove(P(a));
+                return new { copertina = esito.ComeDataUrl(), accanto = esito.Accanto, dentro = esito.Dentro, nota = esito.Nota };
+            }
+            case "mettiCopertina":
+            {
+                var esito = await Copertine.ApplicaGenerata(strumenti, P(a), (string?)a["titolo"] ?? "", a["variante"]?.GetValue<int>() ?? 0);
+                schede.Remove(P(a));
+                return new { copertina = esito.ComeDataUrl(), accanto = esito.Accanto, dentro = esito.Dentro, nota = esito.Nota };
+            }
+            case "copertine":
+            {
+                var titolo = (string?)a["titolo"] ?? "";
+                var elenco = new List<string>();
+                for (var n = 0; n < Copertine.Quante; n++)
+                    elenco.Add(new EsitoCopertina(Copertine.Genera(titolo, n, null), null, false, null).ComeDataUrl()!);
+                return elenco;
             }
             case "apriFile":
             {

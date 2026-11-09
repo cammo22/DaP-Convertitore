@@ -1,5 +1,5 @@
 // Lo stato della piastra e le domande che si fanno sempre sullo stato. Una cosa sola, condivisa da tutti i pezzi.
-import type { Carico, Categoria, Formato, InfoFile, Lavoro, Opzioni, Piano, StimaImmagine, Stato } from '../ponte';
+import type { Carico, Categoria, Formato, InfoFile, Lavoro, Opzioni, OpzioniScheda, Piano, StimaImmagine, Stato } from '../ponte';
 
 export const opzioniDiPartenza = (): Opzioni => ({
   video: { modo: 'peso', pesoByte: 0, qualita: 70, codec: 'h264', lato: 0, motore: 'auto', senzaAudio: false, audioKbps: 0, fps: 0, gifLarghezza: 480, gifFps: 15 },
@@ -24,6 +24,8 @@ export const s = {
   piano: null as Piano | null,
   /** La stima del peso della foto scelta (quanto pesa, a che qualità ci si arriva), con la chiave che dice per quale foto e formato. */
   stimaFoto: null as (StimaImmagine & { chiave: string }) | null,
+  /** Le info corrette per ogni file della coda: si scrivono nel convertito di quel file. */
+  schede: new Map<string, OpzioniScheda>(),
   carico: { cpu: 0, encoder: 0, decoder: 0, grafica: 0 } as Carico,
   giro: [] as string[],
   impostazioniAperte: false,
@@ -60,4 +62,5 @@ export const ui = {
   rapido: () => {},
   impostazioni: () => {},
   nuovoGiro: () => {},
+  testa: () => {},
 };

@@ -2,6 +2,16 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## In lavorazione
+
+- **La copertina si vede anche sul player dell'avatar.** Prima, trascinando un brano sull'avatar, c'erano solo le barrette: la foto del disco non arrivava. Ora c'è, e passandoci sopra (anche nel lettore intero) escono **Modifica** e **Download**. Download la salva nella stessa cartella del brano, senza chiedere dove; se il nome c'è già ne fa un altro. Modifica la estrae, ne carica una dal disco, oppure ne sceglie una disegnata dall'app (viola, oro, magenta, dal titolo). Su MP3, M4A e FLAC entra nel file: si scrive accanto e poi si sostituisce, e se qualcosa va storto l'originale resta. Gli altri formati non la tengono dentro: viene salvata accanto e te lo dice.
+- **«Di seguito» si chiama «Riproduci coda».**
+- **Il fulmine non sta più nella barra del lettore.** Le conversioni rapide restano col tasto U.
+- **Info del file**, nella colonna di mezzo, in una sezione che si apre e si chiude. Per la musica: titolo, artista, album, anno, traccia, copertina. Per il video (MP4, MOV, MKV): titolo e commento. Per la foto (JPG e TIFF): data dello scatto, descrizione, autore. Quello che scrivi finisce **nel file convertito**; l'originale resta com'è. Se il formato non le tiene, la sezione lo dice.
+- **L'anteprima di un brano** non ha più la colonna dei pezzi nel tempo: al suo posto ci sono play, pausa, la posizione e il volume. Video, foto e PDF restano come prima.
+- **Novità**, sulla barra bianca, è scura e si legge. Le icone della barra stanno scure, perché la barra è sempre bianca.
+- **Una bolla sola** al posto delle due (scheda video e processore). Il clic passa da GPU a CPU, si vede quella scelta e la prossima volta è ancora lì.
+
 ## 2.2.8 — 9 novembre 2026
 
 - **Le icone dei file sono rifatte, e quelle piccole si leggono.** A 16, 20 e 24 pixel non c'è più il foglio piegato (diventava una macchia): c'è una mattonella tonda, viola notte, col bordo del colore del tipo e una sagoma piena. Video, musica, foto, PDF, documenti, fogli, presentazioni, codice, sottotitoli, archivi, caratteri e modelli hanno ognuno il suo segno. Dalle 32 pixel in su resta il foglio, col disegnino più nitido.

@@ -113,7 +113,13 @@ export function regolazioniVideo(f: Formato) {
             ...(haAmd ? [{ v: 'amd', testo: 'AMD' }] : []),
             ...(haIntel ? [{ v: 'intel', testo: 'Intel' }] : []),
             { v: 'cpu', testo: 'CPU', nota: 'più lenta' },
-          ], o.motore, (v) => { o.motore = v; s.piano = null; })),
+          ], o.motore, (v) => {
+            o.motore = v;
+            s.stato.impostazioni.codificaCon = v === 'cpu' ? 'cpu' : 'gpu';
+            void chiedi('impostazioni', { codificaCon: s.stato.impostazioni.codificaCon });
+            s.piano = null;
+            ui.testa();
+          })),
           h('div.sotto-gruppo', null, h('label', null, 'AUDIO'), bottoni([{ v: 'si', testo: 'Tienilo' }, { v: 'no', testo: 'Toglilo' }], o.senzaAudio ? 'no' : 'si', (v) => { o.senzaAudio = v === 'no'; s.piano = null; })),
         ))
     : null;

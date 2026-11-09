@@ -80,6 +80,8 @@ export interface Impostazioni {
   avatarCambioAuto?: boolean;
   /** I gruppi scelti per «Aprire tutto con DaProd» (null = tutti). */
   gruppiPredefiniti?: string[] | null;
+  /** Con cosa codificare i video: la scheda o il processore. Si ricorda. */
+  codificaCon?: 'gpu' | 'cpu' | null;
   formati: Record<string, string>;
   scelte?: Record<string, unknown> | null;
 }
@@ -195,7 +197,21 @@ export interface StimaImmagine { peso: number; qualita: number; scala: number; m
 export interface OpzioniPdf { dpi: number }
 /** Compressione degli archivi: -1 solo archiviare, 0 il livello di partenza del formato, 1…9 (7-Zip). */
 export interface OpzioniArchivio { livello: number; /** Solo in memoria: serve per aprire un archivio cifrato o, in ZIP e 7Z, per cifrarlo. */ password?: string }
-export interface Opzioni { video: OpzioniVideo; audio: OpzioniAudio; immagine: OpzioniImmagine; pdf: OpzioniPdf; archivio: OpzioniArchivio }
+/** Le info corrette nella sezione «Info del file»: finiscono nel file convertito. La copertina è un percorso, «nessuna» o «generata:n». */
+export interface OpzioniScheda {
+  scrivi: boolean;
+  titolo?: string | null;
+  artista?: string | null;
+  album?: string | null;
+  anno?: string | null;
+  traccia?: string | null;
+  commento?: string | null;
+  autore?: string | null;
+  descrizione?: string | null;
+  dataScatto?: string | null;
+  copertina?: string | null;
+}
+export interface Opzioni { video: OpzioniVideo; audio: OpzioniAudio; immagine: OpzioniImmagine; pdf: OpzioniPdf; archivio: OpzioniArchivio; scheda?: OpzioniScheda }
 
 type Ascoltatore = (dati: any) => void;
 

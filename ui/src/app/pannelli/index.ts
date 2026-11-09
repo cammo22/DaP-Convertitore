@@ -4,11 +4,21 @@ import type { Categoria, Formato } from '../../ponte';
 import { h } from '../../util';
 import { s, eVideoVero } from '../stato';
 import { gruppo, bottoni, interruttore } from '../controlli';
+import { sezioneScheda } from './scheda';
 import { regolazioniVideo } from './video';
 import { regolazioniImmagine } from './immagine';
 import { eFormatoArchivio, regolazioniArchivio, regolazioniEstrai } from './archivio';
 
 export function regolazioni(c: Categoria, f?: Formato): Node {
+  const n = corpoRegolazioni(c, f);
+  if (f && n instanceof HTMLElement) {
+    const extra = sezioneScheda(c, f);
+    if (extra) n.append(extra);
+  }
+  return n;
+}
+
+function corpoRegolazioni(c: Categoria, f?: Formato): Node {
   if (!f) return h('div');
   const o = s.opzioni;
   if (eVideoVero(f)) return regolazioniVideo(f);

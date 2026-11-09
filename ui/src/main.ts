@@ -33,8 +33,47 @@ function cpuCorta(n: string) {
   return n.replace(/\(R\)|\(TM\)|CPU|Processor/gi, '').replace(/with Radeon.*$/i, '').replace(/@.*$/, '').replace(/^(AMD|Intel)\s+/i, '').replace(/Core\s+/i, '').replace(/\s+/g, ' ').trim();
 }
 
-function disegnaTesta() {
+/** La bolla unica: scheda video o processore, quella con cui si codifica. */
+function usaGpu() {
   const hw = s.stato.hardware;
+  const scelto = s.stato.impostazioni.codificaCon;
+  if (scelto === 'cpu') return false;
+  if (scelto === 'gpu') return !!hw?.acceleratore;
+  return !!hw?.acceleratore && s.opzioni.video.motore !== 'cpu';
+}
+
+function giraCodifica() {
+  const hw = s.stato.hardware;
+  if (!hw?.acceleratore) return;
+  clac();
+  const gpu = !usaGpu();
+  s.stato.impostazioni.codificaCon = gpu ? 'gpu' : 'cpu';
+  if (!gpu) s.opzioni.video.motore = 'cpu';
+  else if (s.opzioni.video.motore === 'cpu') {
+    const enc = hw.encoder;
+    s.opzioni.video.motore = enc.some((e) => e.endsWith('_nvenc')) ? 'nvidia' : enc.some((e) => e.endsWith('_amf')) ? 'amd' : enc.some((e) => e.endsWith('_qsv')) ? 'intel' : 'auto';
+  }
+  void chiedi('impostazioni', { codificaCon: s.stato.impostazioni.codificaCon });
+  s.piano = null;
+  disegnaTesta();
+  if (s.vista === 'scegli' && s.stato.modo === 'finestra') ui.scegli();
+}
+
+function bollaMotore() {
+  const hw = s.stato.hardware;
+  if (!hw) return h('span.chip', null, h('i.led.lampeggia'), 'Guardo la macchina…');
+  const gpu = usaGpu();
+  const testo = gpu && hw.acceleratore ? hw.acceleratore : `${cpuCorta(hw.cpu)} · ${hw.thread} thread`;
+  const titolo = !hw.acceleratore
+    ? hw.cpu
+    : gpu
+      ? 'Codifichi con la scheda video. Clic per passare al processore.'
+      : 'Codifichi con il processore. Clic per passare alla scheda video.';
+  return h(`button.chip.motore${gpu ? '.gpu' : '.cpu'}`, { type: 'button', title: titolo, onclick: () => giraCodifica() },
+    h(`i.led${gpu ? '.verde' : '.ambra'}`), testo);
+}
+
+function disegnaTesta() {
   testa.replaceChildren(
     h('div.marchio', null,
       h('span.logo', { html: logoSvg }),
@@ -43,8 +82,7 @@ function disegnaTesta() {
     h('div.trascina', { 'data-regione': 'trascina' }),
     h('div.chip-hw', null,
       s.aggiornamento ? h('button.chip.agg', { title: `Installa la ${s.aggiornamento} e riapre il convertitore`, onclick: () => { clac(true); void chiedi('aggiorna', { installa: true }); } }, h('i.led.verde'), `Aggiornamento ${s.aggiornamento} disponibile`) : null,
-      hw?.acceleratore ? h('span.chip.gpu', { title: hw.gpu.map((g) => g.nome).join(' · ') }, h('i.led.verde'), hw.acceleratore) : h('span.chip', null, h('i.led'), 'Solo CPU'),
-      hw ? h('span.chip', { title: hw.cpu }, h('i.led.ambra'), `${cpuCorta(hw.cpu)} · ${hw.thread} thread`) : h('span.chip', null, h('i.led.lampeggia'), 'Guardo la macchina…'),
+      bollaMotore(),
     ),
     h('div.finestra', null,
       h('button.btn-fin.nov', { title: 'Novità e aggiornamenti', onclick: () => void apriNovita(), html: icone.novita }),
@@ -303,6 +341,8 @@ function elementiDaConvertire() {
       const peso = c === 'immagine' && conQualita(f) && o.immagine.modo === 'peso' ? pesoVolutoFoto(id) : 0;
       o.immagine.pesoMaxByte = peso;
       if (peso) o.immagine.qualita = QUALITA_PER_PESO;
+      const sch = s.schede.get(id);
+      if (sch?.scrivi) o.scheda = { ...sch };
       el.push({ ids: [id], formato: f.id, opzioni: o });
     }
   }
@@ -351,10 +391,13 @@ function opzioniSalvate() {
   if (!sc) return;
   for (const k of ['video', 'audio', 'immagine', 'pdf'] as const) if (sc[k]) Object.assign(s.opzioni[k], sc[k]);
   if (s.opzioni.video.modo === 'auto') s.opzioni.video.modo = 'peso';
+  // la bolla in alto è la scelta che si ricorda: vince su un motore vecchio salvato in senso contrario
+  if (s.stato.impostazioni.codificaCon === 'cpu') s.opzioni.video.motore = 'cpu';
+  else if (s.stato.impostazioni.codificaCon === 'gpu' && s.opzioni.video.motore === 'cpu') s.opzioni.video.motore = 'auto';
 }
 
 async function avvia() {
-  Object.assign(ui, { tutto: disegnaTutto, scegli: disegnaScegli, piede: disegnaPiede, coda: disegnaCoda, fatto: disegnaFatto, rapido: disegnaRapido, impostazioni: apriImpostazioni, nuovoGiro });
+  Object.assign(ui, { tutto: disegnaTutto, scegli: disegnaScegli, piede: disegnaPiede, coda: disegnaCoda, fatto: disegnaFatto, rapido: disegnaRapido, impostazioni: apriImpostazioni, nuovoGiro, testa: disegnaTesta });
   await avviaFinto();
   avviaIncolla();
   ascolta('file', (f: InfoFile) => {

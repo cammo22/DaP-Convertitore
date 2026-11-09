@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Threading;
+using DaP.Convertitore.Lettore;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 
@@ -383,6 +384,11 @@ public sealed class Ponte
                     imp.ApriCon = ap.GetValue<bool>();
                     if (imp.ApriCon) ApriCon.Registra(Environment.ProcessPath!); else ApriCon.Rimuovi();
                 }
+                if (a["codificaCon"] is { } cc)
+                {
+                    var v = (string?)cc;
+                    imp.CodificaCon = v is "gpu" or "cpu" ? v : null;
+                }
                 if (a["formati"] is JsonObject fo) imp.Formati = fo.ToDictionary(kv => kv.Key, kv => (string?)kv.Value ?? "");
                 if (a["scelte"] is JsonObject sc) imp.Scelte = (JsonObject)sc.DeepClone();
                 imp.Salva();
@@ -551,6 +557,31 @@ public sealed class Ponte
             case "registro":
                 if (File.Exists(Registro.Percorso)) Process.Start(new ProcessStartInfo(Registro.Percorso) { UseShellExecute = true });
                 return true;
+            case "schedaFile":
+            {
+                var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
+                var fmt = Catalogo.Trova((string?)a["formato"] ?? "");
+                var est = string.IsNullOrEmpty(fmt?.Estensione) ? Path.GetExtension(v.Info.Percorso) : fmt!.Estensione;
+                return await Metadati.Leggi(strumenti, v.Info.Percorso, est);
+            }
+            case "scegliImmagine":
+            {
+                string? scelto = null;
+                await finestra.Dispatcher.InvokeAsync(() =>
+                {
+                    var d = new Microsoft.Win32.OpenFileDialog { Title = "Scegli la copertina", Filter = "Immagini|*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.tif;*.tiff" };
+                    if (d.ShowDialog(finestra) == true) scelto = d.FileName;
+                });
+                return scelto;
+            }
+            case "copertine":
+            {
+                var titolo = (string?)a["titolo"] ?? "";
+                var elenco = new List<string>();
+                for (var n = 0; n < Copertine.Quante; n++)
+                    elenco.Add(new EsitoCopertina(Copertine.Genera(titolo, n, null), null, false, null).ComeDataUrl()!);
+                return elenco;
+            }
         }
         throw new InvalidOperationException($"Comando sconosciuto: {cmd}");
     }

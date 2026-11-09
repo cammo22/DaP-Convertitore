@@ -8,6 +8,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using DaP.Convertitore.Lettore;
 using Microsoft.Win32;
 
 namespace DaP.Convertitore.App;
@@ -548,6 +549,11 @@ public sealed class MiniPlayer : Window
     };
     readonly Grid barra = new() { Height = 22, Background = Brushes.Transparent, Cursor = Cursors.Hand, Margin = new Thickness(0, 12, 0, 0) };
     readonly List<Border> equalizzatore = [];
+    readonly Image fotoCopertina = new() { Stretch = Stretch.UniformToFill, IsHitTestVisible = false };
+    readonly StackPanel barretteEq = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Height = 22, IsHitTestVisible = false };
+    byte[]? copertinaOra;
+    string? notaSotto;
+    int notaPer;
     readonly Button bPlay;
     readonly DispatcherTimer orologio;
     int i;
@@ -578,20 +584,30 @@ public sealed class MiniPlayer : Window
         barra.MouseMove += (_, e) => { if (barra.IsMouseCaptured) Cerca(e); };
         barra.MouseLeftButtonUp += (_, _) => barra.ReleaseMouseCapture();
 
-        // in alto: l'icona con le barrette che ballano, il titolo (intero, per quanto ci sta) e la X
+        // in alto: la copertina (o le barrette, se il brano non ne ha), il titolo e la X.
+        // sopra la copertina, col mouse, escono Modifica e Download
         var tessera = new Border
         {
-            Width = 46, Height = 46, CornerRadius = new CornerRadius(14), VerticalAlignment = VerticalAlignment.Center,
+            Width = 112, Height = 112, CornerRadius = new CornerRadius(16), VerticalAlignment = VerticalAlignment.Center, ClipToBounds = true,
             Background = new LinearGradientBrush(Color.FromArgb(120, 0xff, 0x3d, 0xf2), Color.FromArgb(150, 0x5a, 0x2b, 0xbf), 45),
             BorderBrush = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), BorderThickness = new Thickness(1),
         };
-        var barrette = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Height = 22 };
         for (var k = 0; k < 4; k++)
         {
             var br = new Border { Width = 4, Height = 5, CornerRadius = new CornerRadius(2), Background = Col("#ffd54a"), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(k == 0 ? 0 : 3, 0, 0, 0) };
-            equalizzatore.Add(br); barrette.Children.Add(br);
+            equalizzatore.Add(br); barretteEq.Children.Add(br);
         }
-        tessera.Child = barrette;
+        var sopra = new StackPanel { Orientation = Orientation.Vertical, Margin = new Thickness(6, 0, 6, 4) };
+        sopra.Children.Add(TastoCopertina("Modifica", () => ModificaCopertina()));
+        sopra.Children.Add(TastoCopertina("Download", () => ScaricaCopertina()));
+        var velo = new Border { Background = new SolidColorBrush(Color.FromArgb(170, 8, 6, 14)), CornerRadius = new CornerRadius(0, 0, 14, 14), VerticalAlignment = VerticalAlignment.Bottom, Height = 58, Child = sopra, Visibility = Visibility.Collapsed };
+        var riquadro = new Grid();
+        riquadro.Children.Add(fotoCopertina);
+        riquadro.Children.Add(barretteEq);
+        riquadro.Children.Add(velo);
+        riquadro.MouseEnter += (_, _) => velo.Visibility = Visibility.Visible;
+        riquadro.MouseLeave += (_, _) => velo.Visibility = Visibility.Collapsed;
+        tessera.Child = riquadro;
         var chiudi = Tasto(null, "Chiudi", () => Close(), lato: 28, tondo: true, ico: IcChiudi);
         chiudi.VerticalAlignment = VerticalAlignment.Top; chiudi.Margin = new Thickness(0);
         var nomi = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(13, 0, 10, 0) };
@@ -684,6 +700,114 @@ public sealed class MiniPlayer : Window
         mp.Open(new Uri(brani[i]));
         mp.Play();
         Stato(true);
+        _ = CaricaCopertina(i);
+    }
+
+    async Task CaricaCopertina(int n)
+    {
+        byte[]? jpg = null;
+        try { jpg = await Media.Copertina(Strumenti.Trova(), brani[n], true); }
+        catch { /* niente copertina: restano le barrette */ }
+        if (n != i) return;
+        await Dispatcher.InvokeAsync(() => MostraCopertina(jpg));
+    }
+
+    void MostraCopertina(byte[]? jpg)
+    {
+        copertinaOra = jpg;
+        if (jpg is null)
+        {
+            fotoCopertina.Source = null;
+            barretteEq.Visibility = Visibility.Visible;
+            return;
+        }
+        fotoCopertina.Source = ImmagineDi(jpg);
+        barretteEq.Visibility = Visibility.Collapsed;
+    }
+
+    static BitmapImage ImmagineDi(byte[] b)
+    {
+        var img = new BitmapImage();
+        using var ms = new MemoryStream(b);
+        img.BeginInit();
+        img.CacheOption = BitmapCacheOption.OnLoad;
+        img.StreamSource = ms;
+        img.EndInit();
+        img.Freeze();
+        return img;
+    }
+
+    Button TastoCopertina(string testo, Action fai)
+    {
+        var b = new Button
+        {
+            Content = new TextBlock { Text = testo, FontSize = 10, FontWeight = FontWeights.Bold, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center },
+            Height = 22, Margin = new Thickness(0, 2, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch, Cursor = Cursors.Hand, Focusable = false,
+            Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)), BorderThickness = new Thickness(0),
+        };
+        var t = new ControlTemplate(typeof(Button));
+        var bordo = new FrameworkElementFactory(typeof(Border)) { Name = "b" };
+        bordo.SetValue(Border.CornerRadiusProperty, new CornerRadius(8));
+        bordo.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding("Background") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        var presente = new FrameworkElementFactory(typeof(ContentPresenter));
+        presente.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+        presente.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        bordo.AppendChild(presente);
+        t.VisualTree = bordo;
+        var su = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+        su.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)), "b"));
+        t.Triggers.Add(su);
+        b.Template = t;
+        b.Click += (_, _) => fai();
+        return b;
+    }
+
+    async void ScaricaCopertina()
+    {
+        try
+        {
+            var dove = await Copertine.SalvaAccanto(Strumenti.Trova(), brani[i]);
+            Dice($"Salvata: {Path.GetFileName(dove)}");
+        }
+        catch (Exception e) { Dice(e.Message); }
+    }
+
+    async void ModificaCopertina()
+    {
+        var era = suona;
+        var n = i;
+        mp.Pause();
+        Stato(false);
+        try
+        {
+            var esito = await FinestraCopertina.Mostra(this, brani[n]);
+            if (n != i || esito is null) { if (era && n == i) { mp.Play(); Stato(true); } return; }
+            if (esito.Dentro)
+            {
+                mp.Close();
+                mp.Open(new Uri(brani[n]));
+                if (era) { mp.Play(); Stato(true); }
+            }
+            else if (era) { mp.Play(); Stato(true); }
+            if (esito.Immagine is not null) MostraCopertina(esito.Immagine);
+            if (!string.IsNullOrEmpty(esito.Nota)) Dice(esito.Nota);
+        }
+        catch (Exception e)
+        {
+            Dice(e.Message);
+            if (era && n == i) { try { mp.Play(); Stato(true); } catch { /* il file non si riapre: la nota basta */ } }
+        }
+    }
+
+    void Dice(string testo)
+    {
+        notaSotto = sotto.Text;
+        sotto.Text = testo;
+        var giro = ++notaPer;
+        _ = Task.Delay(2400).ContinueWith(_ => Dispatcher.Invoke(() =>
+        {
+            if (giro == notaPer && notaSotto is not null) { sotto.Text = notaSotto; notaSotto = null; }
+        }));
     }
 
     void Gira() { if (suona) { mp.Pause(); Stato(false); } else { mp.Play(); Stato(true); } }

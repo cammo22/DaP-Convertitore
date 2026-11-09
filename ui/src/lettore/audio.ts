@@ -27,10 +27,15 @@ export async function monta(c: Contesto): Promise<Vista> {
   // il muto sta dopo l'analizzatore: lo spettro balla anche a volume zero
   let zitto = memoria.leggi<boolean>('muto') ?? false;
 
-  // ——— la copertina: se non c'è, una mattonella col formato ———
+  // ——— la copertina: se non c'è, una mattonella col formato. Col mouse sopra: Modifica e Download ———
   const copertina = info.copertina
     ? h('div.a-cover', { style: { backgroundImage: `url(${info.copertina})` } })
     : h('div.a-cover.vuota', null, h('b', null, estensione || 'AUDIO'), h('small', null, a0 ? a0.codec.toUpperCase().replace('PCM_', 'PCM ') : ''));
+  const boxCover = h('div.a-cover-box', null,
+    copertina,
+    h('div.a-cover-tasti', null,
+      h('button', { type: 'button', title: 'Cambia la copertina', onclick: (e: Event) => { e.stopPropagation(); void modifica(); } }, 'Modifica'),
+      h('button', { type: 'button', title: 'Salva la copertina nella cartella del brano', onclick: (e: Event) => { e.stopPropagation(); void scarica(); } }, 'Download')));
 
   // ——— la parte di destra ———
   const onda = h<HTMLCanvasElement>('canvas.a-onda');
@@ -40,7 +45,7 @@ export async function monta(c: Contesto): Promise<Vista> {
   let ripeti = memoria.leggi<boolean>('ripeti') ?? false;
   /** Di partenza suona solo il brano scelto; «Di seguito» fa suonare anche gli altri della cartella. */
   let seguito = memoria.leggi<boolean>('seguito') ?? false;
-  const bSeguito = h(`button.a-seguito.solo-fratelli${seguito ? '.su' : ''}`, { title: 'Suona anche gli altri brani della cartella, uno dopo l\'altro (T)', onclick: () => cambiaSeguito() }, h('i.led'), 'Di seguito');
+  const bSeguito = h(`button.a-seguito.solo-fratelli${seguito ? '.su' : ''}`, { title: 'Suona anche gli altri brani della cartella, uno dopo l\'altro (T)', onclick: () => cambiaSeguito() }, h('i.led'), 'Riproduci coda');
   const bRipeti = h(`button.a-b${ripeti ? '.su' : ''}`, { title: 'Ripeti il brano (R)', html: ic.ripeti, onclick: () => cambiaRipeti() });
   const vol = h<HTMLInputElement>('input.v-vol', { type: 'range', min: 0, max: 1, step: 0.01, value: audio.volume });
   vol.style.setProperty('--p', `${audio.volume * 100}%`);
@@ -58,7 +63,7 @@ export async function monta(c: Contesto): Promise<Vista> {
     info.copertina ? h('div.a-fondo', { style: { backgroundImage: `url(${info.copertina})` } }) : h('div.a-fondo.vuoto'),
     h('div.a-scheda', null,
       h('div.a-sinistra', null,
-        copertina,
+        boxCover,
         h('div.a-tecnica', null, ...tecnica.map((x) => h('span', null, x)))),
       h('div.a-destra', null,
         h('div.a-titoli', null,
@@ -229,7 +234,7 @@ export async function monta(c: Contesto): Promise<Vista> {
     memoria.scrivi('seguito', seguito);
     bSeguito.classList.toggle('su', seguito);
     sc.el.querySelector('.a-seguito-s')?.classList.toggle('su', seguito);
-    c.hud(seguito ? 'Di seguito: suona anche gli altri brani' : 'Solo questo brano', ic.elenco);
+    c.hud(seguito ? 'Riproduci coda: suona anche gli altri brani' : 'Solo questo brano', ic.elenco);
   }
   function cambiaRipeti() {
     ripeti = !ripeti;
@@ -256,10 +261,10 @@ export async function monta(c: Contesto): Promise<Vista> {
   void audio.play().catch(() => { /* aspetta un clic */ });
 
   // ——— la scaletta: i brani della cartella (il componente è in scaletta.ts) ———
-  /** La riga «Di seguito» sotto il titolo della scaletta. */
+  /** La riga «Riproduci coda» sotto il titolo della scaletta. */
   function riga() {
     return h(`button.a-seguito-s${seguito ? '.su' : ''}`, { title: 'Suona anche gli altri brani, uno dopo l\'altro (T)', onclick: () => cambiaSeguito() },
-      h('i.led'), 'Di seguito', h('small', null, seguito ? 'suona anche gli altri' : 'suona solo quello scelto'));
+      h('i.led'), 'Riproduci coda', h('small', null, seguito ? 'suona anche gli altri' : 'suona solo quello scelto'));
   }
 
   const tasti: Tasto[] = [
@@ -273,9 +278,73 @@ export async function monta(c: Contesto): Promise<Vista> {
     { k: ['p'], etichetta: 'P', cosa: 'Brano prima (o da capo)', fai: prima },
     { k: ['r'], etichetta: 'R', cosa: 'Ripeti il brano', fai: cambiaRipeti },
     { k: ['l'], etichetta: 'L', cosa: 'Scaletta', fai: () => sc.gira() },
-    { k: ['t'], etichetta: 'T', cosa: 'Di seguito: suona anche gli altri brani', fai: () => cambiaSeguito() },
+    { k: ['t'], etichetta: 'T', cosa: 'Riproduci coda: suona anche gli altri brani', fai: () => cambiaSeguito() },
     { k: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], etichetta: '0 … 9', cosa: 'Vai al 0%, 10%… 90%', fai: (e) => { audio.currentTime = (+e.key / 10) * (audio.duration || 0); } },
   ];
+
+  async function scarica() {
+    try {
+      const r = await chiedi<{ nome: string }>('salvaCopertina');
+      c.hud(`Salvata: ${r.nome}`);
+    } catch (e) { c.hud((e as Error).message); }
+  }
+
+  function mostraCopertina(url: string) {
+    copertina.classList.remove('vuota');
+    copertina.style.backgroundImage = `url(${url})`;
+    copertina.replaceChildren();
+    const fondo = stanza.querySelector('.a-fondo') as HTMLElement | null;
+    if (fondo) {
+      fondo.classList.remove('vuoto');
+      fondo.style.backgroundImage = `url(${url})`;
+    }
+    void tintaDa(url).then((col) => { if (col) stanza.style.setProperty('--cop', col); });
+  }
+
+  async function modifica() {
+    const velo = h('div.a-scelta');
+    const griglia = h('div.a-varianti');
+    const box = h('div.a-scelta-box', null,
+      h('h2', null, 'Copertina'),
+      h('p', null, 'MP3, M4A e FLAC la tengono dentro il file. Gli altri: la salvo accanto. Se qualcosa va storto, il brano resta com\'è.'),
+      h('div.a-scelta-fila', null,
+        h('button', { type: 'button', onclick: () => { void scarica(); velo.remove(); } }, 'Salva nella cartella'),
+        h('button', { type: 'button', onclick: () => void carica() }, 'Carica un\'immagine')),
+      h('p.a-oppure', null, 'Oppure una disegnata'),
+      griglia,
+      h('button.a-chiudi', { type: 'button', onclick: () => velo.remove() }, 'Chiudi'));
+    velo.append(box);
+    velo.addEventListener('click', (e) => { if (e.target === velo) velo.remove(); });
+    stanza.append(velo);
+
+    async function carica() {
+      try {
+        const r = await chiedi<{ copertina: string | null; nota: string | null } | null>('scegliCopertina');
+        if (!r) return;
+        if (r.copertina) mostraCopertina(r.copertina);
+        if (r.nota) c.hud(r.nota);
+        velo.remove();
+      } catch (e) { c.hud((e as Error).message); }
+    }
+    async function scegli(n: number) {
+      try {
+        const r = await chiedi<{ copertina: string | null; nota: string | null }>('mettiCopertina', { variante: n, titolo });
+        if (r.copertina) mostraCopertina(r.copertina);
+        if (r.nota) c.hud(r.nota);
+        velo.remove();
+      } catch (e) { c.hud((e as Error).message); }
+    }
+    try {
+      const urls = await chiedi<string[]>('copertine', { titolo });
+      urls.forEach((url, n) => {
+        griglia.append(h('button', {
+          type: 'button', title: 'Usa questa',
+          style: { backgroundImage: `url(${url})` },
+          onclick: () => void scegli(n),
+        }));
+      });
+    } catch (e) { c.hud((e as Error).message); }
+  }
 
   return {
     tasti,

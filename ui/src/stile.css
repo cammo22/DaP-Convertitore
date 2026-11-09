@@ -83,6 +83,7 @@ code { font: 600 12px 'Cascadia Mono', Consolas, monospace; color: var(--oro); b
 .trascina { flex: 1; align-self: stretch; }
 .chip-hw { display: flex; gap: 8px; }
 .chip { display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 11px; border-radius: 13px; background: #101016; border: 1px solid var(--bordo); color: var(--testo2); font: 700 12px var(--ui); letter-spacing: 0.02em; white-space: nowrap; }
+button.chip { cursor: pointer; font: 700 12px var(--ui); letter-spacing: 0.02em; }
 .chip.gpu { color: var(--testo); }
 .chip.agg { color: var(--oro); border-color: rgba(255, 213, 74, 0.45); background: #1d1a10; cursor: pointer; animation: respira 2.4s ease-in-out infinite; }
 .chip.agg:hover { background: #2a2414; }
@@ -499,6 +500,8 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .testa .chip.agg:hover { background: #ffeaa6; }
 .testa .led { box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.25); }
 .testa .led.verde { box-shadow: 0 0 6px var(--verde); }
+.testa button.chip.motore { color: #1f1c28; }
+.testa button.chip.motore:hover { background: #fff; border-color: #9a90b0; }
 .testa .btn-fin { color: #4a4659; }
 .testa .btn-fin:hover { background: rgba(0, 0, 0, 0.08); color: #14121a; }
 .testa .btn-fin.chiudi:hover { background: #c42b4a; color: #fff; }
@@ -607,6 +610,38 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .cl-segnaposto.manca { opacity: 0.45; }
 .cl-etichetta { font: 700 12.5px var(--ui); color: var(--testo2); min-height: 16px; }
 .cl-strisce { flex: none; width: 104px; overflow-y: auto; overflow-x: hidden; padding: 8px 8px; display: flex; flex-direction: column; gap: 8px; border-left: 1px solid #1d1b25; background: rgba(15, 14, 20, 0.7); outline: 0; }
+/* un brano non ha i pezzi nel tempo: al loro posto play, il tempo e il volume */
+.cl-suono { display: none; }
+.ap-colonna.audio .cl-strisce { display: none; }
+.ap-colonna.audio .cl-etichetta { display: none; }
+.ap-colonna.audio .cl-suono { display: flex; flex: none; width: 132px; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 14px 12px; border-left: 1px solid #1d1b25; background: rgba(15, 14, 20, 0.7); }
+.cl-play { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: #102a1d; background: radial-gradient(circle at 35% 30%, #b9ffe0, #5dffb4 62%, #1c9a62); box-shadow: 0 6px 18px rgba(93, 255, 180, 0.28); }
+.cl-play svg { width: 22px; height: 22px; }
+.cl-play:hover { filter: brightness(1.06); }
+.cl-tempo { font: 700 13px var(--ui); color: var(--testo); font-variant-numeric: tabular-nums; }
+.cl-vol { width: 100%; height: 16px; accent-color: #5dffb4; cursor: pointer; }
+.cl-vol::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: #3a3648; }
+.cl-vol::-webkit-slider-thumb { margin-top: -5px; }
+.cl-vol-etichetta { font: 700 10px var(--marchio); letter-spacing: 0.16em; color: var(--testo3); }
+.scheda-file { margin-top: 4px; border: 1px solid var(--bordo); border-radius: 12px; background: rgba(0, 0, 0, 0.22); }
+.scheda-file > .testa-scheda { width: 100%; display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: var(--testo); font: 800 12px var(--marchio); letter-spacing: 0.14em; }
+.scheda-file .freccia { margin-left: auto; width: 16px; height: 16px; display: grid; }
+.scheda-file .freccia svg { width: 16px; height: 16px; }
+.scheda-file.aperta .freccia { transform: rotate(180deg); }
+.scheda-file .corpo-scheda { display: none; padding: 0 12px 12px; }
+.scheda-file.aperta .corpo-scheda { display: grid; gap: 10px; }
+.scheda-nota { margin: 0; font: 600 12.5px/1.45 var(--ui); color: var(--testo2); }
+.scheda-campi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.scheda-campi label { display: grid; gap: 4px; font: 700 11px var(--ui); color: var(--testo3); min-width: 0; }
+.scheda-campi .campo { width: 100%; }
+.scheda-cover { display: flex; gap: 12px; align-items: center; }
+.scheda-cover img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; background: #0b0a0f; }
+.scheda-cover img[hidden] { display: none; }
+.scheda-dida { display: block; margin-bottom: 6px; font: 600 12.5px var(--ui); color: var(--testo2); }
+.scheda-cover-tasti { display: flex; flex-wrap: wrap; gap: 6px; }
+.scheda-varianti { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 6px; }
+.scheda-varianti button { aspect-ratio: 1; border-radius: 8px; background: #0b0a0f center/cover no-repeat; border: 2px solid transparent; }
+.scheda-varianti button.su, .scheda-varianti button:hover { border-color: var(--oro); }
 .cl-strisce.sola { width: 96px; }
 .cl-voce { position: relative; flex: none; display: block; width: 100%; padding: 0; border-radius: 5px; border: 2px solid transparent; background: none; cursor: pointer; }
 .cl-mini { min-height: 56px; border-radius: 3px; overflow: hidden; background: #1a1823; display: grid; place-items: center; }
@@ -697,7 +732,9 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .novita-testo b { color: var(--testo); }
 .novita-testo code { font-size: 12.5px; color: var(--oro); }
 .novita-stato { color: var(--verde); font-size: 13px; }
-.btn-fin.nov svg { color: var(--oro); }
+/* la barra è bianca: la stellina delle novità sta scura, se no non si legge */
+.btn-fin.nov svg { color: #2c2840; }
+.testa .btn-fin.nov:hover svg { color: #14121a; }
 
 /* la mini interfaccia accanto all'avatar: la stessa del convertitore, senza la lista dei file e senza l'anteprima */
 #app.compatto .corpo { grid-template-columns: minmax(0, 1fr) !important; }

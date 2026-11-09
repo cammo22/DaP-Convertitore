@@ -77,8 +77,19 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
   codifica (`FormatoDi`: BOM UTF-8/UTF-16, CRLF se il file lo ha, Latin-1 → UTF-8 e lo si dice) con bozza e
   `Sposta`. Le voci scelte dentro un archivio escono con 7-Zip (`SetteZip.Estrai`, vedi sotto): il percorso di una
   cartella (`foto/`) porta con sé anche quello che c'è dentro (provato in `ProveScrittura`).
-- **La barra bianca**: `.testa` (convertitore) e `.l-barra` (lettore) hanno uno sfondo chiaro apposta, il resto è
-  scuro. Non è la barra di Windows (la finestra è senza cornice): è disegnata dalla pagina.
+- **La barra bianca**: `.testa` (convertitore) e `.l-barra` (lettore) hanno **sempre** uno sfondo bianco, il resto è
+  scuro. Non è la barra di Windows (la finestra è senza cornice): è disegnata dalla pagina. Le icone e le scritte
+  della barra vanno scure, che si leggano sul bianco: un'icona oro o chiara lì sopra sparisce (è successo al tasto Novità).
+- **Con cosa si codifica**: in alto c'è una bolla sola, scheda video o processore. Il clic passa dall'una all'altra
+  e la scelta sta in `Impostazioni.CodificaCon` (`gpu` / `cpu`). La CPU forza il motore del video a `cpu`; la GPU usa
+  la scheda (nvidia, amd o intel).
+- **La scheda del file** sta nella colonna di mezzo, sezione richiudibile «Info del file», e si scrive **nel file
+  convertito** (l'originale non si tocca). Musica: titolo, artista, album, anno, traccia e, su MP3, M4A e FLAC, la
+  copertina. OGG, OPUS e WMA tengono i testi, non la copertina. Video MP4, MOV e MKV: titolo e commento. JPG e TIFF:
+  data dello scatto, descrizione, autore. Se il formato non le tiene, la sezione lo dice e non inventa campi.
+  La copertina del brano che stai ascoltando, invece, si cambia sul file vero (lettore e player dell'avatar): bozza
+  accanto e poi si sostituisce, come la rotazione (`Copertine.cs`). Download la salva nella cartella del brano,
+  senza chiedere dove e senza sovrascrivere.
 - **Ritocco delle foto** (dalla 1.5.0): `ui/src/lettore/ritocco.ts` disegna su due fogli canvas (`base` = segni fissati,
   `viva` = segno in corso) grandi quanto la foto, dentro un wrapper che prende lo stesso `transform` della foto
   (`rit.segui`). Si salva componendo foto + segni in un canvas, codificato **dalla pagina** (JPG 0.97, PNG, WEBP) e

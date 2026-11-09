@@ -34,18 +34,22 @@ const quadro = (a: string, b: string, testo: string) => {
   return c.toDataURL('image/jpeg', 0.8);
 };
 
+let codificaCon: 'gpu' | 'cpu' | null = null;
+
 const esempi: InfoFile[] = [
   { id: 'F1', percorso: 'C:\\Users\\cammo\\Videos\\Matrimonio Napoli 4K.mov', nome: 'Matrimonio Napoli 4K.mov', cartella: 'C:\\Users\\cammo\\Videos', estensione: '.mov', categoria: 'video', nomeCategoria: 'Video', peso: 7_840_000_000, eDirectory: false, formati: formati.filter((x) => x.categoria === 'video').map((x) => x.id) },
   { id: 'F2', percorso: 'C:\\Users\\cammo\\Pictures\\Tramonto Posillipo.heic', nome: 'Tramonto Posillipo.heic', cartella: 'C:\\Users\\cammo\\Pictures', estensione: '.heic', categoria: 'immagine', nomeCategoria: 'Immagini', peso: 3_120_000, eDirectory: false, formati: formati.filter((x) => x.categoria === 'immagine').map((x) => x.id) },
   { id: 'F3', percorso: 'C:\\Users\\cammo\\Documents\\Preventivo DaProd.pdf', nome: 'Preventivo DaProd.pdf', cartella: 'C:\\Users\\cammo\\Documents', estensione: '.pdf', categoria: 'pdf', nomeCategoria: 'PDF', peso: 482_000, eDirectory: false, formati: formati.filter((x) => x.categoria === 'pdf').map((x) => x.id) },
   { id: 'F4', percorso: 'C:\\Users\\cammo\\Desktop\\server DaProd.log', nome: 'server DaProd.log', cartella: 'C:\\Users\\cammo\\Desktop', estensione: '.log', categoria: 'testo', nomeCategoria: 'Testi', peso: 2_480_000, eDirectory: false, formati: formati.filter((x) => x.categoria === 'testo').map((x) => x.id) },
+  { id: 'F5', percorso: 'C:\\Users\\cammo\\Music\\Poco dopo lo zero.mp3', nome: 'Poco dopo lo zero.mp3', cartella: 'C:\\Users\\cammo\\Music', estensione: '.mp3', categoria: 'audio', nomeCategoria: 'Audio', peso: 7_430_000, eDirectory: false, formati: formati.filter((x) => x.categoria === 'audio').map((x) => x.id) },
 ];
 const dettagli: Record<string, any> = {
   F1: { durata: 1834, larghezza: 3840, altezza: 2160, fps: 25, codec: 'hevc', hdr: true, bitrate: 33_800_000, audio: 'aac', canali: 2, tracceAudio: 1, sottotitoli: 0 },
   F2: { larghezza: 4032, altezza: 3024 },
   F3: { pagine: 4 },
+  F5: { durata: 326, audio: 'mp3', canali: 2, bitrate: 192000 },
 };
-const anteprime: Record<string, [string, string, string]> = { F1: ['#3b1d6e', '#ff3df2', 'NAPOLI'], F2: ['#ff9f43', '#3b1d6e', 'TRAMONTO'], F3: ['#f4f1fa', '#c9c2da', 'PDF'] };
+const anteprime: Record<string, [string, string, string]> = { F1: ['#3b1d6e', '#ff3df2', 'NAPOLI'], F2: ['#ff9f43', '#3b1d6e', 'TRAMONTO'], F3: ['#f4f1fa', '#c9c2da', 'PDF'], F5: ['#1a1030', '#ffd54a', 'MUSICA'] };
 
 let lavori: Lavoro[] = [];
 let nl = 0;
@@ -112,7 +116,7 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
         regolaPredefiniti: { supportata: true, attiva: false, diAltri: false, impostati: 0, totale: 40 },
         apriConGruppi: [{ id: 'Video', nome: 'Video', esempi: '.mp4 .mkv .mov' }, { id: 'Audio', nome: 'Audio', esempi: '.mp3 .flac .wav' }, { id: 'Immagine', nome: 'Immagine', esempi: '.jpg .png .heic' }, { id: 'Pdf', nome: 'Documento PDF', esempi: '.pdf' }],
         categorie: [{ id: 'video', nome: 'Video' }, { id: 'audio', nome: 'Audio' }, { id: 'immagine', nome: 'Immagini' }, { id: 'pdf', nome: 'PDF' }, { id: 'documento', nome: 'Documenti' }, { id: 'testo', nome: 'Testi' }, { id: 'archivio', nome: 'Archivi' }],
-        impostazioni: { scritta: 'convertito', menu: true, alMassimo: false, suoniAccesi: false, apriCartella: false, cestinoDaSolo: false, apriCon: true, menu11Chiesto: false, formati: {} },
+        impostazioni: { scritta: 'convertito', menu: true, alMassimo: false, suoniAccesi: false, apriCartella: false, cestinoDaSolo: false, apriCon: true, menu11Chiesto: false, formati: {}, codificaCon },
         modo,
         file: modo === 'rapido' ? [esempi[0]] : esempi,
         lavori: [],
@@ -171,10 +175,38 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
       if (c === 'video' || c === 'audio') return { tipo: 'tempo', voci: 12, totale: 240, punti: Array.from({ length: 12 }, (_, n) => 10 + n * 20) };
       return { tipo: 'singola', voci: 1, totale: 1, punti: [0] };
     }
-    case 'fonteAnteprima':
-      return { url: null };   // nel browser non c'è un file vero da suonare: lo scrub usa i fotogrammi finti
-    case 'scrubAnteprima':
+    case 'impostazioni':
+      if (args.codificaCon === 'gpu' || args.codificaCon === 'cpu') codificaCon = args.codificaCon;
+      return true;
+    case 'schedaFile': {
+      const file = esempi.find((e) => e.id === args.id);
+      const est = formati.find((x) => x.id === args.formato)?.estensione ?? '';
+      const campi = est === '.mp3' || est === '.m4a' || est === '.flac' ? ['titolo', 'artista', 'album', 'anno', 'traccia', 'copertina']
+        : est === '.ogg' || est === '.opus' || est === '.wma' ? ['titolo', 'artista', 'album', 'anno', 'traccia']
+        : est === '.mp4' || est === '.mov' || est === '.mkv' ? ['titolo', 'commento']
+        : est === '.jpg' || est === '.tif' || est === '.tiff' ? ['data', 'descrizione', 'autore'] : [];
+      const audio = file?.categoria === 'audio';
+      return {
+        titolo: audio ? 'Poco dopo lo zero' : file?.categoria === 'video' ? 'Matrimonio Napoli' : '',
+        artista: audio ? 'doprod22' : '', album: audio ? 'Notte' : '', anno: audio ? '2026' : '', traccia: audio ? '1' : '',
+        commento: file?.categoria === 'video' ? 'Le nozze' : '', autore: '', descrizione: file?.categoria === 'immagine' ? 'Tramonto a Posillipo' : '',
+        dataScatto: file?.categoria === 'immagine' ? '2024-06-01' : '', copertina: null, campi,
+      };
+    }
+    case 'copertine':
+      return ['#3b1d6e', '#ff3df2', '#ffd54a', '#120c1c', '#5a2bbf', '#5dffb4'].map((colore, n) => quadro(colore, '#120c1c', String(n + 1)));
+    case 'scegliImmagine':
+      return null;
+    case 'fonteAnteprima': {
+      const c = esempi.find((x) => x.id === args.id)?.categoria;
+      if (c === 'audio') return { url: tonoWav() };
+      return { url: null };   // nel browser non c'è un file vero da suonare: lo scrub del video usa i fotogrammi finti
+    }
+    case 'scrubAnteprima': {
+      const c = esempi.find((x) => x.id === args.id)?.categoria;
+      if (c === 'audio' && args.t == null) return { url: ondaFinta() };
       return { url: quadro('#3b1d6e', '#ff3df2', `${Math.round(Number(args.t ?? 0))} s`) };
+    }
     case 'voceAnteprima':
       return { url: quadro('#3b1d6e', '#ff3df2', String(Number(args.n) + 1)) };
     default:
@@ -206,6 +238,41 @@ function simula(l: Lavoro, emetti: (e: string, d: any) => void) {
     }
     emetti('lavoro', { ...l });
   }, 120);
+}
+
+/** Un brano corto, giusto per premere play nell'anteprima del browser. */
+function tonoWav() {
+  const sr = 8000, sec = 4, n = sr * sec;
+  const buf = new ArrayBuffer(44 + n * 2);
+  const v = new DataView(buf);
+  const scrivi = (o: number, t: string) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+  scrivi(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); scrivi(8, 'WAVE'); scrivi(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  scrivi(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    const env = Math.min(1, t * 6) * Math.min(1, (sec - t) * 3);
+    v.setInt16(44 + i * 2, Math.round(Math.sin(2 * Math.PI * 440 * t) * 0.28 * env * 32767), true);
+  }
+  let bin = '';
+  for (const b of new Uint8Array(buf)) bin += String.fromCharCode(b);
+  return 'data:audio/wav;base64,' + btoa(bin);
+}
+
+/** L'onda intera del brano, al posto della colonna dei pezzi. */
+function ondaFinta() {
+  const c = document.createElement('canvas');
+  c.width = 720; c.height = 220;
+  const g = c.getContext('2d')!;
+  g.clearRect(0, 0, 720, 220);
+  for (let i = 0; i < 160; i++) {
+    const alto = 20 + Math.abs(Math.sin(i / 7) * 70) + (i % 9) * 4;
+    const x = 16 + i * 4.3;
+    g.fillStyle = i < 40 ? '#5dffb4' : i < 100 ? '#ffd54a' : '#ff3df2';
+    g.fillRect(x, 110 - alto / 2, 3, alto);
+  }
+  return c.toDataURL('image/png');
 }
 
 /** Un registro lungo (40.000 righe, qualcuna lunghissima) per provare lo scorrimento e la ricerca dell'anteprima. */
