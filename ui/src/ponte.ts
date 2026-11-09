@@ -158,6 +158,8 @@ export interface Stato {
   /** La mini interfaccia accanto all'avatar, e la scelta già fatta da lì («Comprimi»). */
   compatto?: boolean;
   scelta?: { formato: string; preset?: string | null } | null;
+  /** Si è arrivati dal lettore: «Indietro» sulla barra bianca riapre quel file. */
+  torna?: string | null;
 }
 
 /** La regola delle app predefinite di Windows e quanti tipi hanno davvero il lettore come programma (UserChoice). */

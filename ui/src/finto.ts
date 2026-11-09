@@ -122,6 +122,7 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
         lavori: [],
         office: { libreOffice: true, word: false, setteZip: true },
         menu11: { supportato: true, registrato: false, fidato: false, chiesto: false, windows11: true, classico: false },
+        torna: new URLSearchParams(location.search).get('torna') ? 'C:\\Users\\cammo\\Videos\\Matrimonio Napoli 4K.mov' : null,
       } satisfies Stato;
     }
     case 'piano': {
@@ -218,6 +219,11 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
     }
     case 'voceAnteprima':
       return { url: quadro('#3b1d6e', '#ff3df2', String(Number(args.n) + 1)) };
+    case 'salvaPng':
+    case 'salvaQuadro':
+      return { nome: 'fotogramma.png', percorso: 'C:\\Users\\cammo\\Pictures\\DaPConvertitore\\fotogramma.png' };
+    case 'tornaLettore':
+      return true;
     default:
       return true;
   }

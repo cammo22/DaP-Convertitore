@@ -32,6 +32,8 @@ export const s = {
   aggiornamento: null as string | null,
   /** La scelta fatta dall'avatar (formato e preset), da applicare appena i file sono arrivati. */
   sceltaRichiesta: null as { formato: string; preset?: string | null } | null,
+  /** Il file del lettore da cui si è aperta la modifica. */
+  torna: null as string | null,
 };
 
 export const nomeCat = (c: string) => s.stato.categorie.find((x) => x.id === c)?.nome ?? c;

@@ -25,7 +25,34 @@ public static class Vassoio
         var menu = new ContextMenuStrip();
         menu.Items.Add("Apri", null, (_, _) => SulFilo(() => Regia.Gestisci(new Richiesta(null, [], true))));
         menu.Items.Add("Screenshot", null, (_, _) => SulFilo(Schermata.Cattura));
-        menu.Items.Add("Registra lo schermo", null, (_, _) => SulFilo(Registrazione.Alterna));
+        var registra = new ToolStripMenuItem("Registra…");
+        registra.Click += (_, _) => SulFilo(() =>
+        {
+            if (Registrazione.Attiva) BarraRegistrazione.PortaDavanti();
+            else MenuRegistrazione.Mostra(null);
+        });
+        menu.Items.Add(registra);
+        var sistema = false;
+        var avatar = new ToolStripMenuItem("Avatar") { CheckOnClick = true, Checked = Regia.AvatarAcceso };
+        avatar.CheckedChanged += (_, _) =>
+        {
+            if (sistema) return;
+            SulFilo(() => Regia.Avatar(avatar.Checked));
+        };
+        Regia.AvatarCambiato += acceso => SulFilo(() =>
+        {
+            sistema = true;
+            avatar.Checked = acceso;
+            sistema = false;
+        });
+        menu.Opening += (_, _) =>
+        {
+            registra.Text = Registrazione.Attiva ? "La registrazione è in corso" : "Registra…";
+            sistema = true;
+            avatar.Checked = Regia.AvatarAcceso;
+            sistema = false;
+        };
+        menu.Items.Add(avatar);
         menu.Items.Add("Impostazioni", null, (_, _) => SulFilo(Regia.ApriImpostazioni));
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Esci", null, (_, _) => SulFilo(() => app.Shutdown()));

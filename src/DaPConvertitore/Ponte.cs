@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
@@ -36,6 +37,12 @@ public sealed class Ponte
     readonly TaskCompletionSource<IStampante> stampante = new(TaskCreationOptions.RunContinuationsAsynchronously);
     bool pronta;
     bool chiediImpostazioni;
+
+    /// <summary>Si è arrivati dal lettore: la pagina mostra «Indietro» sulla barra bianca.</summary>
+    public void MostraIndietro(string percorso)
+    {
+        if (pronta) finestra.Dispatcher.BeginInvoke(() => Manda("torna", new { percorso }), DispatcherPriority.Background);
+    }
     readonly HashSet<string> giro = [];
 
     /// <summary>Dal vassoio: apri le impostazioni appena la pagina è pronta.</summary>
@@ -266,6 +273,7 @@ public sealed class Ponte
                     menu11 = StatoMenu11(),
                     compatto,
                     scelta = sceltaIniziale,
+                    torna = Regia.PercorsoIndietro,
                 };
             case "pronto":
                 return true;
@@ -636,7 +644,38 @@ public sealed class Ponte
                 return true;
             case "registra":
                 Registrazione.Alterna();
-                return new { inCorso = Registrazione.InCorso };
+                return new { inCorso = Registrazione.Attiva };
+            case "tornaLettore":
+                Regia.TornaAlLettore();
+                return true;
+            case "salvaPng":
+            {
+                var dati = (string?)a["png"] ?? "";
+                var i = dati.IndexOf(',');
+                if (i < 0 || i >= dati.Length - 1) throw new ErroreConversione("Manca l'immagine.");
+                byte[] bytes;
+                try { bytes = Convert.FromBase64String(dati[(i + 1)..]); }
+                catch { throw new ErroreConversione("L'immagine non è valida."); }
+                if (bytes.Length < 32) throw new ErroreConversione("L'immagine è vuota.");
+                var nomePng = $"fotogramma {DateTime.Now:yyyy-MM-dd HH-mm-ss}.png";
+                var destPng = Path.Combine(CartellaLavori.Assicura(), nomePng);
+                await File.WriteAllBytesAsync(destPng, bytes);
+                return new { nome = nomePng, percorso = destPng };
+            }
+            case "salvaQuadro":
+            {
+                var idQuadro = (string?)a["id"] ?? "";
+                if (!file.TryGetValue(idQuadro, out var voce)) throw new ErroreConversione("Il file non è più nella coda.");
+                var t = Math.Max(0, a["t"]?.GetValue<double>() ?? 0);
+                var nomeQ = $"fotogramma {DateTime.Now:yyyy-MM-dd HH-mm-ss}.png";
+                var destQ = Path.Combine(CartellaLavori.Assicura(), nomeQ);
+                var esito = await Processi.Esegui(strumenti.Ffmpeg,
+                    ["-hide_banner", "-y", "-i", voce.Info.Percorso, "-ss", t.ToString(CultureInfo.InvariantCulture), "-frames:v", "1", destQ],
+                    CancellationToken.None);
+                if (esito.Codice != 0 || !File.Exists(destQ))
+                    throw new ErroreConversione("Non sono riuscito a salvare il fotogramma.", esito.Errori);
+                return new { nome = nomeQ, percorso = destQ };
+            }
         }
         throw new InvalidOperationException($"Comando sconosciuto: {cmd}");
     }

@@ -32,7 +32,6 @@ export async function monta(c: Contesto): Promise<Vista> {
   const tacche = h('div.v-tacche', null, ...info.capitoli.filter((x) => x.inizio > 0).map((x) => h('i', { style: { left: `${(x.inizio / info.durata) * 100}%` }, title: x.titolo })));
   const pezzo = h('i.v-taglio');
   const linea = h('div.v-linea', null, h('div.v-binario', null, pronto, pezzo, fatto, tacche), pallino, bolla);
-  const striscia = h('div.v-pezzi', { title: '1 taglia · 2 toglie il pezzo · Q accorcia la testa · W la coda · trascina per riordinare' });
   const ora = h('span.v-ora', null, '0:00');
   const tot = h('span.v-tot', null, tempo(info.durata));
   const bPlay = h('button.v-b.grande', { title: 'Play / pausa (Spazio)', html: ic.play, onclick: () => giraPlay() });
@@ -44,7 +43,6 @@ export async function monta(c: Contesto): Promise<Vista> {
   const bVel = h('button.v-b.testo', { title: 'Velocità ([ e ])', onclick: (e: Event) => menuVelocita(e.currentTarget as HTMLElement) }, '1×');
   const comandi = h('div.v-comandi', null,
     linea,
-    striscia,
     h('div.v-riga', null,
       bPlay,
       h('button.v-b', { title: '10 secondi indietro (J)', html: ic.indietro10, onclick: () => salta(-10) }),
@@ -218,101 +216,6 @@ export async function monta(c: Contesto): Promise<Vista> {
     } catch (e) { c.stato(null); c.hud((e as Error).message, ic.forbici); }
   }
 
-  // ——— più pezzi: 1 taglia, 2 toglie, Q/W testa e coda, si riordinano trascinando. Il file nuovo sta accanto. ———
-  type Pezzo = { da: number; a: number };
-  let pezzi: Pezzo[] = [];
-  const durataTot = () => info.durata || video.duration || 0;
-  const intero = () => {
-    const d0 = durataTot();
-    if (!pezzi.length) return true;
-    return pezzi.length === 1 && pezzi[0].da < 0.08 && Math.abs(pezzi[0].a - d0) < 0.25;
-  };
-  function assicura() {
-    if (!pezzi.length) pezzi = [{ da: 0, a: Math.max(0.2, durataTot()) }];
-  }
-  function disegnaPezzi() {
-    const d0 = durataTot() || 1;
-    const lista = pezzi.length ? pezzi : [{ da: 0, a: d0 }];
-    striscia.replaceChildren();
-    lista.forEach((p, i) => {
-      const el = h('button.v-pezzo', {
-        type: 'button',
-        title: `${tempo(p.da)} – ${tempo(p.a)}. Trascina per riordinare.`,
-        style: { flexGrow: String(Math.max(0.04, p.a - p.da)) },
-      }, String(i + 1));
-      let mosso = false, daX = 0;
-      el.addEventListener('pointerdown', (e) => {
-        if (!pezzi.length) return;
-        mosso = false; daX = e.clientX;
-        el.setPointerCapture(e.pointerId);
-      });
-      el.addEventListener('pointermove', (e) => {
-        if (el.hasPointerCapture(e.pointerId) && Math.abs(e.clientX - daX) > 8) mosso = true;
-      });
-      el.addEventListener('pointerup', (e) => {
-        if (!mosso || pezzi.length < 2) return;
-        const sotto = document.elementFromPoint(e.clientX, e.clientY);
-        const bottoni = [...striscia.querySelectorAll<HTMLElement>('.v-pezzo')];
-        const daI = bottoni.indexOf(el);
-        const aI = bottoni.indexOf(sotto as HTMLElement);
-        if (daI < 0 || aI < 0 || daI === aI || aI >= pezzi.length) return;
-        const [preso] = pezzi.splice(daI, 1);
-        pezzi.splice(aI, 0, preso);
-        disegnaPezzi();
-        c.hud('Pezzi riordinati', ic.forbici);
-      });
-      striscia.append(el);
-    });
-    if (!intero()) striscia.append(h('button.v-pezzo.salva', { type: 'button', title: 'Salva i pezzi accanto: l\'originale resta', onclick: () => void salvaPezzi() }, 'Salva'));
-  }
-  function tagliaQui() {
-    assicura();
-    const t = video.currentTime;
-    const j = pezzi.findIndex((p) => t > p.da + 0.12 && t < p.a - 0.12);
-    if (j < 0) { c.hud('Troppo vicino al bordo del pezzo', ic.forbici); return; }
-    const p = pezzi[j];
-    pezzi.splice(j, 1, { da: p.da, a: t }, { da: t, a: p.a });
-    disegnaPezzi();
-    c.hud(`Taglio a ${tempo(t)}`, ic.forbici);
-  }
-  function togliPezzo() {
-    assicura();
-    const t = video.currentTime;
-    const j = pezzi.findIndex((p) => t >= p.da - 0.02 && t <= p.a + 0.02);
-    if (j < 0 || pezzi.length < 2) { c.hud('Prima taglia con 1, poi togli il pezzo con 2', ic.forbici); return; }
-    pezzi.splice(j, 1);
-    disegnaPezzi();
-    c.hud('Pezzo tolto', ic.forbici);
-  }
-  function testaPezzo() {
-    assicura();
-    const t = video.currentTime;
-    const j = pezzi.findIndex((p) => t > p.da + 0.05 && t < p.a - 0.05);
-    if (j < 0) return;
-    pezzi[j] = { da: t, a: pezzi[j].a };
-    disegnaPezzi();
-    c.hud(`La testa parte da ${tempo(t)}`, ic.forbici);
-  }
-  function codaPezzo() {
-    assicura();
-    const t = video.currentTime;
-    const j = pezzi.findIndex((p) => t > p.da + 0.05 && t < p.a - 0.05);
-    if (j < 0) return;
-    pezzi[j] = { da: pezzi[j].da, a: t };
-    disegnaPezzi();
-    c.hud(`La coda finisce a ${tempo(t)}`, ic.forbici);
-  }
-  async function salvaPezzi() {
-    if (intero() || !pezzi.length) return;
-    c.stato('Taglio i pezzi (senza ricodificare) e li metto accanto…');
-    try {
-      const r = await chiedi<{ nome: string }>('taglia', { pezzi });
-      c.stato(null);
-      c.hud(`Salvato: ${r.nome}`, ic.forbici);
-    } catch (e) { c.stato(null); c.hud((e as Error).message, ic.forbici); }
-  }
-  disegnaPezzi();
-  video.addEventListener('loadedmetadata', () => disegnaPezzi());
 
   async function scaricaCopertina() {
     try {
@@ -624,11 +527,7 @@ export async function monta(c: Contesto): Promise<Vista> {
     { k: ['arrowdown'], etichetta: '↓', cosa: 'Meno volume', fai: () => volume(-0.05) },
     { k: ['m'], etichetta: 'M', cosa: 'Muto', fai: muto },
     { k: ['f'], etichetta: 'F', cosa: 'Schermo intero (anche doppio clic)', fai: schermoIntero },
-    { k: ['1'], etichetta: '1', cosa: 'Taglia il video in questo punto', fai: tagliaQui },
-    { k: ['2'], etichetta: '2', cosa: 'Togli il pezzo sotto il cursore', fai: togliPezzo },
-    { k: ['q'], etichetta: 'Q', cosa: 'Accorcia la testa del pezzo fin qui', fai: testaPezzo },
-    { k: ['w'], etichetta: 'W', cosa: 'Accorcia la coda del pezzo fin qui', fai: codaPezzo },
-    { k: ['0', '3', '4', '5', '6', '7', '8', '9'], etichetta: '0, 3 … 9', cosa: 'Vai al 0%, 30%… 90%', fai: (e) => cerca((+e.key / 10) * (info.durata || video.duration)) },
+    { k: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], etichetta: '0 … 9', cosa: 'Vai al 0%, 10%… 90%', fai: (e) => cerca((+e.key / 10) * (info.durata || video.duration)) },
     { k: ['home'], etichetta: 'Inizio', cosa: 'Dall\'inizio', fai: () => cerca(0) },
     { k: ['[', '-'], etichetta: '[', cosa: 'Più lento', fai: () => cambiaVelocita(velocita[Math.max(0, velocita.indexOf(video.playbackRate) - 1)] ?? 1) },
     { k: [']', '+'], etichetta: ']', cosa: 'Più veloce', fai: () => cambiaVelocita(velocita[Math.min(velocita.length - 1, velocita.indexOf(video.playbackRate) + 1)] ?? 1) },

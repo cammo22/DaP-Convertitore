@@ -282,7 +282,7 @@ public sealed class PonteLettore
 
             // ——— cose da fare col file ———
             case "converti":
-                Regia.Converti(P(a));
+                Regia.Converti(P(a), finestra);
                 return true;
             case "estrai":
                 if (!string.IsNullOrEmpty(passwordArchivio))

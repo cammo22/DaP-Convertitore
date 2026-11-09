@@ -142,6 +142,7 @@ function disegnaTesta() {
       bollaMotore(),
     ),
     h('div.finestra', null,
+      s.torna ? h('button.btn-fin.indietro', { title: 'Torna al lettore e chiudi questa finestra', onclick: () => { clac(); void chiedi('tornaLettore'); } }, h('span.indietro-ico', { html: icone.freccia }), 'Indietro') : null,
       h('button.btn-fin.nov', { title: 'Novità e aggiornamenti', onclick: () => void apriNovita(), html: icone.novita }),
       h(`button.btn-fin.av${s.stato.impostazioni.avatarAttivo ? '.su' : ''}`, { title: s.stato.impostazioni.avatarAttivo ? "Spegni l'avatar" : "Accendi l'avatar", onclick: () => accendiAvatar(!s.stato.impostazioni.avatarAttivo), html: icone.avatar }),
       h('button.btn-fin', { title: 'Impostazioni', onclick: () => apriImpostazioni() , html: icone.ingranaggio }),
@@ -503,6 +504,7 @@ async function avvia() {
     strumenti.dec?.valore(c.decoder / 100);
   });
   ascolta('apriImpostazioni', () => apriImpostazioni());
+  ascolta('torna', (d: { percorso?: string | null }) => { s.torna = d.percorso || null; disegnaTesta(); });
   ascolta('avatar', (d: { si: boolean }) => {
     s.stato.impostazioni.avatarAttivo = d.si;
     disegnaTesta();
@@ -526,6 +528,7 @@ async function avvia() {
 
   s.stato = await chiedi<Stato>('stato');
   s.aggiornamento = s.stato.aggiornamento ?? null;
+  s.torna = s.stato.torna ?? null;
   accendiSuoni(s.stato.impostazioni.suoniAccesi);
   // dopo un aggiornamento le novità si aprono da sole, una volta
   if (s.stato.modo === 'finestra') void chiedi<DatiNovita>('novita').then((n) => { if (n?.nuova) setTimeout(() => void apriNovita(n), 1200); }).catch(() => {});

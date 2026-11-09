@@ -199,6 +199,16 @@ button.chip { cursor: pointer; font: 700 12px var(--ui); letter-spacing: 0.02em;
 .tasto.su { color: var(--oro); background: linear-gradient(180deg, #34312a, #24221d); border-color: rgba(255, 213, 74, 0.35); box-shadow: 0 2px 0 #050508, 0 0 12px rgba(255, 213, 74, 0.12), inset 0 0 8px rgba(255, 213, 74, 0.08); }
 .tasto.su small { color: rgba(255, 213, 74, 0.6); }
 .tasto:disabled { opacity: 0.35; }
+.campo-scorciatoia {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 220px; height: 46px; padding: 0 16px;
+  border-radius: 10px; background: #fff8e6; border: 2px solid #e0a020; color: #1a1408;
+  font: 800 16px var(--ui); letter-spacing: 0.02em; box-shadow: 0 0 0 3px rgba(255, 213, 74, 0.28);
+}
+.campo-scorciatoia.ascolta {
+  background: #2a1230; color: #ffd54a; border-color: #ff3df2; box-shadow: 0 0 0 3px rgba(255, 61, 242, 0.5);
+  animation: scorciatoia-pulsa 0.9s ease-in-out infinite;
+}
+@keyframes scorciatoia-pulsa { 50% { box-shadow: 0 0 0 7px rgba(255, 61, 242, 0.18); } }
 .tasto.piccolo { height: 30px; padding: 0 10px; font-size: 13px; }
 
 .interruttore { display: inline-flex; align-items: center; gap: 10px; padding: 6px 12px 6px 6px; border-radius: 9px; background: var(--gomma); border: 1px solid var(--bordo); color: var(--testo2); font: 700 13.5px var(--ui); text-align: left; }
@@ -522,6 +532,9 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .testa button.chip.motore { color: #1f1c28; }
 .testa button.chip.motore:hover { background: #fff; border-color: #9a90b0; }
 .testa .btn-fin { color: #4a4659; }
+.testa .btn-fin.indietro { width: auto; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px 0 8px; color: #1f1c28; font: 700 13px var(--ui); }
+.testa .btn-fin.indietro .indietro-ico { display: grid; transform: scaleX(-1); }
+.testa .btn-fin.indietro .indietro-ico svg { width: 16px; height: 16px; }
 .testa .btn-fin:hover { background: rgba(0, 0, 0, 0.08); color: #14121a; }
 .testa .btn-fin.chiudi:hover { background: #c42b4a; color: #fff; }
 
@@ -637,6 +650,18 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .ap-colonna.audio .cl-grande { width: 100%; justify-content: flex-end; gap: 8px; padding-bottom: 6px; }
 .ap-colonna.audio .cl-barra { height: 16px; cursor: pointer; }
 .ap-colonna.audio .cl-suono { display: flex; flex: none; width: auto; flex-direction: row; align-items: center; justify-content: flex-start; gap: 14px; padding: 8px 14px 12px; border-left: 0; border-top: 1px solid #1d1b25; background: rgba(15, 14, 20, 0.7); }
+/* un video in modifica: niente colonna di fotogrammi a destra; i controlli stanno sotto, la barra è il punto in cui cercare */
+.ap-colonna.video { flex-direction: column; }
+.ap-colonna.video .cl-strisce { display: none; }
+.ap-colonna.video .cl-etichetta { display: none; }
+.ap-colonna.video .cl-grande { width: 100%; justify-content: flex-end; gap: 8px; padding-bottom: 6px; }
+.ap-colonna.video .cl-barra { height: 20px; border-radius: 10px; cursor: pointer; background: #2a2736; box-shadow: inset 0 0 0 1px rgba(255, 213, 74, 0.4); }
+.ap-colonna.video .cl-suono { display: flex; flex: none; width: auto; flex-wrap: wrap; flex-direction: row; align-items: center; gap: 12px; padding: 8px 14px 12px; border-top: 1px solid #1d1b25; background: rgba(15, 14, 20, 0.7); }
+.ap-colonna:focus { outline: none; }
+.cl-quadro { display: none; height: 36px; padding: 0 12px; border-radius: 9px; color: #1a1408; background: #ffd54a; font: 800 13px var(--ui); }
+.ap-colonna.video .cl-quadro { display: inline-flex; align-items: center; }
+.cl-tasti { display: none; }
+.ap-colonna.video .cl-tasti { display: block; flex: 1 1 120px; min-width: 0; font: 600 12px var(--ui); color: #d9d4e6; }
 .ap-colonna.audio .cl-vol { width: 120px; }
 .ap-colonna.audio .cl-play { width: 42px; height: 42px; }
 .cl-play { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: #102a1d; background: radial-gradient(circle at 35% 30%, #b9ffe0, #5dffb4 62%, #1c9a62); box-shadow: 0 6px 18px rgba(93, 255, 180, 0.28); }

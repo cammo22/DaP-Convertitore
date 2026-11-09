@@ -93,9 +93,14 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
   Nel video è un fotogramma allegato (`-disposition attached_pic`, flusso `0:V` per non copiare quello vecchio):
   `Sonda.IndiceCopertina` lo trova e le miniature (`Anteprime`, `Multimedia.Video`) usano quello, non un fotogramma
   a caso. Download la salva nella cartella del brano, senza chiedere dove e senza sovrascrivere.
-- **I tagli del video** (`Modifiche.TagliaPezzi`): nel lettore, 1 taglia, 2 toglie, Q e W accorciano testa e coda,
-  si riordinano sulla striscia. Il comando `taglia` accetta `pezzi`. Un pezzo solo è `TagliaVideo`. Il risultato
-  sta accanto, «(tagliato)»; l'originale non si tocca. Senza fotogrammi chiave vicini la copia può fallire: si dice, e il file resta.
+- **I tagli del video** (`Modifiche.TagliaPezzi`): nel lettore restano Z e X (un pezzo solo, file «(tagliato)» accanto,
+  originale intatto). La striscia gialla 1/2/Q/W non c'è più. Il comando `taglia` accetta ancora `pezzi`; un pezzo solo
+  è `TagliaVideo`. Senza fotogrammi chiave vicini la copia può fallire: si dice, e il file resta.
+  L'anteprima nella piastra non ha la colonna a destra: play, barra (clic e trascinamento), frecce di un fotogramma, J/K/L.
+  «Fotogramma» salva il PNG in `CartellaLavori` (`salvaPng` se la pagina ha il quadro, altrimenti `salvaQuadro` con FFmpeg).
+  Nel lettore intero S salva ancora accanto al video. Il clic sull'onda di un brano sposta il punto e non lo fa sentire.
+- **Dal lettore alla modifica** (`Regia.Converti`): il lettore si chiude. `PercorsoIndietro` mette «Indietro» sulla barra
+  bianca del convertitore (icona scura); `TornaAlLettore` riapre il lettore e chiude la piastra.
 - **Ritocco delle foto** (dalla 1.5.0): `ui/src/lettore/ritocco.ts` disegna su due fogli canvas (`base` = segni fissati,
   `viva` = segno in corso) grandi quanto la foto, dentro un wrapper che prende lo stesso `transform` della foto
   (`rit.segui`). Si salva componendo foto + segni in un canvas, codificato **dalla pagina** (JPG 0.97, PNG, WEBP) e
@@ -151,9 +156,17 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
   copertina allegata, la miniatura è quella. Il montaggio vero resta DaProd Editor Video (`docs/ROADMAP.md`).
 - **Quello che l'app produce** (screenshot, registrazioni) va in Immagini\DaPConvertitore (`CartellaLavori`).
   Si crea all'avvio e nel hook di Velopack. `Impostazioni.CartellaMia` la sposta. Dalle Impostazioni si apre e si vedono gli ultimi file.
-- **Il vassoio** (`Vassoio.cs`) c'è finché l'app è aperta e non la tiene in vita da solo. Menu: apri, screenshot, registra, impostazioni, esci.
-- **Lo screenshot** (`Schermata.cs`): scorciatoia globale (`Impostazioni.ScorciatoiaSchermo`, di partenza Ctrl+Maiusc+S),
-  schermo fermo e scurito, zona o finestra sotto il cursore, misure, lente, PNG nella cartella e negli appunti, anteprima in basso a destra.
-  Lo schermo si fotografa prima dell'oscuramento. Su più monitor con DPI diversi il ritaglio può slittare di un pixel.
-- **La registrazione** (`Registrazione.cs`) è gdigrab del desktop principale più il primo microfono DirectShow, se c'è.
-  Si ferma con «q» su stdin. Non sceglie una zona. Il video sull'avatar è un `MediaElement`: se Windows non lo sa suonare, lo apre il lettore.
+- **Il vassoio** (`Vassoio.cs`) c'è finché l'app è aperta e non la tiene in vita da solo. Menu: apri, screenshot,
+  Registra… (il menu dei dispositivi, o la barra se si sta già registrando), Avatar acceso/spento, impostazioni, esci.
+- **Lo screenshot** (`Schermata.cs`): scorciatoia globale (`Impostazioni.ScorciatoiaSchermo`, di partenza Ctrl+Maiusc+S).
+  Il campo nelle Impostazioni è chiaro e, in ascolto, dice «Premi i tasti…». Lo schermo fermo resta luminoso
+  (l'immagine sotto è a opacità 0.72); la zona scelta è a piena luce. Tasto destro o Esc annullano. Misure, lente,
+  PNG nella cartella e negli appunti, anteprima in basso a destra. Lo schermo si fotografa prima dell'oscuramento.
+  Su più monitor con DPI diversi il ritaglio può slittare di un pixel.
+- **La registrazione** (`Registrazione.cs`, `BarraRegistrazione`, `MenuRegistrazione`): schermo principale intero
+  (gdigrab) con microfono DirectShow e/o audio del PC in loopback WASAPI, oppure solo audio (M4A). I nomi scelti
+  stanno in `Impostazioni.RegistrazioneMic` e `RegistrazionePc` (vuoto = nessuno, null = il primo). La pausa manda
+  «q», chiude il pezzo e la ripresa ne apre un altro; Salva li concatena, Annulla cancella. La barra e il menu
+  chiamano `SetWindowDisplayAffinity` con `WDA_EXCLUDEFROMCAPTURE` (0x11), così non entrano nel video su Windows 10 2004+.
+  Non sceglie una zona. Su questa macchina ffmpeg non ha dshow né wasapi: l'elenco dispositivi va provato su Windows.
+  Il video sull'avatar è un `MediaElement`: se Windows non lo sa suonare, lo apre il lettore.

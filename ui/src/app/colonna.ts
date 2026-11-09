@@ -40,14 +40,19 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
   const vol = h<HTMLInputElement>('input.cl-vol', { type: 'range', min: '0', max: '1', step: '0.01', value: '1', 'aria-label': 'Volume' });
   const audioEl = h<HTMLAudioElement>('audio.cl-audio', { preload: 'auto' });
   audioEl.hidden = true;
-  vol.addEventListener('input', () => { audioEl.volume = +vol.value; });
+  vol.addEventListener('input', () => { audioEl.volume = +vol.value; video.volume = +vol.value; });
+  video.volume = +vol.value;
+  const bQuadro = h('button.cl-quadro', { type: 'button', title: 'Salva questo fotogramma in Immagini\\DaPConvertitore', onclick: () => void salvaQuadro() }, 'Fotogramma');
+  const tasti = h('div.cl-tasti', null, '← → fotogramma · J K L');
   const suono = h('div.cl-suono', null,
     bPlay,
     tempoSuono,
+    bQuadro,
     h('div.cl-vol-etichetta', null, 'VOLUME'),
     vol,
+    tasti,
     audioEl);
-  const el = h('div.ap-colonna', null, grande, suono, strisce);
+  const el = h('div.ap-colonna', { tabindex: '-1' }, grande, suono, strisce);
 
   let gettone = 0;                              // cambia a ogni file: le risposte in ritardo si scartano
   let file: InfoFile | null = null;
@@ -212,7 +217,14 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
       return;
     }
     if (f.categoria === 'video') {
-      video.onloadeddata = () => { if (g === gettone && scrub === 'foto') { scrub = 'video'; } };
+      video.onloadeddata = () => {
+        if (g !== gettone || scrub !== 'foto') return;
+        scrub = 'video';
+        video.hidden = false;
+        img.hidden = true;
+        segnaposto.hidden = true;
+        if (vuoleSuonare) parti(posizione);
+      };
       video.onerror = () => { if (g === gettone && scrub === 'video') { scrub = 'foto'; video.hidden = true; img.hidden = false; } };
       video.ontimeupdate = () => { if (g === gettone && suona) mostraPosizione(video.currentTime); };
       video.onended = () => { if (g === gettone) pausa(); };
@@ -314,36 +326,85 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
     else if ((e.key === ' ' || e.key === 'Enter') && indice.tipo === 'tempo' && media()) { e.preventDefault(); alterna(); }
   });
 
-  // ——— il cursore sulla figura e sulla barra: il video scorre; l'audio no (ci si sposta dalla timeline) ———
+  // ——— il cursore: l'onda e la timeline spostano il punto, senza farlo sentire. Il video si cerca dalla barra. ———
   const puoScorrere = () => !!indice && indice.tipo === 'tempo' && !!scrub && scrub !== 'muto';
-  let tiraAudio = false;
-  figura.addEventListener('pointermove', (e) => { if (scrub === 'audio' || !puoScorrere() || suona) return; vaiA(tempoDa(e, figura)); });
+  const eTempo = () => file?.categoria === 'audio' || file?.categoria === 'video';
+  let tira = false;
+  function sposta(t: number) {
+    if (suona && media()) {
+      mostraPosizione(t);
+      try { media()!.currentTime = t; } catch { /* non ancora pronto */ }
+    } else vaiA(t);
+  }
+  function focusVideo() { if (file?.categoria === 'video') el.focus({ preventScroll: true }); }
+  function tastoVideo(e: KeyboardEvent) {
+    if (file?.categoria !== 'video') return;
+    const fps = file.dettagli?.fps && file.dettagli.fps > 1 ? file.dettagli.fps : 25;
+    const k = e.key.toLowerCase();
+    const passo = (d: number, continua: boolean) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const t = posizione + d;
+      if (continua && suona) parti(t);
+      else { if (!continua) pausa(); vaiA(t); }
+    };
+    if (e.key === 'ArrowLeft') passo(-1 / fps, false);
+    else if (e.key === 'ArrowRight') passo(1 / fps, false);
+    else if (k === 'j') passo(-10, true);
+    else if (k === 'l') passo(10, true);
+    else if (k === 'k' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); alterna(); }
+  }
+  async function salvaQuadro() {
+    if (!file || file.categoria !== 'video') return;
+    try {
+      if (video.videoWidth > 0) {
+        const cv = document.createElement('canvas');
+        cv.width = video.videoWidth;
+        cv.height = video.videoHeight;
+        cv.getContext('2d')!.drawImage(video, 0, 0);
+        const r = await chiedi<{ nome: string }>('salvaPng', { png: cv.toDataURL('image/png') });
+        tasti.textContent = `Salvato: ${r.nome}`;
+        return;
+      }
+    } catch { /* il fotogramma lo prende FFmpeg */ }
+    try {
+      const r = await chiedi<{ nome: string }>('salvaQuadro', { id: file.id, t: posizione });
+      tasti.textContent = `Salvato: ${r.nome}`;
+    } catch (e) { tasti.textContent = (e as Error).message; }
+  }
+  figura.addEventListener('pointermove', (e) => { if (scrub === 'audio' || file?.categoria === 'video' || !puoScorrere() || suona) return; vaiA(tempoDa(e, figura)); });
+  figura.addEventListener('pointerup', (e) => {
+    if (file?.categoria !== 'audio' || e.button !== 0) return;
+    sposta(tempoDa(e, figura));
+  });
   barra.addEventListener('pointerdown', (e) => {
-    if (file?.categoria !== 'audio') return;
-    tiraAudio = true;
+    if (!eTempo() || e.button !== 0) return;
+    tira = true;
     barra.setPointerCapture(e.pointerId);
-    vaiA(tempoDa(e, barra));
-    if (suona) parti(tempoDa(e, barra));
+    focusVideo();
+    sposta(tempoDa(e, barra));
   });
   barra.addEventListener('pointermove', (e) => {
-    if (file?.categoria === 'audio') { if (tiraAudio) { const t = tempoDa(e, barra); if (suona) parti(t); else vaiA(t); } return; }
+    if (eTempo()) { if (tira) sposta(tempoDa(e, barra)); return; }
     if (puoScorrere() && !suona) vaiA(tempoDa(e, barra));
   });
-  barra.addEventListener('pointerup', () => { tiraAudio = false; });
+  barra.addEventListener('pointerup', () => { tira = false; });
   figura.addEventListener('pointerleave', () => { if (!suona && scrub !== 'audio') audio?.pause(); });
   barra.addEventListener('pointerleave', () => { if (!suona && scrub !== 'audio') audio?.pause(); });
   figura.addEventListener('click', (e) => {
-    // l'audio: il clic sulla figura fa play/pausa. Il video, dove si può suonare, parte dal punto. Altrimenti si apre il lettore.
-    if (file?.categoria === 'audio') { alterna(); return; }
+    // l'onda del brano ha già messo il punto (pointerup): il play sta sotto. Il video: clic = play/pausa, la barra cerca.
+    if (file?.categoria === 'audio') return;
+    if (file?.categoria === 'video') { focusVideo(); alterna(); return; }
     if (indice?.tipo === 'tempo' && media()) { if (suona) pausa(); else parti(tempoDa(e, figura)); }
     else apri();
   });
   figura.addEventListener('dblclick', () => { if (indice?.tipo === 'tempo' && (media() || file?.categoria === 'audio')) { pausa(); apri(); } });
   barra.addEventListener('click', (e) => {
-    if (file?.categoria === 'audio') return;
+    if (eTempo()) return;
     if (puoScorrere() && media()) parti(tempoDa(e, barra));
   });
   barra.addEventListener('keydown', (e) => {
+    if (file?.categoria === 'video') { tastoVideo(e); return; }
     if (!puoScorrere()) return;
     const passo = e.shiftKey ? 30 : SALTO;
     const vai = (t: number) => { e.preventDefault(); if (suona) parti(t); else vaiA(t); };
@@ -352,6 +413,10 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
     else if (e.key === 'Home') vai(0);
     else if (e.key === 'End') vai(durataTot());
     else if ((e.key === ' ' || e.key === 'Enter') && media()) { e.preventDefault(); alterna(); }
+  });
+  el.addEventListener('keydown', (e) => {
+    if (e.target === barra || e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement) return;
+    tastoVideo(e);
   });
 
   function costruisci(i: Indice) {
@@ -395,11 +460,15 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
       inCorso = false;
       file = f;
       el.classList.toggle('audio', f.categoria === 'audio');
+      el.classList.toggle('video', f.categoria === 'video');
       figura.title = f.categoria === 'audio'
-        ? 'Clic: play o pausa. La timeline sotto sposta il punto, senza far sentire il passaggio.'
-        : 'Passa il cursore: scorre. Clic: riproduce. Doppio clic: apre nel lettore';
+        ? 'Clic sull\'onda: sposta il punto, senza farlo sentire. Poi Play.'
+        : f.categoria === 'video'
+          ? 'Clic: play o pausa. La barra sotto cerca il punto. ← → un fotogramma, J K L.'
+          : 'Passa il cursore: scorre. Clic: riproduce. Doppio clic: apre nel lettore';
       bPlay.innerHTML = icone.play;
       tempoSuono.textContent = '—';
+      tasti.textContent = f.categoria === 'video' ? '← → fotogramma · J K L' : '';
       indice = null;
       scelta = -1;
       tipoDescritto = '';
@@ -416,10 +485,10 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
         .then((i) => {
           if (g !== gettone) return;
           // un brano non ha i pezzi nel tempo: si ascolta da qui, con play, posizione e volume
-          if (f.categoria === 'audio') {
-            // anche se la durata letta è zero: il tag audio, quando è pronto, dice quanto dura davvero
+          if (f.categoria === 'audio' || f.categoria === 'video') {
+            // anche se la durata letta è zero: il tag, quando è pronto, dice quanto dura davvero
             indice = i.tipo === 'tempo' ? i : { tipo: 'tempo', voci: 1, totale: f.dettagli?.durata || 0, punti: [0] };
-            tipoDescritto = 'si ascolta da qui';
+            tipoDescritto = f.categoria === 'audio' ? 'si ascolta da qui' : 'si guarda da qui';
             strisce.replaceChildren();
             void preparaScrub(f, g);
             pronto();
@@ -432,7 +501,7 @@ export function creaColonna(apri: () => void, pronto: () => void = () => {}): Co
         })
         .catch(() => {
           if (g !== gettone) return;
-          if (f.categoria === 'audio') {
+          if (f.categoria === 'audio' || f.categoria === 'video') {
             indice = { tipo: 'tempo', voci: 1, totale: f.dettagli?.durata || 0, punti: [0] };
             void preparaScrub(f, g);
             pronto();

@@ -58,8 +58,28 @@ public static class Regia
         l.ContentRendered += (_, _) => Davanti.Porta(l);
     }
 
-    /// <summary>Dal lettore al convertitore: il file entra nella piastra, con tutte le scelte.</summary>
-    public static void Converti(string percorso) => Gestisci(new Richiesta(null, [percorso], true));
+    /// <summary>Il file da cui si è arrivati in modifica: «Indietro» riapre il lettore e chiude questa finestra.</summary>
+    public static string? PercorsoIndietro { get; private set; }
+
+    /// <summary>Dal lettore alla modifica: il lettore si chiude, il file entra nella piastra. Si torna con «Indietro».</summary>
+    public static void Converti(string percorso, Window? daChiudere = null)
+    {
+        PercorsoIndietro = percorso;
+        Gestisci(new Richiesta(null, [percorso], true));
+        daChiudere?.Close();
+        convertitore?.Ponte.MostraIndietro(percorso);
+    }
+
+    /// <summary>«Indietro» sulla barra bianca: si riapre il lettore e la modifica si chiude.</summary>
+    public static void TornaAlLettore()
+    {
+        var p = PercorsoIndietro;
+        PercorsoIndietro = null;
+        if (string.IsNullOrEmpty(p) || !File.Exists(p)) return;
+        var c = convertitore;
+        ApriNelLettore(p);
+        c?.Close();
+    }
 
     /// <summary>Dal convertitore al lettore.</summary>
     public static void ApriNelLettore(string percorso) => Gestisci(new Richiesta(null, [percorso], false, true));

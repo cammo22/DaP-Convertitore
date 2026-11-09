@@ -1,0 +1,155 @@
+using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
+using System.Windows.Threading;
+
+namespace DaP.Convertitore.App;
+
+/// <summary>
+/// La barretta mentre si registra: tempo, pausa, salva, annulla. Sta sopra a tutto e non entra nella cattura.
+/// </summary>
+public sealed class BarraRegistrazione : Window
+{
+    static BarraRegistrazione? aperta;
+    readonly TextBlock tempo;
+    readonly Button pausa;
+    readonly Ellipse punto;
+    readonly DispatcherTimer orologio;
+    bool chiusuraVoluta;
+
+    public static void Mostra()
+    {
+        if (aperta is not null) { PortaDavanti(); return; }
+        aperta = new BarraRegistrazione();
+        Registrazione.Escludi(aperta);
+        aperta.Closed += (_, _) => { if (aperta is not null) aperta = null; };
+        aperta.Show();
+    }
+
+    public static void Chiudi()
+    {
+        var f = aperta;
+        if (f is null) return;
+        aperta = null;
+        f.chiusuraVoluta = true;
+        f.Close();
+    }
+
+    public static void PortaDavanti()
+    {
+        if (aperta is null) Mostra();
+        else aperta.Topmost = true;
+    }
+
+    public static void Aggiorna() => aperta?.Rinfresca();
+
+    BarraRegistrazione()
+    {
+        WindowStyle = WindowStyle.None;
+        ResizeMode = ResizeMode.NoResize;
+        ShowInTaskbar = false;
+        ShowActivated = false;
+        Topmost = true;
+        AllowsTransparency = true;
+        SizeToContent = SizeToContent.WidthAndHeight;
+        Background = Brushes.Transparent;
+        Title = "Registrazione";
+
+        punto = new Ellipse { Width = 10, Height = 10, Fill = new SolidColorBrush(Color.FromRgb(0xff, 0x3d, 0x6e)), VerticalAlignment = VerticalAlignment.Center };
+        tempo = new TextBlock
+        {
+            Text = "00:00",
+            Foreground = new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)),
+            FontFamily = new FontFamily("Consolas, Segoe UI"),
+            FontSize = 18,
+            FontWeight = FontWeights.Bold,
+            VerticalAlignment = VerticalAlignment.Center,
+            MinWidth = 64,
+        };
+        pausa = Tasto("Pausa", "#3a3548", () => { if (Registrazione.InPausa) Registrazione.Riprendi(); else Registrazione.Pausa(); Rinfresca(); });
+        var riga = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(12, 8, 10, 8) };
+        riga.Children.Add(punto);
+        riga.Children.Add(tempo);
+        tempo.Margin = new Thickness(8, 0, 12, 0);
+        riga.Children.Add(pausa);
+        riga.Children.Add(Tasto("Salva", "#1c9a62", Registrazione.Salva));
+        riga.Children.Add(Tasto("Annulla", "#8a2a3c", Registrazione.Annulla));
+        Content = new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0x12, 0x10, 0x18)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(0xff, 0xd5, 0x4a)),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(12),
+            Child = riga,
+        };
+        MouseLeftButtonDown += (_, e) =>
+        {
+            if (DentroTasto(e.OriginalSource)) return;
+            try { DragMove(); } catch { /* il tasto è già partito */ }
+        };
+
+        orologio = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        orologio.Tick += (_, _) => Rinfresca();
+        Loaded += (_, _) =>
+        {
+            var area = SystemParameters.WorkArea;
+            Left = area.Left + (area.Width - ActualWidth) / 2;
+            Top = area.Bottom - ActualHeight - 28;
+            orologio.Start();
+            Rinfresca();
+        };
+        Closed += (_, _) => orologio.Stop();
+    }
+
+    void Rinfresca()
+    {
+        tempo.Text = Registrazione.TestoTempo();
+        var ferma = Registrazione.InPausa;
+        pausa.Content = ferma ? "Riprendi" : "Pausa";
+        punto.Fill = new SolidColorBrush(ferma ? Color.FromRgb(0xa1, 0x9d, 0xb0) : Color.FromRgb(0xff, 0x3d, 0x6e));
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        if (!chiusuraVoluta && Registrazione.Attiva)
+        {
+            e.Cancel = true;
+            Registrazione.Annulla();
+            return;
+        }
+        base.OnClosing(e);
+    }
+
+    static bool DentroTasto(object? o)
+    {
+        var d = o as DependencyObject;
+        while (d is not null)
+        {
+            if (d is Button) return true;
+            d = VisualTreeHelper.GetParent(d);
+        }
+        return false;
+    }
+
+    static Button Tasto(string testo, string sfondo, Action fai)
+    {
+        var b = new Button
+        {
+            Content = testo,
+            Margin = new Thickness(4, 0, 0, 0),
+            Padding = new Thickness(12, 6, 12, 6),
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(sfondo)),
+            Foreground = Brushes.White,
+            BorderThickness = new Thickness(0),
+            FontFamily = new FontFamily("Segoe UI"),
+            FontWeight = FontWeights.Bold,
+            FontSize = 13,
+            Cursor = Cursors.Hand,
+        };
+        b.Click += (_, _) => fai();
+        return b;
+    }
+}

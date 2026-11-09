@@ -169,7 +169,8 @@ public static class Schermata
             Width = SystemParameters.VirtualScreenWidth;
             Height = SystemParameters.VirtualScreenHeight;
 
-            piano.Children.Add(new System.Windows.Controls.Image { Source = foto, Stretch = Stretch.Fill, Opacity = 0.32, IsHitTestVisible = false });
+            // scurimento leggero, come ShareX: la foto resta chiara, la zona scelta è a piena luce
+            piano.Children.Add(new System.Windows.Controls.Image { Source = foto, Stretch = Stretch.Fill, Opacity = 0.72, IsHitTestVisible = false });
             chiara = new System.Windows.Controls.Image { Source = foto, Stretch = Stretch.Fill, IsHitTestVisible = false, Visibility = Visibility.Collapsed };
             piano.Children.Add(chiara);
             piano.Children.Add(finestra);
@@ -190,6 +191,7 @@ public static class Schermata
             MouseMove += Muovi;
             MouseLeftButtonDown += Premi;
             MouseLeftButtonUp += Lascia;
+            MouseRightButtonDown += (_, _) => Close();
             KeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); };
             Opacity = 0;
             Loaded += (_, _) =>

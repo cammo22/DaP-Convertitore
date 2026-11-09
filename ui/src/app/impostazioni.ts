@@ -150,9 +150,11 @@ export function apriImpostazioni() {
       } }, 'Cambia'),
       imp.cartellaMia ? h('button.tasto', { onclick: () => { clac(); imp.cartellaMia = null; void chiedi('impostazioni', { cartellaMia: '' }); apriImpostazioni(); } }, 'Quella di partenza') : null),
     elenco);
-  const scorciatoia = h('button.tasto', { title: 'Clicca e premi la combinazione' }, imp.scorciatoiaSchermo || 'Ctrl+Maiusc+S');
+  const scorciatoia = h('button.campo-scorciatoia', { type: 'button', title: 'Clicca qui, poi premi i tasti della scorciatoia' }, imp.scorciatoiaSchermo || 'Ctrl+Maiusc+S');
   scorciatoia.addEventListener('click', () => {
+    if (scorciatoia.classList.contains('ascolta')) return;
     clac();
+    scorciatoia.classList.add('ascolta');
     scorciatoia.textContent = 'Premi i tasti…';
     const f = (e: KeyboardEvent) => {
       e.preventDefault();
@@ -163,15 +165,16 @@ export function apriImpostazioni() {
       if (e.altKey) parti.push('Alt');
       if (e.shiftKey) parti.push('Maiusc');
       const tasto = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+      const fine = () => { scorciatoia.classList.remove('ascolta'); window.removeEventListener('keydown', f, true); };
       if (!e.ctrlKey && !e.altKey && !e.metaKey && tasto !== 'Escape') return;
-      if (tasto === 'Escape') { scorciatoia.textContent = imp.scorciatoiaSchermo || 'Ctrl+Maiusc+S'; window.removeEventListener('keydown', f, true); return; }
+      if (tasto === 'Escape') { scorciatoia.textContent = imp.scorciatoiaSchermo || 'Ctrl+Maiusc+S'; fine(); return; }
       parti.push(tasto);
       const testo = parti.join('+');
       imp.scorciatoiaSchermo = testo;
       scorciatoia.textContent = testo;
       salva({ scorciatoiaSchermo: testo });
       void chiedi('scorciatoia', { testo });
-      window.removeEventListener('keydown', f, true);
+      fine();
     };
     window.addEventListener('keydown', f, true);
   });
@@ -208,7 +211,7 @@ export function apriImpostazioni() {
         h('div.imp-sezione', null, 'CARTELLA'),
         riga('Dove finisce quello che faccio io', 'Screenshot, registrazioni e il resto che produce l\'app. Di partenza è Immagini/DaPConvertitore.', bloccaCartella),
         h('div.imp-sezione', null, 'SCHERMO'),
-        riga('Screenshot', 'Come ShareX: si oscura lo schermo, scegli la zona (o la finestra passando sopra) e la foto va nella cartella. La scorciatoia vale anche quando DaP non è davanti.',
+        riga('Screenshot', 'Clicca il riquadro chiaro e premi i tasti (si legge «Premi i tasti…»). Poi lo schermo si scurisce appena, scegli la zona e la foto va nella cartella. Tasto destro o Esc annulla. Vale anche quando DaP non è davanti.',
           h('div.compatto-tasti', null, scorciatoia, h('button.tasto', { onclick: () => { clac(); cassetto.remove(); void chiedi('cattura'); } }, 'Prova'))),
         h('div.imp-piede', null,
           h('span', null, `DaP Convertitore ${s.stato.versione} · DaProd`),
