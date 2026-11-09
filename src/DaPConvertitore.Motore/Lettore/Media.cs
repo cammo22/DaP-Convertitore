@@ -69,15 +69,16 @@ public static class Media
     }
 
     /// <summary>La copertina: quella dentro il file, o cover.jpg / folder.jpg nella cartella. JPEG piccolo.</summary>
-    public static async Task<byte[]?> Copertina(Strumenti s, string percorso, bool dentro)
+    public static async Task<byte[]?> Copertina(Strumenti s, string percorso, bool dentro, bool silenzioso = false, int lato = 800)
     {
         if (dentro)
         {
             var jpg = Path.Combine(Strumenti.CartellaTemporanea, $"copertina-{Guid.NewGuid():N}.jpg");
             try
             {
+                var scala = $"scale='min({Math.Clamp(lato, 32, 800)},iw)':-2";
                 var r = await Processi.Esegui(s.Ffmpeg, ["-hide_banner", "-loglevel", "error", "-y", "-i", percorso, "-map", "0:v:0", "-frames:v", "1",
-                    "-vf", "scale='min(800,iw)':-2", "-q:v", "3", "-update", "1", jpg], CancellationToken.None, tieniUscita: false);
+                    "-vf", scala, "-q:v", "3", "-update", "1", jpg], CancellationToken.None, tieniUscita: false, silenzioso: silenzioso);
                 if (r.Codice == 0 && File.Exists(jpg)) return await File.ReadAllBytesAsync(jpg);
             }
             finally { try { File.Delete(jpg); } catch { } }

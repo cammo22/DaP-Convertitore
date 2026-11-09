@@ -125,3 +125,10 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
 - **La home** (`ui/src/app/home.ts`): le sei strade (il selettore si apre già filtrato: comando `scegli` con `categoria`), gli ultimi
   convertiti (`Storico.cs`, `storico.json`, solo l'app lo scrive: la coda lo chiama tramite `Coda.QuandoFatto`) e come sta il PC.
 - **Suoni** spenti di partenza: la proprietà si chiama `SuoniAccesi` (nome nuovo apposta, come `CestinoDaSolo`).
+- **Icone e miniature** (dalla 2.2.8): `Icone.cs` scrive il .ico del tipo (16…256). Fino a 24 pixel è `Glifi.Mattonella`
+  (sagoma piena: a 16 il foglio piegato era una macchia); da 32 in su il foglio, col tratto in pixel e non
+  `1.45/scala` (quel conto a 32 pixel gonfiava il segno). La miniatura audio (`Multimedia.Audio`) mette la copertina
+  a sinistra — `Media.Copertina`, dentro il file o `cover.jpg` / `folder.jpg`, in silenzio — e l'onda vera a destra
+  (`Onde.Barre`). Sotto i 48 la copertina sta sopra e l'onda è una striscia; a 16–24 senza copertina si torna null e
+  resta il .ico. Il nome del file .ico porta la versione: al cambio si buttano i vecchi. Cosa non si fa ora (scheda
+  del file, tagli piccoli, niente montaggio: quello è DaProd Editor Video) sta in `docs/ROADMAP.md`.

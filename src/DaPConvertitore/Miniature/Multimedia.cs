@@ -7,8 +7,8 @@ using Windows.Graphics.Imaging;
 namespace DaP.Convertitore.App.Miniature;
 
 /// <summary>
-/// Le miniature che mostrano il contenuto: il fotogramma del video (col suo tasto play e la pellicola), la forma
-/// d'onda della musica (come i vocali di WhatsApp), il modello 3D su uno sfondo da studio, la foto.
+/// Le miniature che mostrano il contenuto: il fotogramma del video (col suo tasto play e la pellicola), la musica
+/// con la copertina a sinistra e la forma d'onda vera a destra, il modello 3D su uno sfondo da studio, la foto.
 /// </summary>
 public static class Multimedia
 {
@@ -63,8 +63,9 @@ public static class Multimedia
                 }
             }
 
-            // il tasto play al centro: vetro scuro, anello magenta-oro, triangolo bianco
-            var d = Math.Max(minimo * 0.36, 14);
+            // il tasto play al centro: vetro scuro, anello magenta-oro, triangolo bianco.
+            // sotto i 48 pixel il minimo di 14 copriva tutto il fotogramma
+            var d = minimo * (L >= 48 ? 0.36 : 0.46);
             var c = new Point(fw / 2.0, fh / 2.0);
             dc.DrawEllipse(Tavolozza.P(Colors.Black, 0.28), null, c, d / 2 * 1.16, d / 2 * 1.16);
             dc.DrawEllipse(Tavolozza.P(Tavolozza.Fondo, 0.66), null, c, d / 2, d / 2);
@@ -105,71 +106,141 @@ public static class Multimedia
 
     // ————————————————————————————————————— AUDIO —————————————————————————————————————
 
+    /// <summary>
+    /// Dove sta la copertina e dove sta l'onda. Dalle 48 pixel in su la copertina è il riquadro a sinistra e l'onda
+    /// quello a destra; fra 32 e 47 la copertina sta sopra e l'onda è una striscia; sotto, se non c'è copertina,
+    /// non si disegna niente (resta l'icona del tipo, che a 16 pixel è più nitida di una copertina schiacciata).
+    /// </summary>
+    readonly record struct SchemaAudio(int W, int H, Rect Cover, Rect Onda, bool Pastiglie, int Barre);
+
+    static SchemaAudio ImpaginaAudio(int L)
+    {
+        if (L < 48)
+        {
+            double m = Math.Max(1, L * 0.07);
+            double striscia = L <= 24 ? 0 : Math.Max(6, L * 0.34);
+            double lato = L <= 24 ? L - 2 * m : Math.Min(L - 2 * m, L - 2 * m - striscia - m * 0.45);
+            var cover = new Rect((L - lato) / 2, m, lato, lato);
+            var onda = striscia <= 0 ? Rect.Empty : new Rect(m, L - m - striscia, L - 2 * m, striscia);
+            var passo = Math.Max(2, L * 0.08);
+            var barre = onda.IsEmpty ? 0 : Math.Clamp((int)(onda.Width / passo), 5, 16);
+            return new SchemaAudio(L, L, cover, onda, false, barre);
+        }
+
+        int W = L, H = (int)Math.Round(L * 0.72);
+        bool pastiglie = L >= 96;
+        double padX = W * 0.048, padY = H * 0.07, fascia = pastiglie ? H * 0.20 : padY;
+        double utile = H - padY * 0.45 - fascia;
+        double latoCover = Math.Min(utile * 0.96, W * 0.38);
+        double y = padY * 0.35 + Math.Max(0, (utile - latoCover) / 2);
+        var c = new Rect(padX, y, latoCover, latoCover);
+        double xOnda = c.Right + W * 0.04;
+        var z = new Rect(xOnda, y, Math.Max(4, W - padX - xOnda), latoCover);
+        int n = Math.Clamp((int)(z.Width / Math.Max(2.2, L * 0.0145)), 8, 64);
+        return new SchemaAudio(W, H, c, z, pastiglie, n);
+    }
+
     public static Quadro? Audio(string percorso, int L, Strumenti s)
     {
-        int W = L, H = (int)Math.Round(L * 0.7);
-        var u = L / 256.0;
-        double larBarra = Math.Max(1.6, 3.3 * u), vuoto = larBarra * 0.72;
-        double x0 = W * 0.285, x1 = W * 0.93;
-        var barre = Math.Max(8, (int)((x1 - x0 + vuoto) / (larBarra + vuoto)));
-        var onda = Aspetta(() => Onde.Barre(s, percorso, barre, TimeSpan.FromSeconds(14)));
-        if (onda.Length == 0) return null;
+        var schema = ImpaginaAudio(L);
         var info = Sonda_(s, percorso);
+        BitmapSource? cover = null;
+        try
+        {
+            var lato = Math.Clamp((int)schema.Cover.Width * 2, 64, 512);
+            var jpg = Aspetta(() => Media.Copertina(s, percorso, info?.Copertina == true, silenzioso: true, lato: lato));
+            cover = Tela.Immagine(jpg, lato);
+        }
+        catch { /* niente copertina: resta il disco */ }
+
+        // a 16 e 24, senza copertina, l'icona del tipo è più chiara di un dischetto sfocato
+        if (L <= 24 && cover is null) return null;
+
+        float[] onda = [];
+        if (schema.Barre > 0)
+        {
+            try { onda = Aspetta(() => Onde.Barre(s, percorso, schema.Barre, TimeSpan.FromSeconds(12))); }
+            catch { onda = []; }
+        }
+        if (onda.Length == 0 && cover is null) return null;
+        if (onda.Length != schema.Barre && schema.Barre > 0)
+            onda = onda.Length == 0 ? Enumerable.Repeat(0.18f, schema.Barre).ToArray() : onda;
+
         var durata = info?.Durata ?? 0;
         var est = Path.GetExtension(percorso).TrimStart('.').ToUpperInvariant();
-        var grande = L >= 96;
+        int W = schema.W, H = schema.H;
 
         return Tela.Fai(W, H, dc =>
         {
             var r = new Rect(0, 0, W, H);
-            var raggio = H * 0.1;
+            var raggio = Math.Min(W, H) * (L < 48 ? 0.18 : 0.1);
             var fondo = new LinearGradientBrush(Tavolozza.ViolaChiaro, Tavolozza.Fondo, 125);
             fondo.Freeze();
             dc.DrawRoundedRectangle(fondo, null, r, raggio, raggio);
             Tela.Ritaglia(dc, r, raggio);
-            var luce = new RadialGradientBrush(Color.FromArgb(70, 255, 61, 242), Color.FromArgb(0, 255, 61, 242)) { Center = new Point(0.12, 0.45), GradientOrigin = new Point(0.12, 0.45), RadiusX = 0.6, RadiusY = 0.9 };
+            var luce = new RadialGradientBrush(Color.FromArgb(64, 255, 61, 242), Color.FromArgb(0, 255, 61, 242)) { Center = new Point(0.18, 0.4), GradientOrigin = new Point(0.18, 0.4), RadiusX = 0.55, RadiusY = 0.8 };
             luce.Freeze();
             dc.DrawRectangle(luce, null, r);
 
-            // il tasto play a sinistra, come nei vocali
-            double cy = H * (grande ? 0.43 : 0.5), d = H * 0.3;
-            var c = new Point(W * 0.145, cy);
-            var oro = new LinearGradientBrush(Tavolozza.Oro, Tavolozza.Oro2, 90);
-            oro.Freeze();
-            dc.DrawEllipse(oro, null, c, d / 2, d / 2);
-            var tri = new StreamGeometry();
-            using (var g = tri.Open())
-            {
-                double k = d * 0.2;
-                g.BeginFigure(new Point(c.X - k * 0.6, c.Y - k * 1.1), true, true);
-                g.LineTo(new Point(c.X + k * 1.2, c.Y), true, false);
-                g.LineTo(new Point(c.X - k * 0.6, c.Y + k * 1.1), true, false);
-            }
-            tri.Freeze();
-            dc.DrawGeometry(Tavolozza.P(Tavolozza.Fondo), null, tri);
+            DisegnaCopertina(dc, schema.Cover, cover);
+            if (!schema.Onda.IsEmpty && onda.Length > 0) DisegnaOnda(dc, schema.Onda, onda);
 
-            // le barre: la forma d'onda vera del brano, magenta all'inizio e oro alla fine
-            var sfum = new LinearGradientBrush(Tavolozza.Magenta, Tavolozza.Oro, new Point(x0, 0), new Point(x1, 0)) { MappingMode = BrushMappingMode.Absolute };
-            sfum.Freeze();
-            double massimo = H * (grande ? 0.31 : 0.4), minimo = larBarra * 0.6;
-            for (var i = 0; i < barre; i++)
-            {
-                var mezza = minimo + onda[i] * (massimo - minimo);
-                var x = x0 + i * (larBarra + vuoto);
-                dc.DrawRoundedRectangle(sfum, null, new Rect(x, cy - mezza, larBarra, mezza * 2), larBarra / 2, larBarra / 2);
-            }
-
-            if (grande)
+            if (schema.Pastiglie)
             {
                 var h = Math.Max(11, H * 0.115);
-                var y = H - h - H * 0.07;
-                var vetro = Tavolozza.P(Colors.Black, 0.38);
+                var y = H - h - H * 0.055;
+                var vetro = Tavolozza.P(Colors.Black, 0.45);
                 if (est.Length is > 0 and <= 5) Tela.Pastiglia(dc, est, W * 0.045, y, h, vetro, Tavolozza.P(Tavolozza.Oro));
                 if (durata > 0) Tela.Pastiglia(dc, Tela.Durata(durata), W * 0.955, y, h, vetro, Tavolozza.P(Colors.White, 0.92), aDestra: true);
             }
             dc.Pop();
-            dc.DrawRoundedRectangle(null, Tavolozza.Penna(Colors.White, 1, 0.12), new Rect(0.5, 0.5, W - 1, H - 1), raggio, raggio);
+            dc.DrawRoundedRectangle(null, Tavolozza.Penna(Colors.White, 1, 0.14), new Rect(0.5, 0.5, W - 1, H - 1), raggio, raggio);
         });
+    }
+
+    /// <summary>La copertina nel riquadro di sinistra, tagliata al centro. Senza immagine, un disco oro.</summary>
+    static void DisegnaCopertina(DrawingContext dc, Rect r, BitmapSource? img)
+    {
+        if (r.Width < 2 || r.Height < 2) return;
+        var rad = r.Width * 0.16;
+        if (img is not null)
+        {
+            Tela.Copri(dc, img, r, rad);
+            dc.DrawRoundedRectangle(null, Tavolozza.Penna(Tavolozza.Oro, Math.Max(1, r.Width * 0.035)), r, rad, rad);
+            return;
+        }
+        var c = new Point(r.X + r.Width / 2, r.Y + r.Height / 2);
+        double rx = r.Width / 2;
+        dc.PushClip(new RectangleGeometry(r, rad, rad));
+        dc.DrawEllipse(Tavolozza.P(Tavolozza.C("#1a1030")), null, c, rx, rx);
+        dc.DrawEllipse(null, Tavolozza.Penna(Tavolozza.Oro, Math.Max(1, rx * 0.07)), c, rx * 0.78, rx * 0.78);
+        dc.DrawEllipse(null, Tavolozza.Penna(Tavolozza.Tinta("Audio"), Math.Max(1, rx * 0.05), 0.85), c, rx * 0.48, rx * 0.48);
+        dc.DrawEllipse(Tavolozza.P(Tavolozza.Oro), null, c, Math.Max(1.2, rx * 0.14), Math.Max(1.2, rx * 0.14));
+        dc.Pop();
+        dc.DrawRoundedRectangle(null, Tavolozza.Penna(Tavolozza.Oro, Math.Max(1, r.Width * 0.035), 0.85), r, rad, rad);
+    }
+
+    /// <summary>L'onda vera del brano, nel riquadro a destra: magenta dove comincia, oro dove finisce.</summary>
+    static void DisegnaOnda(DrawingContext dc, Rect zona, float[] onda)
+    {
+        int n = onda.Length;
+        if (n == 0 || zona.Width < 2) return;
+        double lar = zona.Width / (n + (n - 1) * 0.42);
+        double vuoto = lar * 0.42;
+        double usato = n * lar + (n - 1) * vuoto;
+        double x0 = zona.X + (zona.Width - usato) / 2;
+        double cy = zona.Y + zona.Height / 2;
+        double massimo = zona.Height * 0.48;
+        double minimo = Math.Max(0.8, Math.Min(lar * 0.55, massimo * 0.18));
+        var sfum = new LinearGradientBrush(Tavolozza.Magenta, Tavolozza.Oro, new Point(zona.X, 0), new Point(zona.Right, 0)) { MappingMode = BrushMappingMode.Absolute };
+        sfum.Freeze();
+        dc.DrawLine(Tavolozza.Penna(Colors.White, Math.Max(0.6, zona.Height * 0.012), 0.16), new Point(zona.X, cy), new Point(zona.Right, cy));
+        for (var i = 0; i < n; i++)
+        {
+            var mezza = minimo + Math.Clamp(onda[i], 0f, 1f) * (massimo - minimo);
+            var x = x0 + i * (lar + vuoto);
+            dc.DrawRoundedRectangle(sfum, null, new Rect(x, cy - mezza, Math.Max(1, lar), mezza * 2), lar / 2, lar / 2);
+        }
     }
 
     // ————————————————————————————————————— MODELLO 3D —————————————————————————————————————

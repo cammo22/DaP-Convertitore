@@ -111,19 +111,44 @@ public static class Tela
         return m.ToArray();
     }
 
-    /// <summary>Un'immagine da byte (JPEG, PNG…), già pronta e «congelata».</summary>
-    public static BitmapSource? Immagine(byte[]? dati)
+    /// <summary>
+    /// Un'immagine da byte (JPEG, PNG…), già pronta e «congelata». Con <paramref name="latoMassimo"/> si rimpicciolisce
+    /// mentre si legge: le copertine degli album non vanno tenute intere per una miniatura.
+    /// </summary>
+    public static BitmapSource? Immagine(byte[]? dati, int latoMassimo = 0)
     {
         if (dati is not { Length: > 0 }) return null;
         try
         {
             using var m = new MemoryStream(dati);
+            if (latoMassimo > 0)
+            {
+                var bi = new BitmapImage();
+                bi.BeginInit();
+                bi.StreamSource = m;
+                bi.CacheOption = BitmapCacheOption.OnLoad;
+                bi.DecodePixelWidth = latoMassimo;
+                bi.EndInit();
+                bi.Freeze();
+                return bi;
+            }
             var dec = BitmapDecoder.Create(m, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
             var f = dec.Frames[0];
             f.Freeze();
             return f;
         }
         catch { return null; }
+    }
+
+    /// <summary>L'immagine riempie il rettangolo (tagliata al centro, come una copertina) con gli angoli tondi.</summary>
+    public static void Copri(DrawingContext dc, BitmapSource img, Rect r, double raggio)
+    {
+        var scala = Math.Max(r.Width / img.PixelWidth, r.Height / img.PixelHeight);
+        double w = img.PixelWidth * scala, h = img.PixelHeight * scala;
+        var dest = new Rect(r.X + (r.Width - w) / 2, r.Y + (r.Height - h) / 2, w, h);
+        dc.PushClip(new RectangleGeometry(r, raggio, raggio));
+        dc.DrawImage(img, dest);
+        dc.Pop();
     }
 
     /// <summary>Un angolo tondo: il disegno si ritaglia con questo.</summary>

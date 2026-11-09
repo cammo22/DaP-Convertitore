@@ -2,6 +2,12 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
+## 2.2.8 — 9 novembre 2026
+
+- **Le icone dei file sono rifatte, e quelle piccole si leggono.** A 16, 20 e 24 pixel non c'è più il foglio piegato (diventava una macchia): c'è una mattonella tonda, viola notte, col bordo del colore del tipo e una sagoma piena. Video, musica, foto, PDF, documenti, fogli, presentazioni, codice, sottotitoli, archivi, caratteri e modelli hanno ognuno il suo segno. Dalle 32 pixel in su resta il foglio, col disegnino più nitido.
+- **La musica in Esplora file mostra la copertina e l'onda vera.** A sinistra la copertina del brano (quella dentro il file, oppure `cover.jpg` / `folder.jpg` nella cartella), a destra la forma d'onda di quel brano, magenta e oro. Senza copertina c'è un disco. Sotto, il formato e la durata. Nelle viste piccole la copertina riempie l'icona e l'onda diventa una striscia; a 16 pixel, se il brano non ha copertina, resta la mattonella del tipo, che è più chiara.
+- **In arrivo**, senza fretta e senza diventare un programma di montaggio: la scheda del file (titolo, artista, copertina, e le informazioni che si possono correggere) e i tagli piccoli. Il montaggio vero resta [DaProd Editor Video](https://github.com/cammo22/DaProdEditorVideo). I dettagli sono in `docs/ROADMAP.md`.
+
 ## 2.2.7 — 4 novembre 2026
 
 - **La colonna di mezzo non si rompe più con l'anteprima aperta.** Si regolava sulla larghezza della finestra, non sulla sua: con
