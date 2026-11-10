@@ -4,6 +4,8 @@ Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
 ## In lavorazione
 
+## 2.2.9 — 10 novembre 2026
+
 ### Registrare lo schermo
 
 - **Registra si apre accanto all'avatar.** Dal vassoio o dal tasto destro sull'avatar. Se l'avatar è su un altro monitor, la finestra sta su quello, dentro lo schermo, e se sposti l'avatar lei lo segue. Se l'avatar è spento, la finestra sta al centro del monitor principale.
