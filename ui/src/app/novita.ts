@@ -9,16 +9,19 @@ import { s } from './stato';
 
 export interface DatiNovita { versione: string; testo: string | null; nuova: boolean }
 
-/** Un markdown piccolo piccolo: elenchi (anche su più righe), **grassetto** e `codice`. */
+/** Un markdown piccolo piccolo: elenchi (anche su più righe), **grassetto**, `codice` e [testo](https://…). */
 function markdown(md: string): HTMLElement {
   const box = h('div.novita-testo');
   const inline = (t: string) => {
     const el = h('span');
-    const re = /\*\*([^*]+)\*\*|`([^`]+)`/g;
+    const re = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|\*\*([^*]+)\*\*|`([^`]+)`/g;
     let k = 0, m: RegExpExecArray | null;
     while ((m = re.exec(t))) {
       if (m.index > k) el.append(t.slice(k, m.index));
-      el.append(m[1] ? h('b', null, m[1]) : h('code', null, m[2]));
+      if (m[1]) {
+        const url = m[2];
+        el.append(h('button.link', { type: 'button', onclick: () => void chiedi('link', { url }) }, m[1]));
+      } else el.append(m[3] ? h('b', null, m[3]) : h('code', null, m[4]));
       k = re.lastIndex;
     }
     if (k < t.length) el.append(t.slice(k));

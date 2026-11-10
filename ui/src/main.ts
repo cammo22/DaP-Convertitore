@@ -14,7 +14,7 @@ import { icone, iconaCategoria, coloreCategoria } from './icone';
 import { clac, accendiSuoni } from './suoni';
 import { disegnaHome } from './app/home';
 import { apriNovita, type DatiNovita } from './app/novita';
-import { s, ui, nomeCat, formato, fileDi, categoriePresenti, sceltaPer, eVideoVero } from './app/stato';
+import { s, ui, nomeCat, formato, fileDi, categoriePresenti, sceltaPer, eVideoVero, scelteDaRicordare } from './app/stato';
 import { app, testa, coda, banco, piede, corpo, logoSvg, mostraAvviso, conservaVista } from './app/scheletro';
 import { regolazioni } from './app/pannelli';
 import { aggiornaPiano, pesoObiettivo } from './app/pannelli/video';
@@ -33,8 +33,104 @@ function cpuCorta(n: string) {
   return n.replace(/\(R\)|\(TM\)|CPU|Processor/gi, '').replace(/with Radeon.*$/i, '').replace(/@.*$/, '').replace(/^(AMD|Intel)\s+/i, '').replace(/Core\s+/i, '').replace(/\s+/g, ' ').trim();
 }
 
-function disegnaTesta() {
+function gpuCorta(n: string) {
+  return n.replace(/NVIDIA |GeForce |AMD |Radeon |Intel\(R\) |Intel /gi, '').replace(/\(TM\)|\(R\)/gi, '').replace(/\s+/g, ' ').trim();
+}
+
+/** La bolla unica: scheda video o processore, quella con cui si codifica. */
+function usaGpu() {
   const hw = s.stato.hardware;
+  const scelto = s.stato.impostazioni.codificaCon;
+  if (scelto === 'cpu') return false;
+  if (scelto === 'gpu') return !!hw?.acceleratore;
+  return !!hw?.acceleratore && s.opzioni.video.motore !== 'cpu';
+}
+
+interface Unita { motore: string; titolo: string; nota: string; gpu: boolean }
+
+/** Schede con un encoder vero, poi il processore. Due schede della stessa marca condividono l'encoder. */
+function unitaDisponibili(hw: NonNullable<typeof s.stato.hardware>): Unita[] {
+  const marche: { marca: string; suf: string; motore: string; etichetta: string }[] = [
+    { marca: 'nvidia', suf: '_nvenc', motore: 'nvidia', etichetta: 'NVENC' },
+    { marca: 'amd', suf: '_amf', motore: 'amd', etichetta: 'AMF' },
+    { marca: 'intel', suf: '_qsv', motore: 'intel', etichetta: 'Quick Sync' },
+  ];
+  const out: Unita[] = [];
+  for (const m of marche) {
+    if (!hw.encoder.some((e) => e.endsWith(m.suf))) continue;
+    const schede = hw.gpu.filter((g) => g.marca === m.marca);
+    const lista = schede.length ? schede : [{ nome: m.etichetta, marca: m.marca, vram: 0, driver: '' }];
+    for (const g of lista) out.push({ motore: m.motore, titolo: gpuCorta(g.nome) || g.nome, nota: m.etichetta, gpu: true });
+  }
+  out.push({ motore: 'cpu', titolo: cpuCorta(hw.cpu) || 'Processore', nota: `${hw.thread} thread`, gpu: false });
+  return out;
+}
+
+function marcaAttiva(hw: NonNullable<typeof s.stato.hardware>): string {
+  const m = s.opzioni.video.motore;
+  if (m === 'nvidia' || m === 'amd' || m === 'intel' || m === 'cpu') return m;
+  if (hw.encoder.some((e) => e.endsWith('_nvenc'))) return 'nvidia';
+  if (hw.encoder.some((e) => e.endsWith('_amf'))) return 'amd';
+  if (hw.encoder.some((e) => e.endsWith('_qsv'))) return 'intel';
+  return 'cpu';
+}
+
+function scegliUnita(u: Unita) {
+  clac();
+  document.querySelector('.menu-motore')?.remove();
+  s.stato.impostazioni.codificaCon = u.gpu ? 'gpu' : 'cpu';
+  s.opzioni.video.motore = u.motore;
+  void chiedi('impostazioni', { codificaCon: s.stato.impostazioni.codificaCon, scelte: scelteDaRicordare() });
+  s.piano = null;
+  disegnaTesta();
+  if (s.vista === 'scegli' && s.stato.modo === 'finestra') ui.scegli();
+}
+
+function apriMenuMotore(ancora: HTMLElement) {
+  const gia = document.querySelector('.menu-motore');
+  if (gia) { gia.remove(); return; }
+  const hw = s.stato.hardware;
+  if (!hw) return;
+  clac();
+  const gpu = usaGpu();
+  const marca = gpu ? marcaAttiva(hw) : 'cpu';
+  const voci = unitaDisponibili(hw);
+  let segnata = false;
+  const menu = h('div.menu-motore', { role: 'menu' });
+  for (const u of voci) {
+    const attiva = !segnata && u.motore === marca && u.gpu === gpu;
+    if (attiva) segnata = true;
+    menu.append(h(`button${attiva ? '.su' : ''}`, { type: 'button', role: 'menuitem', onclick: () => scegliUnita(u) },
+      h(`i.led${u.gpu ? '.verde' : '.ambra'}`),
+      h('span', null, h('b', null, u.titolo), h('small', null, attiva ? `${u.nota} · in uso` : u.nota))));
+  }
+  document.body.append(menu);
+  const r = ancora.getBoundingClientRect();
+  menu.style.top = `${Math.round(r.bottom + 6)}px`;
+  menu.style.right = `${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
+  const chiudi = (e: Event) => {
+    if (menu.contains(e.target as Node) || ancora.contains(e.target as Node)) return;
+    menu.remove();
+    document.removeEventListener('pointerdown', chiudi, true);
+  };
+  setTimeout(() => document.addEventListener('pointerdown', chiudi, true), 0);
+}
+
+function bollaMotore() {
+  const hw = s.stato.hardware;
+  if (!hw) return h('span.chip', null, h('i.led.lampeggia'), 'Guardo la macchina…');
+  const gpu = usaGpu();
+  const marca = gpu ? marcaAttiva(hw) : 'cpu';
+  const scelta = unitaDisponibili(hw).find((u) => u.motore === marca && u.gpu === gpu) ?? unitaDisponibili(hw).at(-1)!;
+  const testo = scelta.gpu ? `${scelta.titolo} · ${scelta.nota}` : `${scelta.titolo} · ${hw.thread} thread`;
+  return h(`button.chip.motore${gpu ? '.gpu' : '.cpu'}`, {
+    type: 'button',
+    title: 'Scegli la scheda video o il processore',
+    onclick: (e: Event) => apriMenuMotore(e.currentTarget as HTMLElement),
+  }, h(`i.led${gpu ? '.verde' : '.ambra'}`), testo);
+}
+
+function disegnaTesta() {
   testa.replaceChildren(
     h('div.marchio', null,
       h('span.logo', { html: logoSvg }),
@@ -43,10 +139,10 @@ function disegnaTesta() {
     h('div.trascina', { 'data-regione': 'trascina' }),
     h('div.chip-hw', null,
       s.aggiornamento ? h('button.chip.agg', { title: `Installa la ${s.aggiornamento} e riapre il convertitore`, onclick: () => { clac(true); void chiedi('aggiorna', { installa: true }); } }, h('i.led.verde'), `Aggiornamento ${s.aggiornamento} disponibile`) : null,
-      hw?.acceleratore ? h('span.chip.gpu', { title: hw.gpu.map((g) => g.nome).join(' · ') }, h('i.led.verde'), hw.acceleratore) : h('span.chip', null, h('i.led'), 'Solo CPU'),
-      hw ? h('span.chip', { title: hw.cpu }, h('i.led.ambra'), `${cpuCorta(hw.cpu)} · ${hw.thread} thread`) : h('span.chip', null, h('i.led.lampeggia'), 'Guardo la macchina…'),
+      bollaMotore(),
     ),
     h('div.finestra', null,
+      s.torna ? h('button.btn-fin.indietro', { title: 'Torna al lettore e chiudi questa finestra', onclick: () => { clac(); void chiedi('tornaLettore'); } }, h('span.indietro-ico', { html: icone.freccia }), 'Indietro') : null,
       h('button.btn-fin.nov', { title: 'Novità e aggiornamenti', onclick: () => void apriNovita(), html: icone.novita }),
       h(`button.btn-fin.av${s.stato.impostazioni.avatarAttivo ? '.su' : ''}`, { title: s.stato.impostazioni.avatarAttivo ? "Spegni l'avatar" : "Accendi l'avatar", onclick: () => accendiAvatar(!s.stato.impostazioni.avatarAttivo), html: icone.avatar }),
       h('button.btn-fin', { title: 'Impostazioni', onclick: () => apriImpostazioni() , html: icone.ingranaggio }),
@@ -303,6 +399,8 @@ function elementiDaConvertire() {
       const peso = c === 'immagine' && conQualita(f) && o.immagine.modo === 'peso' ? pesoVolutoFoto(id) : 0;
       o.immagine.pesoMaxByte = peso;
       if (peso) o.immagine.qualita = QUALITA_PER_PESO;
+      const sch = s.schede.get(id);
+      if (sch?.scrivi) o.scheda = { ...sch };
       el.push({ ids: [id], formato: f.id, opzioni: o });
     }
   }
@@ -314,7 +412,7 @@ async function converti() {
   if (!elementi.length) return;
   clac(true);
   for (const c of categoriePresenti()) { const f = sceltaPer(c); if (f) s.stato.impostazioni.formati[c] = f.id; }
-  void chiedi('impostazioni', { formati: s.stato.impostazioni.formati, scelte: { video: { ...s.opzioni.video, pesoByte: 0 }, audio: s.opzioni.audio, immagine: s.opzioni.immagine, pdf: s.opzioni.pdf } });
+  void chiedi('impostazioni', { formati: s.stato.impostazioni.formati, scelte: scelteDaRicordare() });
   const ids = await chiedi<string[]>('converti', { elementi });
   s.giro = ids;
   s.vista = 'lavoro';
@@ -351,10 +449,13 @@ function opzioniSalvate() {
   if (!sc) return;
   for (const k of ['video', 'audio', 'immagine', 'pdf'] as const) if (sc[k]) Object.assign(s.opzioni[k], sc[k]);
   if (s.opzioni.video.modo === 'auto') s.opzioni.video.modo = 'peso';
+  // la bolla in alto è la scelta che si ricorda: vince su un motore vecchio salvato in senso contrario
+  if (s.stato.impostazioni.codificaCon === 'cpu') s.opzioni.video.motore = 'cpu';
+  else if (s.stato.impostazioni.codificaCon === 'gpu' && s.opzioni.video.motore === 'cpu') s.opzioni.video.motore = 'auto';
 }
 
 async function avvia() {
-  Object.assign(ui, { tutto: disegnaTutto, scegli: disegnaScegli, piede: disegnaPiede, coda: disegnaCoda, fatto: disegnaFatto, rapido: disegnaRapido, impostazioni: apriImpostazioni, nuovoGiro });
+  Object.assign(ui, { tutto: disegnaTutto, scegli: disegnaScegli, piede: disegnaPiede, coda: disegnaCoda, fatto: disegnaFatto, rapido: disegnaRapido, impostazioni: apriImpostazioni, nuovoGiro, testa: disegnaTesta });
   await avviaFinto();
   avviaIncolla();
   ascolta('file', (f: InfoFile) => {
@@ -402,6 +503,8 @@ async function avvia() {
     strumenti.enc?.valore(c.encoder / 100);
     strumenti.dec?.valore(c.decoder / 100);
   });
+  ascolta('apriImpostazioni', () => apriImpostazioni());
+  ascolta('torna', (d: { percorso?: string | null }) => { s.torna = d.percorso || null; disegnaTesta(); });
   ascolta('avatar', (d: { si: boolean }) => {
     s.stato.impostazioni.avatarAttivo = d.si;
     disegnaTesta();
@@ -413,6 +516,7 @@ async function avvia() {
     s.piano = null;
     disegnaTutto();
   });
+  ascolta('recenti', () => { if (s.vista === 'scegli' && !s.attiva) disegnaScegli(); });
   ascolta('modo', (m: { modo: 'finestra' | 'rapido' }) => {
     s.stato.modo = m.modo;
     app.classList.toggle('rapido', m.modo === 'rapido');
@@ -425,6 +529,7 @@ async function avvia() {
 
   s.stato = await chiedi<Stato>('stato');
   s.aggiornamento = s.stato.aggiornamento ?? null;
+  s.torna = s.stato.torna ?? null;
   accendiSuoni(s.stato.impostazioni.suoniAccesi);
   // dopo un aggiornamento le novità si aprono da sole, una volta
   if (s.stato.modo === 'finestra') void chiedi<DatiNovita>('novita').then((n) => { if (n?.nuova) setTimeout(() => void apriNovita(n), 1200); }).catch(() => {});

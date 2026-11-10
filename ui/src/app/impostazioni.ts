@@ -137,36 +137,94 @@ export function apriImpostazioni() {
     } }, 'Togli le voci dal sistema'),
     regola.attiva ? h('button.link', { title: 'Cancella la regola di Windows: i tipi tornano a come li scegli tu', onclick: () => { clac(); void chiedi<{ esito: string }>('predefiniteTogli').then((r) => esitoRegola(r.esito, false)); } }, 'Togli la regola delle app predefinite') : null);
 
+  const dove = h('p.imp-dove', null, 'Guardo la cartella…');
+  const elenco = h('ul.imp-file');
+  const bloccaCartella = h('div', null,
+    dove,
+    h('div.compatto-tasti', { style: 'margin-top:8px' },
+      h('button.tasto', { onclick: () => { clac(); void chiedi('apriCartellaMia'); } }, 'Apri'),
+      h('button.tasto', { onclick: async () => {
+        clac();
+        const r = await chiedi<{ percorso: string | null }>('scegliCartellaMia');
+        if (r?.percorso) { imp.cartellaMia = r.percorso; apriImpostazioni(); }
+      } }, 'Cambia'),
+      imp.cartellaMia ? h('button.tasto', { onclick: () => { clac(); imp.cartellaMia = null; void chiedi('impostazioni', { cartellaMia: '' }); apriImpostazioni(); } }, 'Quella di partenza') : null),
+    elenco);
+  const scorciatoia = h('button.campo-scorciatoia', { type: 'button', title: 'Clicca qui, poi premi i tasti della scorciatoia' }, imp.scorciatoiaSchermo || 'Ctrl+Maiusc+S');
+  scorciatoia.addEventListener('click', () => {
+    if (scorciatoia.classList.contains('ascolta')) return;
+    clac();
+    scorciatoia.classList.add('ascolta');
+    scorciatoia.textContent = 'Premi i tasti…';
+    const f = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
+      const parti: string[] = [];
+      if (e.ctrlKey) parti.push('Ctrl');
+      if (e.altKey) parti.push('Alt');
+      if (e.shiftKey) parti.push('Maiusc');
+      const tasto = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+      const fine = () => { scorciatoia.classList.remove('ascolta'); window.removeEventListener('keydown', f, true); };
+      if (!e.ctrlKey && !e.altKey && !e.metaKey && tasto !== 'Escape') return;
+      if (tasto === 'Escape') { scorciatoia.textContent = imp.scorciatoiaSchermo || 'Ctrl+Maiusc+S'; fine(); return; }
+      parti.push(tasto);
+      const testo = parti.join('+');
+      imp.scorciatoiaSchermo = testo;
+      scorciatoia.textContent = testo;
+      salva({ scorciatoiaSchermo: testo });
+      void chiedi('scorciatoia', { testo });
+      fine();
+    };
+    window.addEventListener('keydown', f, true);
+  });
+
   cassetto.append(h('div.cassetto', null,
     h('div.confronto-testa', null, h('b', null, 'IMPOSTAZIONI'), h('span'), h('button.btn-fin', { html: icone.chiudi, onclick: () => cassetto.remove() })),
-    riga('La scritta nel nome', 'Foto.jpg diventa «Foto (convertito).webp». Puoi cambiarla.', scritta),
-    riga('L\'originale nel Cestino da solo', 'Spento: l\'originale resta, e lo butti tu col cestino accanto al risultato. Acceso: quando il convertito ne prende il posto (MOV → MP4, PNG → JPG…) l\'originale va nel Cestino da solo. Mai quando ne tiri fuori un pezzo (l\'audio, il testo, le pagine) né su chiavette e dischi di rete.',
-      leva(imp.cestinoDaSolo, (v) => { salva({ cestinoDaSolo: v }); ui.piede(); })),
-    h('div.imp-sezione', null, 'SISTEMA'),
-    sistema,
-    riga('Scegliere i tipi da aprire col lettore', 'La lista dei tipi di file (foto, video, musica, PDF…) con un interruttore ciascuno: «Aggiusta tutto» usa questa scelta.',
-      h('button.tasto', { onclick: () => { clac(); apriPredefinite(); } }, 'Scegli i tipi')),
-    ...(s.stato.menu11?.windows11
-      ? [riga('Mostra tutti i menu del tasto destro', 'Su Windows 11 il tasto destro apre subito il menu completo, con tutte le voci a un clic e senza «Mostra altre opzioni». Spento torna il menu di Windows 11. Esplora file va riavviato: te lo chiedo.',
-          leva(s.stato.menu11.classico, async (v) => {
-            s.stato.menu11 = await chiedi<StatoMenu11>('classico', { attivo: v });
-            proponiRiavvio(v ? 'Il menu completo arriva quando riparte Esplora file.' : 'Il menu di Windows 11 torna quando riparte Esplora file.');
-          }))]
-      : []),
-    h('div.imp-sezione', null, 'AVATAR'),
-    riga('Avatar sul desktop', 'Un oggetto piccolo (una musicassetta, poi un VHS, un floppy…) che sta in un angolo, ogni tanto fa un movimento e si trasforma. Non dà fastidio: sta fermo quando hai un programma a schermo intero. Ci trascini sopra dei file e ti chiede: aprire, convertire o comprimere. Si sposta col mouse, tasto destro per il menu.',
-      leva(!!imp.avatarAttivo, (v) => { salva({ avatarAttivo: v }); apriImpostazioni(); })),
-    ...(imp.avatarAttivo ? [riga('Parte con Windows', 'L\'avatar si accende da solo quando accedi, senza aprire finestre.', leva(!!imp.avatarAvvio, (v) => salva({ avatarAvvio: v })))] : []),
-    ...(imp.avatarAttivo ? [riga('Cambio automatico del personaggio', "Acceso, ogni tanto l'avatar si trasforma da solo. Spento, resta quello che hai scelto (tasto destro sull'avatar → Scegli il personaggio).", leva(imp.avatarCambioAuto !== false, (v) => salva({ avatarCambioAuto: v })))] : []),
-    h('div.imp-sezione', null, 'ALTRO'),
-    riga('Spingi al massimo', 'FFmpeg a priorità normale: un po\' più veloce, ma mentre converte il PC si sente.', leva(imp.alMassimo, (v) => salva({ alMassimo: v }))),
-    riga('Suoni', 'Il clac dei tasti e il din-don alla fine. Di partenza sono spenti.', leva(imp.suoniAccesi, (v) => { salva({ suoniAccesi: v }); accendiSuoni(v); })),
-    riga('Apri la cartella alla fine', 'Quando ha finito, apre Esplora file col file convertito già selezionato.', leva(imp.apriCartella, (v) => salva({ apriCartella: v }))),
-    h('div.imp-piede', null,
-      h('span', null, `DaP Convertitore ${s.stato.versione} · DaProd`),
-      h('button.link', { onclick: () => chiedi('registro') }, 'Apri il registro'),
-      h('button.link', { onclick: () => void apriNovita() }, 'Novità e aggiornamenti')),
+    h('div.imp-colonne', null,
+      h('div.imp-col', null,
+        riga('La scritta nel nome', 'Foto.jpg diventa «Foto (convertito).webp». Puoi cambiarla.', scritta),
+        riga('L\'originale nel Cestino da solo', 'Spento: l\'originale resta, e lo butti tu col cestino accanto al risultato. Acceso: quando il convertito ne prende il posto (MOV → MP4, PNG → JPG…) l\'originale va nel Cestino da solo. Mai quando ne tiri fuori un pezzo (l\'audio, il testo, le pagine) né su chiavette e dischi di rete.',
+          leva(imp.cestinoDaSolo, (v) => { salva({ cestinoDaSolo: v }); ui.piede(); })),
+        h('div.imp-sezione', null, 'SISTEMA'),
+        sistema,
+        riga('Scegliere i tipi da aprire col lettore', 'La lista dei tipi di file (foto, video, musica, PDF…) con un interruttore ciascuno: «Aggiusta tutto» usa questa scelta.',
+          h('button.tasto', { onclick: () => { clac(); apriPredefinite(); } }, 'Scegli i tipi')),
+        ...(s.stato.menu11?.windows11
+          ? [riga('Mostra tutti i menu del tasto destro', 'Su Windows 11 il tasto destro apre subito il menu completo, con tutte le voci a un clic e senza «Mostra altre opzioni». Spento torna il menu di Windows 11. Esplora file va riavviato: te lo chiedo.',
+              leva(s.stato.menu11.classico, async (v) => {
+                s.stato.menu11 = await chiedi<StatoMenu11>('classico', { attivo: v });
+                proponiRiavvio(v ? 'Il menu completo arriva quando riparte Esplora file.' : 'Il menu di Windows 11 torna quando riparte Esplora file.');
+              }))]
+          : []),
+      ),
+      h('div.imp-col', null,
+        h('div.imp-sezione', null, 'AVATAR'),
+        riga('Avatar sul desktop', 'Un oggetto piccolo (una musicassetta, poi un VHS, un floppy…) che sta in un angolo, ogni tanto fa un movimento e si trasforma. Non dà fastidio: sta fermo quando hai un programma a schermo intero. Ci trascini sopra dei file e ti chiede: aprire, convertire o comprimere. Si sposta col mouse, tasto destro per il menu.',
+          leva(!!imp.avatarAttivo, (v) => { salva({ avatarAttivo: v }); apriImpostazioni(); })),
+        ...(imp.avatarAttivo ? [riga('Parte con Windows', 'L\'avatar si accende da solo quando accedi, senza aprire finestre.', leva(!!imp.avatarAvvio, (v) => salva({ avatarAvvio: v })))] : []),
+        ...(imp.avatarAttivo ? [riga('Cambio automatico del personaggio', "Acceso, ogni tanto l'avatar si trasforma da solo. Spento, resta quello che hai scelto (tasto destro sull'avatar → Scegli il personaggio).", leva(imp.avatarCambioAuto !== false, (v) => salva({ avatarCambioAuto: v })))] : []),
+        h('div.imp-sezione', null, 'ALTRO'),
+        riga('Spingi al massimo', 'FFmpeg a priorità normale: un po\' più veloce, ma mentre converte il PC si sente.', leva(imp.alMassimo, (v) => salva({ alMassimo: v }))),
+        riga('Suoni', 'Il clac dei tasti e il din-don alla fine. Di partenza sono spenti.', leva(imp.suoniAccesi, (v) => { salva({ suoniAccesi: v }); accendiSuoni(v); })),
+        riga('Apri la cartella alla fine', 'Quando ha finito, apre Esplora file col file convertito già selezionato.', leva(imp.apriCartella, (v) => salva({ apriCartella: v }))),
+        h('div.imp-sezione', null, 'CARTELLA'),
+        riga('Dove finisce quello che faccio io', 'Screenshot, registrazioni e il resto che produce l\'app. Di partenza è Immagini/DaPConvertitore.', bloccaCartella),
+        h('div.imp-sezione', null, 'SCHERMO'),
+        riga('Screenshot', 'Clicca il riquadro chiaro e premi i tasti (si legge «Premi i tasti…»). Poi lo schermo si scurisce appena, scegli la zona e la foto va nella cartella. Tasto destro o Esc annulla. Vale anche quando DaP non è davanti.',
+          h('div.compatto-tasti', null, scorciatoia, h('button.tasto', { onclick: () => { clac(); cassetto.remove(); void chiedi('cattura'); } }, 'Prova'))),
+        h('div.imp-piede', null,
+          h('span', null, `DaP Convertitore ${s.stato.versione} · DaProd`),
+          h('button.link', { onclick: () => chiedi('registro') }, 'Apri il registro'),
+          h('button.link', { onclick: () => void apriNovita() }, 'Novità e aggiornamenti')),
+      ),
+    ),
   ));
+  void chiedi<{ percorso: string; file: { nome: string; peso: number; percorso: string }[] }>('cartellaMia').then((r) => {
+    if (!dove.isConnected) return;
+    dove.textContent = r.percorso;
+    elenco.replaceChildren(...(r.file ?? []).map((f) => h('li', null, h('button', { type: 'button', title: f.percorso, onclick: () => void chiedi('mostra', { percorso: f.percorso }) }, f.nome))));
+  }).catch(() => { if (dove.isConnected) dove.textContent = 'La cartella non si legge da qui.'; });
   if (!vecchio) document.body.append(cassetto);
   else (cassetto.querySelector('.cassetto') as HTMLElement).scrollTop = scorri;
 }

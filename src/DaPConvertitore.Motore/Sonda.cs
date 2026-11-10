@@ -26,7 +26,13 @@ public sealed record InfoMedia(
     InfoVideo? Video,
     IReadOnlyList<InfoAudio> Audio,
     IReadOnlyList<InfoSottotitolo> Sottotitoli,
-    bool Copertina);
+    bool Copertina)
+{
+    /// <summary>Indice del flusso attached_pic, o -1 se non c'è. La miniatura e la copertina usano quello.</summary>
+    public int IndiceCopertina { get; init; } = -1;
+    /// <summary>Quanti flussi video veri (non la copertina). Serve a mettere la copertina nuova come ultimo.</summary>
+    public int VideoVeri { get; init; }
+}
 
 public static class Sonda
 {
@@ -53,6 +59,8 @@ public static class Sonda
         var audio = new List<InfoAudio>();
         var sub = new List<InfoSottotitolo>();
         var copertina = false;
+        var indiceCopertina = -1;
+        var videoVeri = 0;
         long bitrateAudio = 0;
 
         if (radice.TryGetProperty("streams", out var flussi))
@@ -66,7 +74,8 @@ public static class Sonda
                 if (tipo == "video")
                 {
                     var allegata = st.TryGetProperty("disposition", out var disp) && Numero(disp, "attached_pic") == 1;
-                    if (allegata) { copertina = true; continue; }
+                    if (allegata) { copertina = true; if (indiceCopertina < 0) indiceCopertina = indice; continue; }
+                    videoVeri++;
                     if (video is not null) continue;
                     int w = (int)Numero(st, "width"), h = (int)Numero(st, "height");
                     if (Ruotato(st)) (w, h) = (h, w);
@@ -95,7 +104,11 @@ public static class Sonda
         // MKV e WEBM spesso non dicono il bitrate del video: lo si ricava dal totale
         if (video is { Bitrate: 0 } && bitrate > 0)
             video = video with { Bitrate = Math.Max(0, bitrate - (bitrateAudio > 0 ? bitrateAudio : audio.Count * 160_000L)) };
-        return new InfoMedia(durata, bitrate, contenitore, video, audio, sub, copertina);
+        return new InfoMedia(durata, bitrate, contenitore, video, audio, sub, copertina)
+        {
+            IndiceCopertina = indiceCopertina,
+            VideoVeri = videoVeri,
+        };
     }
 
     static bool Ruotato(JsonElement st)

@@ -134,6 +134,7 @@ public static class Video
             }
         }
 
+        if (passata != 1) Metadati.SulComando(a, l.Opzioni.Scheda, est);
         if (est is ".mp4" or ".mov") a.AddRange(["-movflags", "+faststart"]);
         if (passata == 1)
         {

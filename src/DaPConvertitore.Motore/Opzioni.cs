@@ -14,6 +14,8 @@ public sealed class Opzioni
     public OpzioniImmagine Immagine { get; set; } = new();
     public OpzioniPdf Pdf { get; set; } = new();
     public OpzioniArchivio Archivio { get; set; } = new();
+    /// <summary>Le info corrette nella sezione «Info del file». Null = si tengono quelle del file di partenza. Finiscono nel convertito.</summary>
+    public OpzioniScheda? Scheda { get; set; }
 
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {

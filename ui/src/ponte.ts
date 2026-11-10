@@ -80,6 +80,12 @@ export interface Impostazioni {
   avatarCambioAuto?: boolean;
   /** I gruppi scelti per «Aprire tutto con DaProd» (null = tutti). */
   gruppiPredefiniti?: string[] | null;
+  /** Con cosa codificare i video: la scheda o il processore. Si ricorda. */
+  codificaCon?: 'gpu' | 'cpu' | null;
+  /** Cartella dove finiscono screenshot, registrazioni e il resto che fa l'app. Vuota = Immagini/DaPConvertitore. */
+  cartellaMia?: string | null;
+  /** Scorciatoia globale dello screenshot, per esempio «Ctrl+Maiusc+S». */
+  scorciatoiaSchermo?: string | null;
   formati: Record<string, string>;
   scelte?: Record<string, unknown> | null;
 }
@@ -152,6 +158,8 @@ export interface Stato {
   /** La mini interfaccia accanto all'avatar, e la scelta già fatta da lì («Comprimi»). */
   compatto?: boolean;
   scelta?: { formato: string; preset?: string | null } | null;
+  /** Si è arrivati dal lettore: «Indietro» sulla barra bianca riapre quel file. */
+  torna?: string | null;
 }
 
 /** La regola delle app predefinite di Windows e quanti tipi hanno davvero il lettore come programma (UserChoice). */
@@ -195,7 +203,21 @@ export interface StimaImmagine { peso: number; qualita: number; scala: number; m
 export interface OpzioniPdf { dpi: number }
 /** Compressione degli archivi: -1 solo archiviare, 0 il livello di partenza del formato, 1…9 (7-Zip). */
 export interface OpzioniArchivio { livello: number; /** Solo in memoria: serve per aprire un archivio cifrato o, in ZIP e 7Z, per cifrarlo. */ password?: string }
-export interface Opzioni { video: OpzioniVideo; audio: OpzioniAudio; immagine: OpzioniImmagine; pdf: OpzioniPdf; archivio: OpzioniArchivio }
+/** Le info corrette nella sezione «Info del file»: finiscono nel file convertito. La copertina è un percorso, «nessuna» o «generata:n». */
+export interface OpzioniScheda {
+  scrivi: boolean;
+  titolo?: string | null;
+  artista?: string | null;
+  album?: string | null;
+  anno?: string | null;
+  traccia?: string | null;
+  commento?: string | null;
+  autore?: string | null;
+  descrizione?: string | null;
+  dataScatto?: string | null;
+  copertina?: string | null;
+}
+export interface Opzioni { video: OpzioniVideo; audio: OpzioniAudio; immagine: OpzioniImmagine; pdf: OpzioniPdf; archivio: OpzioniArchivio; scheda?: OpzioniScheda }
 
 type Ascoltatore = (dati: any) => void;
 

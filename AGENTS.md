@@ -77,8 +77,30 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
   codifica (`FormatoDi`: BOM UTF-8/UTF-16, CRLF se il file lo ha, Latin-1 → UTF-8 e lo si dice) con bozza e
   `Sposta`. Le voci scelte dentro un archivio escono con 7-Zip (`SetteZip.Estrai`, vedi sotto): il percorso di una
   cartella (`foto/`) porta con sé anche quello che c'è dentro (provato in `ProveScrittura`).
-- **La barra bianca**: `.testa` (convertitore) e `.l-barra` (lettore) hanno uno sfondo chiaro apposta, il resto è
-  scuro. Non è la barra di Windows (la finestra è senza cornice): è disegnata dalla pagina.
+- **La barra bianca**: `.testa` (convertitore) e `.l-barra` (lettore) hanno **sempre** uno sfondo bianco, il resto è
+  scuro. Non è la barra di Windows (la finestra è senza cornice): è disegnata dalla pagina. Le icone e le scritte
+  della barra vanno scure, che si leggano sul bianco: un'icona oro o chiara lì sopra sparisce (è successo al tasto Novità).
+- **Con cosa si codifica**: in alto c'è una bolla. Il clic apre il menu delle schede che hanno un encoder
+  (nvidia, amd, intel) e del processore, e segna quella in uso. La scelta sta in `Impostazioni.CodificaCon`
+  (`gpu` / `cpu`) e in `video.motore`. Due schede della stessa marca condividono lo stesso encoder. La scritta
+  della bolla è l'unità scelta, non sempre la prima NVIDIA.
+- **La scheda del file** sta nella colonna di mezzo, sezione richiudibile «Info del file», e si scrive **nel file
+  convertito** (l'originale non si tocca). Musica: titolo, artista, album, anno, traccia e, su MP3, M4A e FLAC, la
+  copertina. OGG, OPUS e WMA tengono i testi, non la copertina. Video MP4, MOV e MKV: titolo e commento. JPG e TIFF:
+  data dello scatto, descrizione, autore. Se il formato non le tiene, la sezione lo dice e non inventa campi.
+  La copertina del brano che stai ascoltando, e quella di un video MP4, MOV o MKV, si cambia sul file vero
+  (lettore e player dell'avatar): bozza accanto e poi si sostituisce, come la rotazione (`Copertine.cs`).
+  Nel video è un fotogramma allegato (`-disposition attached_pic`, flusso `0:V` per non copiare quello vecchio):
+  `Sonda.IndiceCopertina` lo trova e le miniature (`Anteprime`, `Multimedia.Video`) usano quello, non un fotogramma
+  a caso. Download la salva nella cartella del brano, senza chiedere dove e senza sovrascrivere.
+- **I tagli del video** (`Modifiche.TagliaPezzi`): nel lettore restano Z e X (un pezzo solo, file «(tagliato)» accanto,
+  originale intatto). La striscia gialla 1/2/Q/W non c'è più. Il comando `taglia` accetta ancora `pezzi`; un pezzo solo
+  è `TagliaVideo`. Senza fotogrammi chiave vicini la copia può fallire: si dice, e il file resta.
+  L'anteprima nella piastra non ha la colonna a destra: play, barra (clic e trascinamento), frecce di un fotogramma, J/K/L.
+  «Fotogramma» salva il PNG in `CartellaLavori` (`salvaPng` se la pagina ha il quadro, altrimenti `salvaQuadro` con FFmpeg).
+  Nel lettore intero S salva ancora accanto al video. Il clic sull'onda di un brano sposta il punto e non lo fa sentire.
+- **Dal lettore alla modifica** (`Regia.Converti`): il lettore si chiude. `PercorsoIndietro` mette «Indietro» sulla barra
+  bianca del convertitore (icona scura); `TornaAlLettore` riapre il lettore e chiude la piastra.
 - **Ritocco delle foto** (dalla 1.5.0): `ui/src/lettore/ritocco.ts` disegna su due fogli canvas (`base` = segni fissati,
   `viva` = segno in corso) grandi quanto la foto, dentro un wrapper che prende lo stesso `transform` della foto
   (`rit.segui`). Si salva componendo foto + segni in un canvas, codificato **dalla pagina** (JPG 0.97, PNG, WEBP) e
@@ -130,5 +152,30 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
   `1.45/scala` (quel conto a 32 pixel gonfiava il segno). La miniatura audio (`Multimedia.Audio`) mette la copertina
   a sinistra — `Media.Copertina`, dentro il file o `cover.jpg` / `folder.jpg`, in silenzio — e l'onda vera a destra
   (`Onde.Barre`). Sotto i 48 la copertina sta sopra e l'onda è una striscia; a 16–24 senza copertina si torna null e
-  resta il .ico. Il nome del file .ico porta la versione: al cambio si buttano i vecchi. Cosa non si fa ora (scheda
-  del file, tagli piccoli, niente montaggio: quello è DaProd Editor Video) sta in `docs/ROADMAP.md`.
+  resta il .ico. Il nome del file .ico porta la versione: al cambio si buttano i vecchi. Se il video ha una
+  copertina allegata, la miniatura è quella. Il montaggio vero resta DaProd Editor Video (`docs/ROADMAP.md`).
+- **Quello che l'app produce** (screenshot, registrazioni) va in Immagini\DaPConvertitore (`CartellaLavori`).
+  Si crea all'avvio e nel hook di Velopack. `Impostazioni.CartellaMia` la sposta. Dalle Impostazioni si apre e si vedono gli ultimi file.
+- **Il vassoio** (`Vassoio.cs`) c'è finché l'app è aperta e non la tiene in vita da solo. Menu: apri, screenshot,
+  Registra… (il menu dei dispositivi, o la barra se si sta già registrando), Avatar acceso/spento, impostazioni, esci.
+- **Lo screenshot** (`Schermata.cs`): scorciatoia globale (`Impostazioni.ScorciatoiaSchermo`, di partenza Ctrl+Maiusc+S).
+  Il campo nelle Impostazioni è chiaro, alto come gli altri tasti, e in ascolto dice «Premi i tasti…» in oro. Lo schermo fermo resta luminoso
+  (l'immagine sotto è a opacità 0.72); la zona scelta è a piena luce. Tasto destro o Esc annullano. Misure, lente,
+  PNG nella cartella e negli appunti, anteprima in basso a destra. Lo schermo si fotografa prima dell'oscuramento.
+  Su più monitor con DPI diversi il ritaglio può slittare di un pixel.
+- **La registrazione** (`Registrazione.cs`, `MenuRegistrazione`, `BarraRegistrazione`, `PosizioneFinestre`,
+  `Ancoraggio`, `AnteprimaSchermo`, `ComandiRegistrazione.cs`): vassoio, tasto destro dell'avatar e comando `registra`
+  passano da `Registrazione.Chiedi`. La finestra si apre a menu del clic già chiuso, è opaca (niente
+  `AllowsTransparency`: su Windows 11 una finestra trasparente con `WDA_EXCLUDEFROMCAPTURE` sparisce anche dallo
+  schermo) ed è esclusa dalla cattura. Sta accanto all'avatar, nell'area di lavoro del monitor dove sta lui, in pixel
+  veri (`Ancoraggio` + `SetWindowPos`): se l'avatar si sposta, lo segue. Avatar spento: centro del monitor principale.
+  Dentro c'è l'anteprima dal vivo (BitBlt, 8 fps, rimpicciolita) del monitor o della zona che si sta per registrare,
+  anche prima di Avvia e durante. Impostazioni: monitor, intero/zona/finestra, 30 o 60 fps, qualità (CRF 28/23/18),
+  microfono, audio del PC, cursore, conto alla rovescia, solo audio. La scelta si ricorda. «Riduci» lascia la barra
+  (tempo, Pausa, Salva, Annulla), anch'essa accanto all'avatar. gdigrab con offset del monitor o della zona, oppure
+  `title=` per una finestra; microfono DirectShow (`audio=nome`, senza virgolette aggiunte) e audio del PC in loopback
+  WASAPI. I livelli sono il misuratore di Windows, non un secondo FFmpeg. Screenshot e registrazioni entrano in
+  `storico.json` (`Storico.AggiungiFile`) e nei recenti della home, con miniatura; il clic li apre nel lettore.
+  Nel registro: clic, apertura, posizione in pixel, avvio, pausa, il comando ffmpeg, gli errori. Se si rilancia l'exe
+  mentre uno è già aperto, il registro dice «non parto». Su questa macchina ffmpeg non ha dshow né wasapi.
+  Il video sull'avatar è un `MediaElement`: se Windows non lo sa suonare, lo apre il lettore.

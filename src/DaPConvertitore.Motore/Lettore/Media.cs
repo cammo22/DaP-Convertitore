@@ -68,11 +68,19 @@ public static class Media
         return new SchedaMedia(info, tag, audio, sub, capitoli);
     }
 
-    /// <summary>La copertina: quella dentro il file, o cover.jpg / folder.jpg nella cartella. JPEG piccolo.</summary>
+    /// <summary>
+    /// La copertina: quella dentro il file, poi «nome (copertina).jpg» accanto, poi cover.jpg / folder.jpg nella cartella.
+    /// Quella dentro esce in JPEG; un file accanto si legge così com'è (JPG o PNG).
+    /// </summary>
     public static async Task<byte[]?> Copertina(Strumenti s, string percorso, bool dentro, bool silenzioso = false, int lato = 800)
     {
         if (dentro)
         {
+            // un video: solo la copertina allegata, non un fotogramma del film
+            if (Copertine.VideoNelFile(percorso))
+                return await Copertine.ProvaAllegata(s, percorso, lato, silenzioso);
+            var allegata = await Copertine.ProvaAllegata(s, percorso, lato, silenzioso: true);
+            if (allegata is not null) return allegata;
             var jpg = Path.Combine(Strumenti.CartellaTemporanea, $"copertina-{Guid.NewGuid():N}.jpg");
             try
             {
@@ -84,10 +92,15 @@ public static class Media
             finally { try { File.Delete(jpg); } catch { } }
         }
         var cartella = Path.GetDirectoryName(percorso)!;
-        foreach (var nome in new[] { "cover.jpg", "folder.jpg", "cover.png", "front.jpg", "album.jpg", "Cover.jpg", "Folder.jpg" })
+        var radice = Nomi.Radice(percorso);
+        foreach (var nome in new[]
+        {
+            $"{radice} (copertina).jpg", $"{radice} (copertina).png", $"{radice} (copertina).jpeg",
+            "cover.jpg", "folder.jpg", "cover.png", "front.jpg", "album.jpg", "Cover.jpg", "Folder.jpg",
+        })
         {
             var p = Path.Combine(cartella, nome);
-            if (File.Exists(p) && new FileInfo(p).Length < 20_000_000) return await File.ReadAllBytesAsync(p);
+            if (File.Exists(p) && new FileInfo(p).Length is > 0 and < 20_000_000) return await File.ReadAllBytesAsync(p);
         }
         return null;
     }

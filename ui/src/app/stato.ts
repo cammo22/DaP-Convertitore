@@ -1,5 +1,5 @@
 // Lo stato della piastra e le domande che si fanno sempre sullo stato. Una cosa sola, condivisa da tutti i pezzi.
-import type { Carico, Categoria, Formato, InfoFile, Lavoro, Opzioni, Piano, StimaImmagine, Stato } from '../ponte';
+import type { Carico, Categoria, Formato, InfoFile, Lavoro, Opzioni, OpzioniScheda, Piano, StimaImmagine, Stato } from '../ponte';
 
 export const opzioniDiPartenza = (): Opzioni => ({
   video: { modo: 'peso', pesoByte: 0, qualita: 70, codec: 'h264', lato: 0, motore: 'auto', senzaAudio: false, audioKbps: 0, fps: 0, gifLarghezza: 480, gifFps: 15 },
@@ -24,12 +24,16 @@ export const s = {
   piano: null as Piano | null,
   /** La stima del peso della foto scelta (quanto pesa, a che qualità ci si arriva), con la chiave che dice per quale foto e formato. */
   stimaFoto: null as (StimaImmagine & { chiave: string }) | null,
+  /** Le info corrette per ogni file della coda: si scrivono nel convertito di quel file. */
+  schede: new Map<string, OpzioniScheda>(),
   carico: { cpu: 0, encoder: 0, decoder: 0, grafica: 0 } as Carico,
   giro: [] as string[],
   impostazioniAperte: false,
   aggiornamento: null as string | null,
   /** La scelta fatta dall'avatar (formato e preset), da applicare appena i file sono arrivati. */
   sceltaRichiesta: null as { formato: string; preset?: string | null } | null,
+  /** Il file del lettore da cui si è aperta la modifica. */
+  torna: null as string | null,
 };
 
 export const nomeCat = (c: string) => s.stato.categorie.find((x) => x.id === c)?.nome ?? c;
@@ -47,6 +51,16 @@ export const sceltaPer = (c: Categoria): Formato | undefined => {
 };
 export const eVideoVero = (f?: Formato) => !!f && f.categoria === 'video' && ['.mp4', '.mkv', '.webm', '.mov'].includes(f.estensione);
 
+/** Quello che la bolla e il pannello video devono scrivere, se no la scheda scelta si perde chiudendo l'app. */
+export function scelteDaRicordare() {
+  return {
+    video: { ...s.opzioni.video, pesoByte: 0 },
+    audio: s.opzioni.audio,
+    immagine: s.opzioni.immagine,
+    pdf: s.opzioni.pdf,
+  };
+}
+
 /**
  * I pezzi che disegnano si chiamano fra loro (il pannello delle regolazioni ridisegna la piastra, le impostazioni
  * ridisegnano il piede…). Per non far girare gli import in tondo parlano tramite questo: main.ts li collega all'avvio.
@@ -60,4 +74,5 @@ export const ui = {
   rapido: () => {},
   impostazioni: () => {},
   nuovoGiro: () => {},
+  testa: () => {},
 };

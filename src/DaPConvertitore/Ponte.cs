@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Threading;
+using DaP.Convertitore.Lettore;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 
@@ -34,7 +36,21 @@ public sealed class Ponte
     // la stampante arriva quando WebView2 è pronto; un lavoro che parte prima la aspetta
     readonly TaskCompletionSource<IStampante> stampante = new(TaskCreationOptions.RunContinuationsAsynchronously);
     bool pronta;
+    bool chiediImpostazioni;
+
+    /// <summary>Si è arrivati dal lettore: la pagina mostra «Indietro» sulla barra bianca.</summary>
+    public void MostraIndietro(string percorso)
+    {
+        if (pronta) finestra.Dispatcher.BeginInvoke(() => Manda("torna", new { percorso }), DispatcherPriority.Background);
+    }
     readonly HashSet<string> giro = [];
+
+    /// <summary>Dal vassoio: apri le impostazioni appena la pagina è pronta.</summary>
+    public void ApriImpostazioni()
+    {
+        chiediImpostazioni = true;
+        if (pronta) finestra.Dispatcher.BeginInvoke(() => { chiediImpostazioni = false; Manda("apriImpostazioni", null); });
+    }
 
     public Coda Coda { get; }
 
@@ -57,6 +73,11 @@ public sealed class Ponte
         rilevazione = Task.Run(() => Hardware.Rileva(strumenti));
         Coda = new Coda(strumenti, () => hardware ?? rilevazione.GetAwaiter().GetResult(), () => new StampanteInAttesa(stampante.Task), imp.ScrittaPulita, () => imp.CestinoDaSolo) { QuandoFatto = Storico.Aggiungi };
         Coda.Cambiato += l => finestra.Dispatcher.BeginInvoke(() => LavoroCambiato(l));
+        Storico.Cambiato += () =>
+        {
+            try { finestra.Dispatcher.BeginInvoke(() => { if (pronta) Manda("recenti", null); }); }
+            catch { /* la finestra è già chiusa */ }
+        };
         timerRapide = new DispatcherTimer(TimeSpan.FromMilliseconds(450), DispatcherPriority.Normal, (_, _) => PartonoRapide(), finestra.Dispatcher) { IsEnabled = false };
         timerCarico = new DispatcherTimer(TimeSpan.FromMilliseconds(700), DispatcherPriority.Background, (_, _) => Carico(), finestra.Dispatcher) { IsEnabled = false };
         _ = rilevazione.ContinueWith(t =>
@@ -235,6 +256,11 @@ public sealed class Ponte
                 }
                 pronta = true;
                 timerCarico.Start();
+                if (chiediImpostazioni)
+                {
+                    chiediImpostazioni = false;
+                    _ = finestra.Dispatcher.BeginInvoke(() => Manda("apriImpostazioni", null), System.Windows.Threading.DispatcherPriority.Background);
+                }
                 return new
                 {
                     versione = Versione,
@@ -252,6 +278,7 @@ public sealed class Ponte
                     menu11 = StatoMenu11(),
                     compatto,
                     scelta = sceltaIniziale,
+                    torna = Regia.PercorsoIndietro,
                 };
             case "pronto":
                 return true;
@@ -262,6 +289,17 @@ public sealed class Ponte
             {
                 var (recenti, totali) = Storico.Recenti(a["quanti"]?.GetValue<int>() ?? 6);
                 return new { recenti = recenti.Select(v => new { v.Quando, v.Nome, v.Formato, v.Uscita, v.PesoPrima, v.PesoDopo, v.Categoria }), totali };
+            }
+            case "url":
+            {
+                var p = (string?)a["percorso"];
+                return p is not null && File.Exists(p) ? risorse.Url(p) : null;
+            }
+            case "miniatura":
+            {
+                var p = (string?)a["percorso"] ?? "";
+                var png = await Task.Run(() => MiniaturaFile.PngBase64(p));
+                return new { png };
             }
             case "incolla":
             {
@@ -382,6 +420,22 @@ public sealed class Ponte
                 {
                     imp.ApriCon = ap.GetValue<bool>();
                     if (imp.ApriCon) ApriCon.Registra(Environment.ProcessPath!); else ApriCon.Rimuovi();
+                }
+                if (a["codificaCon"] is { } cc)
+                {
+                    var v = (string?)cc;
+                    imp.CodificaCon = v is "gpu" or "cpu" ? v : null;
+                }
+                if (a["cartellaMia"] is { } cm)
+                {
+                    var p = ((string?)cm)?.Trim();
+                    imp.CartellaMia = string.IsNullOrEmpty(p) ? null : p;
+                    try { CartellaLavori.Percorso(imp.CartellaMia); } catch (Exception e) { Registro.Errore("cartella", e); }
+                }
+                if (a["scorciatoiaSchermo"] is { } ss)
+                {
+                    imp.ScorciatoiaSchermo = string.IsNullOrWhiteSpace((string?)ss) ? null : (string)ss!;
+                    Schermata.ApplicaScorciatoia();
                 }
                 if (a["formati"] is JsonObject fo) imp.Formati = fo.ToDictionary(kv => kv.Key, kv => (string?)kv.Value ?? "");
                 if (a["scelte"] is JsonObject sc) imp.Scelte = (JsonObject)sc.DeepClone();
@@ -544,13 +598,101 @@ public sealed class Ponte
             {
                 // solo i posti che conosciamo: l'interfaccia non apre indirizzi a caso
                 var url = (string?)a["url"] ?? "";
-                if (url.StartsWith("https://it.libreoffice.org/") || url.StartsWith("https://github.com/cammo22/DaP-Convertitore"))
+                if (url.StartsWith("https://it.libreoffice.org/") || url.StartsWith("https://github.com/cammo22/"))
                     Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
                 return true;
             }
             case "registro":
                 if (File.Exists(Registro.Percorso)) Process.Start(new ProcessStartInfo(Registro.Percorso) { UseShellExecute = true });
                 return true;
+            case "schedaFile":
+            {
+                var v = file.TryGetValue((string?)a["id"] ?? "", out var x) ? x : throw new ErroreConversione("Il file non è più nella coda.");
+                var fmt = Catalogo.Trova((string?)a["formato"] ?? "");
+                var est = string.IsNullOrEmpty(fmt?.Estensione) ? Path.GetExtension(v.Info.Percorso) : fmt!.Estensione;
+                return await Metadati.Leggi(strumenti, v.Info.Percorso, est);
+            }
+            case "scegliImmagine":
+            {
+                string? scelto = null;
+                await finestra.Dispatcher.InvokeAsync(() =>
+                {
+                    var d = new Microsoft.Win32.OpenFileDialog { Title = "Scegli la copertina", Filter = "Immagini|*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.tif;*.tiff" };
+                    if (d.ShowDialog(finestra) == true) scelto = d.FileName;
+                });
+                return scelto;
+            }
+            case "copertine":
+            {
+                var titolo = (string?)a["titolo"] ?? "";
+                var elenco = new List<string>();
+                for (var n = 0; n < Copertine.Quante; n++)
+                    elenco.Add(new EsitoCopertina(Copertine.Genera(titolo, n, null), null, false, null).ComeDataUrl()!);
+                return elenco;
+            }
+            case "cartellaMia":
+            {
+                var p = CartellaLavori.Assicura();
+                return new { percorso = p, file = CartellaLavori.Recenti(p).Select(v => new { v.Nome, v.Peso, v.Percorso }) };
+            }
+            case "apriCartellaMia":
+                Programma.Mostra(CartellaLavori.Assicura());
+                return true;
+            case "scegliCartellaMia":
+            {
+                string? scelto = null;
+                await finestra.Dispatcher.InvokeAsync(() =>
+                {
+                    var d = new Microsoft.Win32.OpenFolderDialog { Title = "Dove metto quello che faccio", InitialDirectory = CartellaLavori.Assicura() };
+                    if (d.ShowDialog(finestra) == true) scelto = d.FolderName;
+                });
+                if (scelto is null) return new { percorso = (string?)null };
+                imp.CartellaMia = scelto;
+                imp.Salva();
+                CartellaLavori.Percorso(scelto);
+                return new { percorso = scelto };
+            }
+            case "scorciatoia":
+                Schermata.ApplicaScorciatoia();
+                return true;
+            case "cattura":
+                _ = finestra.Dispatcher.BeginInvoke(() => Schermata.Cattura());
+                return true;
+            case "registra":
+                // stessa strada del vassoio e dell'avatar: ComandiRegistrazione.CosaFa
+                Registrazione.Chiedi("ponte");
+                return new { inCorso = Registrazione.Attiva };
+            case "tornaLettore":
+                Regia.TornaAlLettore();
+                return true;
+            case "salvaPng":
+            {
+                var dati = (string?)a["png"] ?? "";
+                var i = dati.IndexOf(',');
+                if (i < 0 || i >= dati.Length - 1) throw new ErroreConversione("Manca l'immagine.");
+                byte[] bytes;
+                try { bytes = Convert.FromBase64String(dati[(i + 1)..]); }
+                catch { throw new ErroreConversione("L'immagine non è valida."); }
+                if (bytes.Length < 32) throw new ErroreConversione("L'immagine è vuota.");
+                var nomePng = $"fotogramma {DateTime.Now:yyyy-MM-dd HH-mm-ss}.png";
+                var destPng = Path.Combine(CartellaLavori.Assicura(), nomePng);
+                await File.WriteAllBytesAsync(destPng, bytes);
+                return new { nome = nomePng, percorso = destPng };
+            }
+            case "salvaQuadro":
+            {
+                var idQuadro = (string?)a["id"] ?? "";
+                if (!file.TryGetValue(idQuadro, out var voce)) throw new ErroreConversione("Il file non è più nella coda.");
+                var t = Math.Max(0, a["t"]?.GetValue<double>() ?? 0);
+                var nomeQ = $"fotogramma {DateTime.Now:yyyy-MM-dd HH-mm-ss}.png";
+                var destQ = Path.Combine(CartellaLavori.Assicura(), nomeQ);
+                var esito = await Processi.Esegui(strumenti.Ffmpeg,
+                    ["-hide_banner", "-y", "-i", voce.Info.Percorso, "-ss", t.ToString(CultureInfo.InvariantCulture), "-frames:v", "1", destQ],
+                    CancellationToken.None);
+                if (esito.Codice != 0 || !File.Exists(destQ))
+                    throw new ErroreConversione("Non sono riuscito a salvare il fotogramma.", esito.Errori);
+                return new { nome = nomeQ, percorso = destQ };
+            }
         }
         throw new InvalidOperationException($"Comando sconosciuto: {cmd}");
     }

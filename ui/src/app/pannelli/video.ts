@@ -7,7 +7,7 @@ import { h, peso, pesoDisplay, numero, clamp, MB, GB } from '../../util';
 import { icone } from '../../icone';
 import { Lancetta } from '../../grafica';
 import { clac } from '../../suoni';
-import { s, ui, fileDi, sceltaPer, eVideoVero } from '../stato';
+import { s, ui, fileDi, sceltaPer, eVideoVero, scelteDaRicordare } from '../stato';
 import { gruppo, bottoni, cursore, faderPeso, mostraPeso } from '../controlli';
 
 let lancettaQualita: Lancetta | null = null;
@@ -113,7 +113,13 @@ export function regolazioniVideo(f: Formato) {
             ...(haAmd ? [{ v: 'amd', testo: 'AMD' }] : []),
             ...(haIntel ? [{ v: 'intel', testo: 'Intel' }] : []),
             { v: 'cpu', testo: 'CPU', nota: 'più lenta' },
-          ], o.motore, (v) => { o.motore = v; s.piano = null; })),
+          ], o.motore, (v) => {
+            o.motore = v;
+            s.stato.impostazioni.codificaCon = v === 'cpu' ? 'cpu' : 'gpu';
+            void chiedi('impostazioni', { codificaCon: s.stato.impostazioni.codificaCon, scelte: scelteDaRicordare() });
+            s.piano = null;
+            ui.testa();
+          })),
           h('div.sotto-gruppo', null, h('label', null, 'AUDIO'), bottoni([{ v: 'si', testo: 'Tienilo' }, { v: 'no', testo: 'Toglilo' }], o.senzaAudio ? 'no' : 'si', (v) => { o.senzaAudio = v === 'no'; s.piano = null; })),
         ))
     : null;

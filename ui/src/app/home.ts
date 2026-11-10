@@ -73,29 +73,51 @@ function statoPc(): HTMLElement {
       s.aggiornamento ? { testo: 'Installa', fai: () => { void chiedi('aggiorna', { installa: true }); mostraAvviso('Scarico e riapro il programma…'); } } : undefined));
 }
 
+function miniatura(v: VoceRecente, cat: Categoria): HTMLElement {
+  const icona = h('span.recente-icona', { html: iconaCategoria[cat] });
+  const img = h('img.recente-foto', { alt: '' }) as HTMLImageElement;
+  img.hidden = true;
+  const metti = (src: string) => { img.src = src; img.hidden = false; icona.hidden = true; };
+  if (cat === 'immagine') {
+    void chiedi<string>('url', { percorso: v.uscita }).then((u) => { if (typeof u === 'string' && u) metti(u); }).catch(() => {});
+  } else {
+    void chiedi<{ png: string | null }>('miniatura', { percorso: v.uscita }).then((r) => {
+      if (r?.png) metti('data:image/png;base64,' + r.png);
+    }).catch(() => {});
+  }
+  return h('span.recente-foto-box', null, icona, img);
+}
+
 function recenti(): HTMLElement {
   const box = h('div.recenti', null);
-  void chiedi<Recenti>('storico', { quanti: 6 }).then((r) => {
-    if (!box.isConnected) return;
-    if (!r?.recenti?.length) {
-      box.replaceChildren(h('p.recenti-vuoto', null, 'Qui compaiono gli ultimi file convertiti, con quanto hanno guadagnato.'));
-      return;
-    }
-    const risparmio = r.totali.byteRisparmiati > 0 ? ` · ${peso(r.totali.byteRisparmiati)} risparmiati` : '';
-    box.replaceChildren(
-      h('div.titolo-sezione', null, h('span', null, 'ULTIMI CONVERTITI'), h('span.conta', null, `${r.totali.conversioni.toLocaleString('it-IT')} in tutto${risparmio}`)),
-      ...r.recenti.map((v) => {
-        const cat = (v.categoria in iconaCategoria ? v.categoria : 'altro') as Categoria;
-        const delta = v.pesoPrima && v.pesoDopo ? Math.round((1 - v.pesoDopo / v.pesoPrima) * 100) : null;
-        return h('div.recente', { style: { '--tinta': coloreCategoria[cat] } },
-          h('span.recente-icona', { html: iconaCategoria[cat] }),
-          h('div.recente-testo', null,
-            h('b', { title: v.uscita }, v.nome, h('span.recente-freccia', null, ` → ${v.formato}`)),
-            h('small', null, `${quando(v.quando)} · ${v.pesoPrima ? `${peso(v.pesoPrima)} → ` : ''}${peso(v.pesoDopo)}${delta !== null && Math.abs(delta) >= 1 ? ` (${delta > 0 ? '−' : '+'}${Math.abs(delta)}%)` : ''}`)),
-          h('button.guarda', { title: 'Guarda nel lettore', html: icone.occhio, onclick: () => { clac(); void chiedi('guarda', { percorso: v.uscita }); } }),
-          h('button.guarda', { title: 'Mostra nella cartella', html: icone.cartella, onclick: () => { clac(); void chiedi('mostra', { percorso: v.uscita }); } }));
-      }));
-  }).catch(() => { /* senza storico la home resta com'è */ });
+  const disegna = () => {
+    void chiedi<Recenti>('storico', { quanti: 6 }).then((r) => {
+      if (!box.isConnected) return;
+      if (!r?.recenti?.length) {
+        box.replaceChildren(h('p.recenti-vuoto', null, 'Qui compaiono gli ultimi file: conversioni, screenshot e registrazioni.'));
+        return;
+      }
+      const risparmio = r.totali.byteRisparmiati > 0 ? ` · ${peso(r.totali.byteRisparmiati)} risparmiati` : '';
+      box.replaceChildren(
+        h('div.titolo-sezione', null, h('span', null, 'RECENTI'), h('span.conta', null, `${r.totali.conversioni.toLocaleString('it-IT')} conversioni${risparmio}`)),
+        ...r.recenti.map((v) => {
+          const cat = (v.categoria in iconaCategoria ? v.categoria : 'altro') as Categoria;
+          const prodotto = !v.pesoPrima;
+          const delta = v.pesoPrima && v.pesoDopo ? Math.round((1 - v.pesoDopo / v.pesoPrima) * 100) : null;
+          const apri = () => { clac(); void chiedi('guarda', { percorso: v.uscita }); };
+          return h('div.recente', { title: v.uscita, onclick: (e: Event) => { if ((e.target as HTMLElement).closest('button')) return; apri(); } },
+            miniatura(v, cat),
+            h('div.recente-testo', null,
+              h('b', null, v.nome, prodotto ? null : h('span.recente-freccia', null, ` → ${v.formato}`)),
+              h('small', null, prodotto
+                ? `${quando(v.quando)} · ${v.formato} · ${peso(v.pesoDopo)}`
+                : `${quando(v.quando)} · ${peso(v.pesoPrima)} → ${peso(v.pesoDopo)}${delta !== null && Math.abs(delta) >= 1 ? ` (${delta > 0 ? '−' : '+'}${Math.abs(delta)}%)` : ''}`)),
+            h('button.guarda', { title: 'Apri', html: icone.occhio, onclick: () => apri() }),
+            h('button.guarda', { title: 'Mostra nella cartella', html: icone.cartella, onclick: () => { clac(); void chiedi('mostra', { percorso: v.uscita }); } }));
+        }));
+    }).catch(() => { /* senza storico la home resta com'è */ });
+  };
+  disegna();
   return box;
 }
 

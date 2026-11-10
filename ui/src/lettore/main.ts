@@ -55,7 +55,6 @@ function disegnaBarra() {
     s.aggiornamento ? h('button.l-chip-agg', { title: `Installa la ${s.aggiornamento} e riapre`, onclick: () => void chiedi('aggiorna') }, h('i'), `Aggiornamento ${s.aggiornamento} disponibile`) : null,
     h('div.l-azioni', null,
       ...(s.vista?.azioni ?? []).map((a) => h('button.l-icona', { title: a.titolo, html: a.icona, onclick: a.fai })),
-      f.rapide.length ? h('button.l-icona.fai-subito', { title: 'Fai subito: le conversioni rapide (U)', html: ic.fulmine, onclick: (e: Event) => faiSubito(e.currentTarget as HTMLElement) }) : null,
       f.convertibile ? h('button.l-converti', { title: 'Converti (Ctrl+E)', onclick: () => void chiedi('converti') }, h('span', { html: ic.converti }), 'Converti') : null,
       h('button.l-icona', { title: 'Apri con… (un altro programma)', html: ic.apriCon, onclick: () => void chiedi('apriCon') }),
       h('button.l-icona', { title: 'Mostra nella cartella', html: ic.cartella, onclick: () => void chiedi('mostra') }),
@@ -272,7 +271,9 @@ async function cestino() {
 function faiSubito(ancora?: HTMLElement) {
   const f = s.scheda;
   if (!f?.rapide.length) return;
-  menuSu(ancora ?? (document.querySelector('.fai-subito') as HTMLElement), f.rapide.map((r) => ({
+  const dove = ancora ?? (document.querySelector('.l-converti') as HTMLElement | null) ?? (document.querySelector('.l-azioni') as HTMLElement | null);
+  if (!dove) return;
+  menuSu(dove, f.rapide.map((r) => ({
     testo: r.etichetta,
     fai: () => { void chiedi('rapida', { azione: r.id }).then(() => hud(`${r.etichetta}…`, ic.fulmine)).catch((e) => hud((e as Error).message)); },
   })));

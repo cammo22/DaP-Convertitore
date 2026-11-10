@@ -55,6 +55,7 @@ export async function monta(c: Contesto): Promise<Vista> {
       info.sottotitoli.some((x) => x.testo) || info.esterni.length ? bSub : null,
       bTracce,
       h('button.v-b.solo-fratelli', { title: 'Scaletta dei video della cartella (E)', html: ic.elenco, onclick: () => sc.gira() }),
+      h('button.v-b.testo', { title: 'Copertina del video (miniatura)', onclick: () => void modificaCopertina() }, 'Copertina'),
       h('button.v-b', { title: 'Salva il fotogramma (S)', html: ic.foto, onclick: () => void fotogramma() }),
       document.pictureInPictureEnabled ? h('button.v-b', { title: 'Finestrella sempre sopra (P)', html: ic.pip, onclick: () => void pip() }) : null,
       h('button.v-b', { title: 'Schermo intero (F)', html: ic.schermo, onclick: () => schermoIntero() })));
@@ -213,6 +214,63 @@ export async function monta(c: Contesto): Promise<Vista> {
       da = a = null;
       modifica();
     } catch (e) { c.stato(null); c.hud((e as Error).message, ic.forbici); }
+  }
+
+
+  async function scaricaCopertina() {
+    try {
+      const r = await chiedi<{ nome: string }>('salvaCopertina');
+      c.hud(`Salvata: ${r.nome}`, ic.foto);
+    } catch (e) { c.hud((e as Error).message, ic.foto); }
+  }
+  async function modificaCopertina() {
+    const velo = h('div.a-scelta');
+    const griglia = h('div.a-varianti');
+    const titolo = f.nome.replace(/\.[^.]+$/, '');
+    const box = h('div.a-scelta-box', null,
+      h('h2', null, 'Copertina'),
+      h('p', null, 'MP4, MOV e MKV la tengono dentro: è la miniatura, anche in Esplora file. Gli altri: la salvo accanto. Se qualcosa va storto, il video resta com\'è.'),
+      h('div.a-scelta-fila', null,
+        h('button', { type: 'button', onclick: () => { void scaricaCopertina(); velo.remove(); } }, 'Salva nella cartella'),
+        h('button', { type: 'button', onclick: () => void caricaCopertina() }, 'Carica un\'immagine'),
+        h('button', { type: 'button', onclick: () => void questoFotogramma() }, 'Questo fotogramma')),
+      h('p.a-oppure', null, 'Oppure una disegnata'),
+      griglia,
+      h('button.a-chiudi', { type: 'button', onclick: () => velo.remove() }, 'Chiudi'));
+    velo.append(box);
+    velo.addEventListener('click', (e) => { if (e.target === velo) velo.remove(); });
+    sala.append(velo);
+    async function caricaCopertina() {
+      try {
+        const r = await chiedi<{ copertina: string | null; nota: string | null } | null>('scegliCopertina');
+        if (!r) return;
+        if (r.nota) c.hud(r.nota, ic.foto);
+        velo.remove();
+      } catch (e) { c.hud((e as Error).message, ic.foto); }
+    }
+    async function questoFotogramma() {
+      if (!video.videoWidth) { c.hud('Il video non è ancora pronto', ic.foto); return; }
+      const cv = h<HTMLCanvasElement>('canvas', { width: video.videoWidth, height: video.videoHeight });
+      try {
+        cv.getContext('2d')!.drawImage(video, 0, 0);
+        const r = await chiedi<{ nota: string | null }>('copertinaPng', { png: cv.toDataURL('image/png') });
+        if (r.nota) c.hud(r.nota, ic.foto);
+        velo.remove();
+      } catch (e) { c.hud((e as Error).message, ic.foto); }
+    }
+    async function scegli(n: number) {
+      try {
+        const r = await chiedi<{ nota: string | null }>('mettiCopertina', { variante: n, titolo });
+        if (r.nota) c.hud(r.nota, ic.foto);
+        velo.remove();
+      } catch (e) { c.hud((e as Error).message, ic.foto); }
+    }
+    try {
+      const urls = await chiedi<string[]>('copertine', { titolo });
+      urls.forEach((url, n) => {
+        griglia.append(h('button', { type: 'button', title: 'Usa questa', style: { backgroundImage: `url(${url})` }, onclick: () => void scegli(n) }));
+      });
+    } catch (e) { c.hud((e as Error).message, ic.foto); }
   }
 
   // ——— sottotitoli: dentro il video (testo) o accanto (.srt, .vtt, .ass) ———
@@ -495,6 +553,7 @@ export async function monta(c: Contesto): Promise<Vista> {
       { titolo: 'Gira a sinistra (Maiusc R)', icona: ic.ruotaSx, fai: () => ruota(-90) },
       { titolo: 'Gira a destra (R)', icona: ic.ruotaDx, fai: () => ruota(90) },
       { titolo: "Taglia un pezzo: Z segna l'inizio, X la fine", icona: ic.forbici, fai: () => segna(da === null ? 'da' : 'a') },
+      { titolo: 'Copertina (miniatura del video)', icona: ic.foto, fai: () => void modificaCopertina() },
     ],
     info: () => {
       const v = info.video;

@@ -44,6 +44,32 @@ public sealed class Impostazioni
     public string? NovitaVista { get; set; }
     /// <summary>L'invito a mettere il convertitore nel menu di Windows 11 è già stato mostrato (e chiuso).</summary>
     public bool Menu11Chiesto { get; set; }
+    /// <summary>Con cosa codificare i video: "gpu" o "cpu". Vuoto = la scheda video se c'è, se no il processore.</summary>
+    public string? CodificaCon { get; set; }
+    /// <summary>Dove finiscono screenshot, registrazioni e il resto che fa l'app. Vuoto = Immagini\DaPConvertitore.</summary>
+    public string? CartellaMia { get; set; }
+    /// <summary>La scorciatoia globale dello screenshot. Vuota = Ctrl+Maiusc+S.</summary>
+    public string? ScorciatoiaSchermo { get; set; }
+    /// <summary>Microfono della registrazione. Vuoto = non usarlo. Null = il primo che trova.</summary>
+    public string? RegistrazioneMic { get; set; }
+    /// <summary>Uscita del PC (l'audio che senti) da registrare in loopback. Vuoto = non usarla. Null = la prima.</summary>
+    public string? RegistrazionePc { get; set; }
+    /// <summary>Il monitor da registrare, come «x,y,larghezza,altezza» in pixel veri. Vuoto = il principale.</summary>
+    public string? RegistrazioneMonitor { get; set; }
+    /// <summary>intero, zona o finestra. Vuoto = lo schermo intero.</summary>
+    public string? RegistrazioneArea { get; set; }
+    /// <summary>La zona scelta, negli stessi pixel del monitor. Vale se l'area è «zona».</summary>
+    public string? RegistrazioneZona { get; set; }
+    /// <summary>Il titolo della finestra da registrare, se l'area è «finestra».</summary>
+    public string? RegistrazioneFinestra { get; set; }
+    /// <summary>30 o 60. Vuoto = 30.</summary>
+    public int? RegistrazioneFps { get; set; }
+    /// <summary>leggera, buona o alta. Vuoto = buona.</summary>
+    public string? RegistrazioneQualita { get; set; }
+    /// <summary>Il cursore del mouse entra nel video. Di partenza sì.</summary>
+    public bool RegistrazioneCursore { get; set; } = true;
+    /// <summary>Tre secondi di conto alla rovescia prima di partire. Di partenza sì.</summary>
+    public bool RegistrazioneConto { get; set; } = true;
     /// <summary>L'ultimo formato scelto per ogni categoria ("video" → "video.mp4").</summary>
     public Dictionary<string, string> Formati { get; set; } = [];
     /// <summary>Le ultime scelte dell'interfaccia (codec, qualità, motore…), tali e quali.</summary>

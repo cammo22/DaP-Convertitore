@@ -5,6 +5,9 @@ using Windows.Storage.Streams;
 
 namespace DaP.Convertitore;
 
+/// <summary>Autore, descrizione e data letti da una foto.</summary>
+public sealed record TestiFoto(string? Autore, string? Descrizione, DateTimeOffset? Data);
+
 /// <summary>
 /// Le immagini passano da WIC, il motore di Windows: legge HEIC, RAW delle fotocamere, WEBP, AVIF con le estensioni
 /// di Windows, e gira la foto come la vede il telefono (orientamento EXIF). Quello che WIC non legge (TGA, EXR, PSD,
@@ -22,6 +25,8 @@ public static class Immagini
         var foto = await Apri(l.Sorgente, ctx, (uint)Math.Max(0, o.Lato));
         ctx.Fase("Scrivo", 0.5);
         await Scrivi(foto, est, l.Bozza, o, ctx);
+        if (l.Opzioni.Scheda is { Scrivi: true } sc && Metadati.FotoTiene(est))
+            await ApplicaScheda(l.Bozza, sc);
     }
 
     /// <summary>Apre un'immagine qualsiasi in BGRA, già girata per il verso giusto e, se serve, rimpicciolita.</summary>
@@ -288,6 +293,76 @@ public static class Immagini
         for (var y = 0; y < h; y++)
             System.Buffer.BlockCopy(sorg, (int)(y * w * 4), dest, ((oy + y) * lato + ox) * 4, (int)w * 4);
         return SoftwareBitmap.CreateCopyFromBuffer(dest.AsBuffer(), BitmapPixelFormat.Bgra8, lato, lato, BitmapAlphaMode.Straight);
+    }
+
+    /// <summary>Autore, descrizione e data dello scatto, come li tiene il file (JPG e TIFF).</summary>
+    public static async Task<TestiFoto> LeggiTesti(string percorso)
+    {
+        var file = await StorageFile.GetFileFromPathAsync(Path.GetFullPath(percorso));
+        string[] chiavi = ["System.Author", "System.Title", "System.Comment", "System.Subject", "System.Photo.DateTaken"];
+        var props = await file.Properties.RetrievePropertiesAsync(chiavi);
+        static string? Testo(object? v) => v switch
+        {
+            null => null,
+            string s => string.IsNullOrWhiteSpace(s) ? null : s.Trim(),
+            string[] a => string.Join(", ", a.Where(x => !string.IsNullOrWhiteSpace(x))),
+            IEnumerable<string> e => string.Join(", ", e.Where(x => !string.IsNullOrWhiteSpace(x))),
+            _ => v.ToString(),
+        };
+        string? Di(string k) => props.TryGetValue(k, out var v) ? Testo(v) : null;
+        DateTimeOffset? data = props.TryGetValue("System.Photo.DateTaken", out var d) && d is DateTimeOffset dto ? dto : null;
+        var descrizione = Di("System.Subject") ?? Di("System.Title") ?? Di("System.Comment");
+        var autore = Di("System.Author");
+        if (string.IsNullOrWhiteSpace(autore)) autore = null;
+        if (string.IsNullOrWhiteSpace(descrizione)) descrizione = null;
+        return new TestiFoto(autore, descrizione, data);
+    }
+
+    /// <summary>
+    /// Scrive autore, descrizione e data sulla foto già scritta, senza ricodificarla (la stessa trascrizione della rotazione).
+    /// Se l'elenco dell'autore non passa, si riprova senza: il resto resta.
+    /// </summary>
+    public static async Task ApplicaScheda(string percorso, OpzioniScheda s)
+    {
+        var set = new BitmapPropertySet();
+        if (s.Descrizione is not null)
+        {
+            set.Add("System.Title", new BitmapTypedValue(s.Descrizione, Windows.Foundation.PropertyType.String));
+            set.Add("System.Comment", new BitmapTypedValue(s.Descrizione, Windows.Foundation.PropertyType.String));
+        }
+        if (!string.IsNullOrWhiteSpace(s.Autore))
+            set.Add("System.Author", new BitmapTypedValue(new[] { s.Autore }, Windows.Foundation.PropertyType.StringArray));
+        if (Metadati.DataDi(s.DataScatto) is { } data)
+            set.Add("System.Photo.DateTaken", new BitmapTypedValue(data, Windows.Foundation.PropertyType.DateTime));
+        if (set.Count == 0) return;
+
+        var bytes = await File.ReadAllBytesAsync(percorso);
+        async Task<byte[]> Trascrivi(BitmapPropertySet proprieta)
+        {
+            using var dentro = new InMemoryRandomAccessStream();
+            await dentro.WriteAsync(bytes.AsBuffer());
+            dentro.Seek(0);
+            var dec = await BitmapDecoder.CreateAsync(dentro);
+            using var mem = new InMemoryRandomAccessStream();
+            var enc = await BitmapEncoder.CreateForTranscodingAsync(mem, dec);
+            await enc.BitmapProperties.SetPropertiesAsync(proprieta);
+            await enc.FlushAsync();
+            var dati = new byte[mem.Size];
+            mem.Seek(0);
+            await mem.ReadAsync(dati.AsBuffer(), (uint)dati.Length, InputStreamOptions.None);
+            return dati;
+        }
+
+        byte[] uscita;
+        try { uscita = await Trascrivi(set); }
+        catch (Exception e)
+        {
+            Registro.Scrivi($"scheda foto, riprovo senza autore ({e.Message})");
+            set.Remove("System.Author");
+            if (set.Count == 0) throw new ErroreConversione("Queste info non si scrivono su questa foto.", e.Message);
+            uscita = await Trascrivi(set);
+        }
+        await File.WriteAllBytesAsync(percorso, uscita);
     }
 
     /// <summary>Le misure di un'immagine, già girate, senza decodificarla tutta.</summary>

@@ -1,3 +1,5 @@
+using DaP.Convertitore.Lettore;
+
 namespace DaP.Convertitore;
 
 /// <summary>
@@ -26,11 +28,35 @@ public static class Audio
         var info = await Sonda.Leggi(ctx.Strumenti, l.Sorgente, ctx.Ct);
         if (info.Audio.Count == 0) throw new ErroreConversione("In questo file non c'è audio.");
 
-        var a = new List<string> { "-i", l.Sorgente, "-map", "0:a:0" };
-        var copertina = info.Copertina && est is ".mp3" or ".m4a" or ".flac";
-        if (copertina) a.AddRange(["-map", "0:v:0", "-c:v", "copy", "-disposition:v:0", "attached_pic"]);
+        // la copertina nuova (un disegno o un file scelto) sostituisce quella del brano; «nessuna» la toglie
+        var tieneCover = est is ".mp3" or ".m4a" or ".flac";
+        string? nuova = null;
+        var togliCover = false;
+        var scheda = l.Opzioni.Scheda;
+        if (scheda is { Scrivi: true } && tieneCover && scheda.Copertina is { Length: > 0 } scelta)
+        {
+            if (scelta == "nessuna") togliCover = true;
+            else if (scelta.StartsWith("generata:", StringComparison.Ordinal))
+            {
+                var n = int.TryParse(scelta["generata:".Length..], out var v) ? v : 0;
+                var png = Path.Combine(ctx.Temporanea(), "copertina.png");
+                await File.WriteAllBytesAsync(png, Copertine.Genera(scheda.Titolo ?? "", n, null), ctx.Ct);
+                nuova = png;
+            }
+            else if (File.Exists(scelta)) nuova = scelta;
+        }
+
+        var a = new List<string> { "-i", l.Sorgente };
+        if (nuova is not null) a.AddRange(["-i", nuova]);
+        a.AddRange(["-map", "0:a:0"]);
+        if (nuova is not null)
+            a.AddRange(["-map", "1:0", "-frames:v", "1", "-c:v", est == ".flac" ? "png" : "mjpeg", "-disposition:v:0", "attached_pic",
+                "-metadata:s:v", "title=Album cover", "-metadata:s:v", "comment=Cover (front)"]);
+        else if (!togliCover && info.Copertina && tieneCover)
+            a.AddRange(["-map", "0:v:0", "-c:v", "copy", "-disposition:v:0", "attached_pic"]);
         else a.Add("-vn");
         a.AddRange(["-map_metadata", "0", "-sn", "-dn"]);
+        Metadati.SulComando(a, scheda, est);
 
         var filtri = new List<string>();
         if (o.Normalizza) filtri.Add("loudnorm=I=-14:TP=-1:LRA=11");

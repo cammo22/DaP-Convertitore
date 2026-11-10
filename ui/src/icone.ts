@@ -12,6 +12,7 @@ export const icone = {
   confronta: i('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 3v18"/><path d="M8 10l-2 2 2 2M16 10l2 2-2 2"/>'),
   ingranaggio: i('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
   play: i('<path d="M7 5l12 7-12 7z" fill="currentColor"/>'),
+  pausa: i('<rect x="6" y="5" width="4.2" height="14" rx="1" fill="currentColor" stroke="none"/><rect x="13.8" y="5" width="4.2" height="14" rx="1" fill="currentColor" stroke="none"/>'),
   ferma: i('<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'),
   ok: i('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
   novita: i('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>'),
