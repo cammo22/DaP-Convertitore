@@ -157,4 +157,96 @@ public class ProveRegistrazione
             """;
         Assert.Equal(new[] { "Casse" }, ComandiRegistrazione.UsciteDaElenco(testo));
     }
+
+    [Fact]
+    public void FpsQualitaCursoreEFinestraEntranoNelComando()
+    {
+        Assert.Equal(30, ComandiRegistrazione.FpsDi(24));
+        Assert.Equal(60, ComandiRegistrazione.FpsDi(60));
+        Assert.Equal(18, ComandiRegistrazione.CrfDi("alta"));
+        Assert.Equal(28, ComandiRegistrazione.CrfDi("leggera"));
+        Assert.Equal(23, ComandiRegistrazione.CrfDi(null));
+        var a = ComandiRegistrazione.Argomenti("finestra", null, null, "out.mp4", new ComandiRegistrazione.Schermo(0, 0, 800, 600), 60, 18, false, "Blocco note").ToList();
+        Assert.Equal("60", a[a.IndexOf("-framerate") + 1]);
+        Assert.Equal("0", a[a.IndexOf("-draw_mouse") + 1]);
+        Assert.Equal("18", a[a.IndexOf("-crf") + 1]);
+        Assert.Contains("title=Blocco note", a);
+        Assert.DoesNotContain("desktop", a);
+        Assert.DoesNotContain("-offset_x", a);
+        Assert.Equal("Scegli la zona da registrare.", ComandiRegistrazione.MotivoRifiuto("zona", null, null, zonaSenzaRettangolo: true));
+        Assert.Equal("Scegli la finestra da registrare.", ComandiRegistrazione.MotivoRifiuto("finestra", null, null, finestraSenzaTitolo: true));
+        var zona = ComandiRegistrazione.Argomenti("zona", null, null, "z.mp4", new ComandiRegistrazione.Schermo(100, 80, 640, 480), 30, 28, true, null).ToList();
+        Assert.Contains("desktop", zona);
+        Assert.Equal("640x480", zona[zona.IndexOf("-video_size") + 1]);
+        Assert.Equal("28", zona[zona.IndexOf("-crf") + 1]);
+        Assert.Equal(new[] { "Blocco note", "Chrome" }, ComandiRegistrazione.TitoliUtili(["", "Registra", "Blocco note", "Blocco note", "Program Manager", "Chrome"]));
+        Assert.Contains("-vcodec", ComandiRegistrazione.ArgomentiFotogramma("film.mp4").ToList());
+    }
+
+    [Fact]
+    public void LaFinestraRestaNelMonitorDellAvatarAncheSeENegativo()
+    {
+        var area = new Ancoraggio.Riquadro(-1920, 0, 1920, 1040);
+        var avatar = new Ancoraggio.Riquadro(-180, 800, 140, 140);
+        var dove = Ancoraggio.Accanto(avatar, 400, 500, area);
+        Assert.True(Ancoraggio.Dentro(dove, area));
+        Assert.True(dove.X < 0, "deve restare sul monitor a sinistra, non sul principale");
+        // l'avatar è contro il bordo destro: a destra non ci sta, quindi va a sinistra
+        Assert.True(dove.Destra <= avatar.X);
+    }
+
+    [Fact]
+    public void UnAvatarFuoriDalloSchermoNonPortaLaFinestraFuori()
+    {
+        var area = new Ancoraggio.Riquadro(0, 0, 1920, 1080);
+        var dove = Ancoraggio.Accanto(new Ancoraggio.Riquadro(5000, 4000, 120, 120), 400, 300, area);
+        Assert.True(Ancoraggio.Dentro(dove, area));
+        var centro = Ancoraggio.Centro(400, 300, area);
+        Assert.Equal(760, centro.X);
+        Assert.Equal(390, centro.Y);
+        Assert.True(Ancoraggio.Dentro(centro, area));
+        var stretto = Ancoraggio.Accanto(new Ancoraggio.Riquadro(10, 10, 80, 80), 400, 200, area);
+        Assert.True(Ancoraggio.Dentro(stretto, area));
+        Assert.True(stretto.X >= 10 + 80);
+    }
+
+    [Fact]
+    public void LaChiaveDelMonitorSiLeggeESiRiscrive()
+    {
+        var r = new Ancoraggio.Riquadro(-1920, 12, 1920, 1080);
+        Assert.True(Ancoraggio.ProvaChiave(Ancoraggio.Chiave(r), out var diNuovo));
+        Assert.Equal(r, diNuovo);
+        Assert.False(Ancoraggio.ProvaChiave("no", out _));
+        Assert.True(Ancoraggio.Tocca(r, new Ancoraggio.Riquadro(-10, 0, 20, 20)));
+        Assert.False(Ancoraggio.Tocca(r, new Ancoraggio.Riquadro(100, 0, 20, 20)));
+    }
+
+    [Fact]
+    public void ScreenshotERegistrazioneEntranoNeiRecentiSenzaContareComeConversione()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "dap-storico-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var prima = Environment.GetEnvironmentVariable("DAP_DATI");
+        Environment.SetEnvironmentVariable("DAP_DATI", dir);
+        try
+        {
+            var file = Path.Combine(dir, "schermo.png");
+            File.WriteAllBytes(file, [1, 2, 3, 4]);
+            Storico.AggiungiFile(file, "Screenshot");
+            var (recenti, totali) = Storico.Recenti(6);
+            Assert.Single(recenti);
+            Assert.Equal(file, recenti[0].Uscita);
+            Assert.Equal("Screenshot", recenti[0].Formato);
+            Assert.Equal("immagine", recenti[0].Categoria);
+            Assert.Equal(4, recenti[0].PesoDopo);
+            Assert.Equal(0, totali.Conversioni);
+            File.Delete(file);
+            Assert.Empty(Storico.Recenti(6).Recenti);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DAP_DATI", prima);
+            try { Directory.Delete(dir, true); } catch { /* il temp la toglie dopo */ }
+        }
+    }
 }

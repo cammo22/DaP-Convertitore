@@ -18,7 +18,9 @@ public sealed class BarraRegistrazione : Window
     readonly Button pausa;
     readonly Ellipse punto;
     readonly DispatcherTimer orologio;
+    Window? ancora;
     bool chiusuraVoluta;
+    bool sistemo;
 
     public static void Mostra()
     {
@@ -107,27 +109,43 @@ public sealed class BarraRegistrazione : Window
 
         orologio = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         orologio.Tick += (_, _) => Rinfresca();
+        SourceInitialized += (_, _) => Sistema(false);
         Loaded += (_, _) =>
+        {
+            UpdateLayout();
+            Aggancia(Registrazione.Ancora);
+            Sistema(true);
+            orologio.Start();
+            Rinfresca();
+        };
+        Closed += (_, _) =>
+        {
+            orologio.Stop();
+            if (ancora is not null) ancora.LocationChanged -= Segui;
+        };
+    }
+
+    void Aggancia(Window? a)
+    {
+        if (ancora is not null) ancora.LocationChanged -= Segui;
+        ancora = a;
+        if (ancora is not null) ancora.LocationChanged += Segui;
+    }
+
+    void Segui(object? sender, EventArgs e) => Sistema(false);
+
+    void Sistema(bool scrivi)
+    {
+        if (sistemo) return;
+        sistemo = true;
+        try
         {
             UpdateLayout();
             var w = ActualWidth > 8 ? ActualWidth : 420;
             var h = ActualHeight > 8 ? ActualHeight : 48;
-            if (ActualWidth < 8 || ActualHeight < 8)
-            {
-                Width = w;
-                Height = h;
-                UpdateLayout();
-                if (ActualWidth > 8) w = ActualWidth;
-                if (ActualHeight > 8) h = ActualHeight;
-            }
-            var area = SystemParameters.WorkArea;
-            Left = area.Left + Math.Max(0, (area.Width - w) / 2);
-            Top = Math.Max(area.Top, area.Bottom - h - 28);
-            Registro.Scrivi($"registrazione: barra a {Left:0},{Top:0} ({w:0}×{h:0})");
-            orologio.Start();
-            Rinfresca();
-        };
-        Closed += (_, _) => orologio.Stop();
+            PosizioneFinestre.Sistema(this, ancora ?? Registrazione.Ancora, w, h, scrivi);
+        }
+        finally { sistemo = false; }
     }
 
     void Rinfresca()

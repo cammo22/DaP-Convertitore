@@ -25,6 +25,9 @@ public static class Storico
         public List<VoceStorico> Voci { get; set; } = [];
     }
 
+    /// <summary>È entrata una voce (conversione, screenshot, registrazione). La home se ne accorge.</summary>
+    public static event Action? Cambiato;
+
     static Dati Leggi()
     {
         try
@@ -35,12 +38,20 @@ public static class Storico
         return new();
     }
 
+    static void Scrivi(Dati d)
+    {
+        var tmp = Percorso + ".tmp";
+        File.WriteAllText(tmp, JsonSerializer.Serialize(d, new JsonSerializerOptions(Opzioni.Json) { WriteIndented = true }));
+        File.Move(tmp, Percorso, true);
+    }
+
     /// <summary>Registra un lavoro riuscito. Non fa mai fallire la conversione.</summary>
     public static void Aggiungi(Lavoro l)
     {
         try
         {
             if (l.Uscita is null || l.Stato != StatoLavoro.Fatto) return;
+            Action? avviso;
             lock (chiave)
             {
                 var d = Leggi();
@@ -50,12 +61,36 @@ public static class Storico
                 if (d.Voci.Count > Massimo) d.Voci.RemoveRange(Massimo, d.Voci.Count - Massimo);
                 d.Conversioni++;
                 if (l.Formato.Sostituisce && l.PesoPrima > dopo && dopo > 0) d.ByteRisparmiati += l.PesoPrima - dopo;
-                var tmp = Percorso + ".tmp";
-                File.WriteAllText(tmp, JsonSerializer.Serialize(d, new JsonSerializerOptions(Opzioni.Json) { WriteIndented = true }));
-                File.Move(tmp, Percorso, true);
+                Scrivi(d);
+                avviso = Cambiato;
             }
+            avviso?.Invoke();
         }
         catch (Exception e) { Registro.Errore("storico: salva", e); }
+    }
+
+    /// <summary>
+    /// Uno screenshot o una registrazione, nella stessa lista dei recenti. Non conta come conversione:
+    /// il totale «in tutto» resta quello delle conversioni.
+    /// </summary>
+    public static void AggiungiFile(string percorso, string formato)
+    {
+        try
+        {
+            if (!File.Exists(percorso)) return;
+            Action? avviso;
+            lock (chiave)
+            {
+                var d = Leggi();
+                var info = new FileInfo(percorso);
+                d.Voci.Insert(0, new VoceStorico(DateTime.Now, info.Name, formato, percorso, 0, info.Length, Catalogo.Chiave(Catalogo.CategoriaDi(percorso))));
+                if (d.Voci.Count > Massimo) d.Voci.RemoveRange(Massimo, d.Voci.Count - Massimo);
+                Scrivi(d);
+                avviso = Cambiato;
+            }
+            avviso?.Invoke();
+        }
+        catch (Exception e) { Registro.Errore("storico: file", e); }
     }
 
     /// <summary>Le ultime <paramref name="quante"/> conversioni il cui risultato c'è ancora, e i totali.</summary>

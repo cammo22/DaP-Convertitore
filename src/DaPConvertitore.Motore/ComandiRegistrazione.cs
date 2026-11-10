@@ -5,7 +5,7 @@ namespace DaP.Convertitore;
 /// <summary>
 /// Il comando di FFmpeg della registrazione, e cosa deve fare «Registra» dal vassoio, dall'avatar o dal ponte.
 /// Niente finestre: le prove lo chiamano così com'è.
-/// Lo schermo è gdigrab, il monitor principale intero. Il microfono è DirectShow (<c>audio=nome</c>),
+/// Lo schermo è gdigrab: un monitor, una zona, oppure una finestra per titolo. Il microfono è DirectShow (<c>audio=nome</c>),
 /// l'audio del PC è WASAPI in loopback. I tempi sono quelli dell'orologio, così video e audio restano
 /// allineati anche quando una sorgente tace un attimo: è la stessa idea della registrazione di DaProd
 /// Editor Video, che riempie di silenzio i buchi del loopback. I nomi dei dispositivi sono un argomento
@@ -30,13 +30,26 @@ public static class ComandiRegistrazione
         return inCorso ? PortaBarra : ApriMenu;
     }
 
-    /// <summary>Solo audio senza microfono e senza l'audio del PC non ha niente da scrivere.</summary>
-    public static string? MotivoRifiuto(string modo, string? mic, string? audioPc)
+    /// <summary>Solo audio senza ingressi, una zona non scelta o una finestra non scelta: non si parte.</summary>
+    public static string? MotivoRifiuto(string modo, string? mic, string? audioPc, bool zonaSenzaRettangolo = false, bool finestraSenzaTitolo = false)
     {
         if (modo == "audio" && string.IsNullOrWhiteSpace(mic) && string.IsNullOrWhiteSpace(audioPc))
             return "Per registrare solo l'audio serve il microfono o l'audio del PC.";
+        if (modo == "zona" && zonaSenzaRettangolo) return "Scegli la zona da registrare.";
+        if (modo == "finestra" && finestraSenzaTitolo) return "Scegli la finestra da registrare.";
         return null;
     }
+
+    /// <summary>30 oppure 60. Un numero in mezzo va a 30, uno alto a 60.</summary>
+    public static int FpsDi(int fps) => fps >= 45 ? 60 : 30;
+
+    /// <summary>Alta, buona, leggera: il CRF di libx264. Il resto è «buona».</summary>
+    public static int CrfDi(string? qualita) => qualita switch
+    {
+        "alta" => 18,
+        "leggera" => 28,
+        _ => 23,
+    };
 
     /// <summary>Un argomento solo: <c>audio=Microphone (Realtek Audio)</c>, senza virgolette intorno.</summary>
     public static string ArgomentoDshow(string nome) => "audio=" + Pulisci(nome);
@@ -44,23 +57,27 @@ public static class ComandiRegistrazione
     /// <summary>Il nome che WASAPI elenca, tale e quale, un argomento solo.</summary>
     public static string ArgomentoWasapi(string nome) => Pulisci(nome);
 
-    public static IReadOnlyList<string> Argomenti(string modo, string? mic, string? audioPc, string uscita, Schermo? schermo)
+    public static IReadOnlyList<string> Argomenti(string modo, string? mic, string? audioPc, string uscita, Schermo? schermo, int fps = 30, int crf = 23, bool cursore = true, string? titoloFinestra = null)
     {
         var soloAudio = modo == "audio";
+        var finestra = modo == "finestra" && !string.IsNullOrWhiteSpace(titoloFinestra);
+        var fotogrammi = FpsDi(fps);
+        var qualita = Math.Clamp(crf, 16, 32);
         var a = new List<string> { "-hide_banner", "-y" };
         if (!soloAudio)
         {
             Ingresso(a);
             a.Add("-f"); a.Add("gdigrab");
-            a.Add("-framerate"); a.Add("30");
-            a.Add("-draw_mouse"); a.Add("1");
-            if (schermo is { Larghezza: > 1, Altezza: > 1 })
+            a.Add("-framerate"); a.Add(fotogrammi.ToString(CultureInfo.InvariantCulture));
+            a.Add("-draw_mouse"); a.Add(cursore ? "1" : "0");
+            // una finestra si prende per titolo: offset e misura non c'entrano (gdigrab segue quella finestra)
+            if (!finestra && schermo is { Larghezza: > 1, Altezza: > 1 })
             {
                 a.Add("-offset_x"); a.Add(schermo.X.ToString(CultureInfo.InvariantCulture));
                 a.Add("-offset_y"); a.Add(schermo.Y.ToString(CultureInfo.InvariantCulture));
                 a.Add("-video_size"); a.Add($"{Pari(schermo.Larghezza)}x{Pari(schermo.Altezza)}");
             }
-            a.Add("-i"); a.Add("desktop");
+            a.Add("-i"); a.Add(finestra ? "title=" + Pulisci(titoloFinestra!) : "desktop");
         }
         var micOk = !string.IsNullOrWhiteSpace(mic);
         var pcOk = !string.IsNullOrWhiteSpace(audioPc);
@@ -99,7 +116,7 @@ public static class ComandiRegistrazione
             }
             a.Add("-c:v"); a.Add("libx264");
             a.Add("-preset"); a.Add("veryfast");
-            a.Add("-crf"); a.Add("23");
+            a.Add("-crf"); a.Add(qualita.ToString(CultureInfo.InvariantCulture));
             a.Add("-pix_fmt"); a.Add("yuv420p");
             if (nAudio > 0) { a.Add("-c:a"); a.Add("aac"); a.Add("-b:a"); a.Add("160k"); }
         }
@@ -160,6 +177,29 @@ public static class ComandiRegistrazione
 
     /// <summary>libx264 con yuv420p vuole larghezza e altezza pari. 1921 diventa 1920.</summary>
     public static int Pari(int n) => Math.Max(2, n - (n & 1));
+
+    /// <summary>I titoli da proporre per «una finestra». Si saltano quelli vuoti e le finestre nostre di registrazione.</summary>
+    public static IReadOnlyList<string> TitoliUtili(IEnumerable<string> titoli)
+    {
+        var visti = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var lista = new List<string>();
+        foreach (var t in titoli)
+        {
+            var n = t.Trim();
+            if (n.Length < 2) continue;
+            if (n.Equals("Registra", StringComparison.OrdinalIgnoreCase) || n.Equals("Registrazione", StringComparison.OrdinalIgnoreCase)) continue;
+            if (n.Equals("Program Manager", StringComparison.OrdinalIgnoreCase)) continue;
+            if (visti.Add(n)) lista.Add(n);
+        }
+        return lista;
+    }
+
+    /// <summary>Un fotogramma piccolo, per la miniatura nei recenti. Esce su stdout in PNG.</summary>
+    public static IReadOnlyList<string> ArgomentiFotogramma(string percorso) =>
+    [
+        "-hide_banner", "-loglevel", "error", "-ss", "0.4", "-i", percorso,
+        "-frames:v", "1", "-vf", "scale=160:-2", "-f", "image2pipe", "-vcodec", "png", "-",
+    ];
 
     static string Pulisci(string nome)
     {

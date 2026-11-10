@@ -163,15 +163,19 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
   (l'immagine sotto è a opacità 0.72); la zona scelta è a piena luce. Tasto destro o Esc annullano. Misure, lente,
   PNG nella cartella e negli appunti, anteprima in basso a destra. Lo schermo si fotografa prima dell'oscuramento.
   Su più monitor con DPI diversi il ritaglio può slittare di un pixel.
-- **La registrazione** (`Registrazione.cs`, `BarraRegistrazione`, `MenuRegistrazione`, `ComandiRegistrazione.cs`):
-  vassoio, tasto destro dell'avatar e comando `registra` del ponte passano da `Registrazione.Chiedi` (la scelta
-  menu/barra è `ComandiRegistrazione.CosaFa`, provata). Il menu si apre a menu del clic già chiuso: aprirlo dentro
-  il clic lo lasciava invisibile. Le finestre sono opache (niente `AllowsTransparency`): su Windows 11 una finestra
-  trasparente con `WDA_EXCLUDEFROMCAPTURE` sparisce anche dallo schermo. Lo schermo è il monitor principale
-  (gdigrab, offset e misura pari) con microfono DirectShow (`audio=nome`, un argomento, senza virgolette aggiunte)
-  e/o audio del PC in loopback WASAPI, oppure solo audio (M4A). I tempi sono dell'orologio, così le tracce restano
-  allineate. I nomi scelti stanno in `Impostazioni.RegistrazioneMic` e `RegistrazionePc` (vuoto = nessuno, null = il primo).
-  La pausa manda «q», chiude il pezzo e la ripresa ne apre un altro; Salva li concatena, Annulla cancella.
-  Nel registro: clic, apertura, avvio, pausa, il comando ffmpeg, gli errori. Se si rilancia l'exe mentre uno è già
-  aperto, il registro dice «non parto» (chiudi l'icona e rilancia). Su questa macchina ffmpeg non ha dshow né wasapi.
+- **La registrazione** (`Registrazione.cs`, `MenuRegistrazione`, `BarraRegistrazione`, `PosizioneFinestre`,
+  `Ancoraggio`, `AnteprimaSchermo`, `ComandiRegistrazione.cs`): vassoio, tasto destro dell'avatar e comando `registra`
+  passano da `Registrazione.Chiedi`. La finestra si apre a menu del clic già chiuso, è opaca (niente
+  `AllowsTransparency`: su Windows 11 una finestra trasparente con `WDA_EXCLUDEFROMCAPTURE` sparisce anche dallo
+  schermo) ed è esclusa dalla cattura. Sta accanto all'avatar, nell'area di lavoro del monitor dove sta lui, in pixel
+  veri (`Ancoraggio` + `SetWindowPos`): se l'avatar si sposta, lo segue. Avatar spento: centro del monitor principale.
+  Dentro c'è l'anteprima dal vivo (BitBlt, 8 fps, rimpicciolita) del monitor o della zona che si sta per registrare,
+  anche prima di Avvia e durante. Impostazioni: monitor, intero/zona/finestra, 30 o 60 fps, qualità (CRF 28/23/18),
+  microfono, audio del PC, cursore, conto alla rovescia, solo audio. La scelta si ricorda. «Riduci» lascia la barra
+  (tempo, Pausa, Salva, Annulla), anch'essa accanto all'avatar. gdigrab con offset del monitor o della zona, oppure
+  `title=` per una finestra; microfono DirectShow (`audio=nome`, senza virgolette aggiunte) e audio del PC in loopback
+  WASAPI. I livelli sono il misuratore di Windows, non un secondo FFmpeg. Screenshot e registrazioni entrano in
+  `storico.json` (`Storico.AggiungiFile`) e nei recenti della home, con miniatura; il clic li apre nel lettore.
+  Nel registro: clic, apertura, posizione in pixel, avvio, pausa, il comando ffmpeg, gli errori. Se si rilancia l'exe
+  mentre uno è già aperto, il registro dice «non parto». Su questa macchina ffmpeg non ha dshow né wasapi.
   Il video sull'avatar è un `MediaElement`: se Windows non lo sa suonare, lo apre il lettore.

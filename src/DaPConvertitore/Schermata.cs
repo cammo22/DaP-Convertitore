@@ -311,6 +311,7 @@ public static class Schermata
             }
             try { Clipboard.SetImage(taglio); } catch { /* gli appunti sono occupati */ }
             Anteprima(percorso, taglio);
+            Storico.AggiungiFile(percorso, "Screenshot");
             Vassoio.Dire("Screenshot", Path.GetFileName(percorso));
         }
 

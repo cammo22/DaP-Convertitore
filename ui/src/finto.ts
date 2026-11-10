@@ -222,6 +222,25 @@ export async function rispondi(cmd: string, args: any, emetti: (e: string, d: an
     case 'salvaPng':
     case 'salvaQuadro':
       return { nome: 'fotogramma.png', percorso: 'C:\\Users\\cammo\\Pictures\\DaPConvertitore\\fotogramma.png' };
+    case 'storico':
+      return {
+        recenti: [
+          { quando: new Date().toISOString(), nome: 'schermo 2026-11-09.png', formato: 'Screenshot', uscita: 'C:\\Users\\cammo\\Pictures\\DaPConvertitore\\schermo.png', pesoPrima: 0, pesoDopo: 180000, categoria: 'immagine' },
+          { quando: new Date(Date.now() - 3600_000).toISOString(), nome: 'registrazione 2026-11-09.mp4', formato: 'Registrazione', uscita: 'C:\\Users\\cammo\\Pictures\\DaPConvertitore\\registrazione.mp4', pesoPrima: 0, pesoDopo: 40_000_000, categoria: 'video' },
+        ],
+        totali: { conversioni: 12, byteRisparmiati: 50_000_000 },
+      };
+    case 'url':
+      return quadro('#1d1236', '#ffd54a', ' ');
+    case 'miniatura': {
+      const c = document.createElement('canvas');
+      c.width = 44; c.height = 44;
+      const g = c.getContext('2d')!;
+      g.fillStyle = '#3b1d6e'; g.fillRect(0, 0, 44, 44);
+      g.fillStyle = '#ffd54a'; g.fillRect(8, 8, 28, 28);
+      const data = c.toDataURL('image/png');
+      return { png: data.slice(data.indexOf(',') + 1) };
+    }
     case 'tornaLettore':
       return true;
     default:

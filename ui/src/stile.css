@@ -744,7 +744,12 @@ body.nel-browser #app.rapido { width: 480px; height: 190px; }
 .strada em { font-style: normal; color: var(--testo3); font-size: 12px; line-height: 1.35; }
 .recenti { display: flex; flex-direction: column; gap: 4px; }
 .recenti-vuoto { color: var(--testo3); font-size: 13px; margin: 2px 0; }
-.recente { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.025); }
+.recente { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.025); cursor: pointer; }
+.recente:hover { background: rgba(255, 255, 255, 0.05); }
+.recente-foto-box { width: 44px; height: 44px; flex: none; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.04); display: grid; }
+.recente-foto-box .recente-icona, .recente-foto { grid-area: 1 / 1; }
+.recente-foto { width: 44px; height: 44px; object-fit: cover; }
+.recente-foto-box .recente-icona { display: grid; place-items: center; }
 .recente-icona svg { width: 20px; height: 20px; color: var(--tinta); }
 .recente-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .recente-testo b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

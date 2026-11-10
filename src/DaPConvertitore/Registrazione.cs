@@ -34,8 +34,13 @@ public static class Registrazione
     static TimeSpan accumulato;
     static bool attiva, inPausa;
     static string modo = "schermo", ultimoErrore = "";
-    static string? mic, audioPc;
-    static int generazione;
+    static string? mic, audioPc, titoloScelto;
+    static int generazione, fpsScelto = 30, crfScelto = 23;
+    static bool cursoreScelto = true;
+    static ComandiRegistrazione.Schermo? schermoScelto;
+
+    /// <summary>L'avatar, se è acceso: la finestra e la barra gli stanno accanto.</summary>
+    public static Window? Ancora { get; private set; }
 
     public static bool Attiva => attiva;
     public static bool InPausa => inPausa;
@@ -97,6 +102,8 @@ public static class Registrazione
     /// </summary>
     public static void Chiedi(string da, Window? accanto = null)
     {
+        accanto ??= AvatarVisibile();
+        Ancora = accanto;
         var cosa = ComandiRegistrazione.CosaFa(da, attiva);
         Registro.Scrivi($"registrazione: «Registra» da {da} → {cosa}");
         var d = System.Windows.Application.Current?.Dispatcher;
@@ -111,8 +118,8 @@ public static class Registrazione
             {
                 if (attiva)
                 {
-                    Registro.Scrivi("registrazione: è già in corso, porto la barra");
-                    BarraRegistrazione.PortaDavanti();
+                    Registro.Scrivi("registrazione: è già in corso, porto la finestra");
+                    MenuRegistrazione.PortaDavanti();
                     return;
                 }
                 MenuRegistrazione.Mostra(accanto, da);
@@ -125,17 +132,22 @@ public static class Registrazione
         });
     }
 
-    public static void Inizia(string modoScelto, string? microfono, string? uscitaPc)
+    public static bool Inizia(string modoScelto, string? microfono, string? uscitaPc, ComandiRegistrazione.Schermo? schermo, int fps, int crf, bool cursore, string? titolo)
     {
-        if (attiva) { BarraRegistrazione.PortaDavanti(); return; }
+        if (attiva) { MenuRegistrazione.PortaDavanti(); return true; }
         if (modoScelto == "audio" && microfono is null && uscitaPc is null)
         {
             Vassoio.Dire("Scegli un audio", "Per registrare solo l'audio serve il microfono o l'audio del PC.");
-            return;
+            return false;
         }
-        modo = modoScelto == "audio" ? "audio" : "schermo";
+        modo = modoScelto == "audio" ? "audio" : modoScelto == "finestra" ? "finestra" : "schermo";
         mic = microfono;
         audioPc = uscitaPc;
+        schermoScelto = schermo;
+        fpsScelto = ComandiRegistrazione.FpsDi(fps);
+        crfScelto = Math.Clamp(crf, 16, 32);
+        cursoreScelto = cursore;
+        titoloScelto = titolo;
         pezzi.Clear();
         accumulato = TimeSpan.Zero;
         inPausa = false;
@@ -152,9 +164,20 @@ public static class Registrazione
             PulisciCartella();
             Registro.Scrivi($"registrazione: non è partita ({(string.IsNullOrWhiteSpace(ultimoErrore) ? "FFmpeg non è partito" : ultimoErrore)})");
             Vassoio.Dire("La registrazione non è partita", string.IsNullOrWhiteSpace(ultimoErrore) ? "FFmpeg non è partito." : ultimoErrore);
-            return;
+            return false;
         }
-        BarraRegistrazione.Mostra();
+        if (!MenuRegistrazione.Visibile) BarraRegistrazione.Mostra();
+        MenuRegistrazione.Aggiorna();
+        return true;
+    }
+
+    static Window? AvatarVisibile()
+    {
+        var app = System.Windows.Application.Current;
+        if (app is null) return null;
+        foreach (Window w in app.Windows)
+            if (w is FinestraAvatar && w.IsVisible) return w;
+        return null;
     }
 
     public static void Pausa()
@@ -167,6 +190,7 @@ public static class Registrazione
         inPausa = true;
         chiusura = Task.Run(() => ChiudiMorbido(p));
         BarraRegistrazione.Aggiorna();
+        MenuRegistrazione.Aggiorna();
     }
 
     public static void Riprendi()
@@ -187,6 +211,7 @@ public static class Registrazione
                 }
                 inPausa = false;
                 BarraRegistrazione.Aggiorna();
+                MenuRegistrazione.Aggiorna();
             });
         });
     }
@@ -205,6 +230,7 @@ public static class Registrazione
         var cartella = dir;
         dir = finale = null;
         BarraRegistrazione.Chiudi();
+        MenuRegistrazione.Aggiorna();
         _ = Task.Run(() =>
         {
             if (p is not null) ChiudiMorbido(p);
@@ -218,10 +244,12 @@ public static class Registrazione
                 {
                     File.Copy(buoni[0], dest, true);
                     Registro.Scrivi($"registrazione, unisco: {e.Message}");
+                    Ricorda(dest);
                     SulFilo(() => Vassoio.Dire("Registrazione salvata a pezzi", "Il resto non si è unito: ho tenuto il primo pezzo, " + Path.GetFileName(dest)));
                     return;
                 }
                 Registro.Scrivi($"registrazione: salvata {dest}");
+                Ricorda(dest);
                 SulFilo(() => Vassoio.Dire("Registrazione salvata", Path.GetFileName(dest)));
             }
             catch (Exception e)
@@ -245,6 +273,7 @@ public static class Registrazione
         dir = finale = null;
         pezzi.Clear();
         BarraRegistrazione.Chiudi();
+        MenuRegistrazione.Aggiorna();
         _ = Task.Run(() =>
         {
             try { if (p is { HasExited: false }) p.Kill(entireProcessTree: true); } catch { /* già fermo */ }
@@ -297,7 +326,7 @@ public static class Registrazione
                 RedirectStandardError = true,
                 StandardErrorEncoding = Encoding.UTF8,
             };
-            var argomenti = ComandiRegistrazione.Argomenti(modo, mic, audioPc, path, modo == "audio" ? null : SchermoPrincipale());
+            var argomenti = ComandiRegistrazione.Argomenti(modo, mic, audioPc, path, modo == "audio" ? null : schermoScelto ?? SchermoPrincipale(), fpsScelto, crfScelto, cursoreScelto, titoloScelto);
             Registro.Scrivi($"> ffmpeg {ComandiRegistrazione.Riga(argomenti)}");
             foreach (var a in argomenti) psi.ArgumentList.Add(a);
             var p = Process.Start(psi);
@@ -378,6 +407,11 @@ public static class Registrazione
             return testo;
         }
         catch (Exception e) { Registro.Scrivi($"dispositivi: {e.Message}"); return ""; }
+    }
+
+    static void Ricorda(string? dest)
+    {
+        if (dest is not null && File.Exists(dest)) Storico.AggiungiFile(dest, "Registrazione");
     }
 
     static string Taglia(string s) => s.Length > 240 ? s[^240..] : s;

@@ -516,6 +516,7 @@ async function avvia() {
     s.piano = null;
     disegnaTutto();
   });
+  ascolta('recenti', () => { if (s.vista === 'scegli' && !s.attiva) disegnaScegli(); });
   ascolta('modo', (m: { modo: 'finestra' | 'rapido' }) => {
     s.stato.modo = m.modo;
     app.classList.toggle('rapido', m.modo === 'rapido');

@@ -4,29 +4,40 @@ Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
 ## In lavorazione
 
-- **Registra si apre.** Dal vassoio e dal tasto destro sull'avatar il menu non compariva: la finestra nasceva dentro il clic del menu (e, trasparente, Windows la toglieva anche dallo schermo). Ora si apre dopo, è una finestra normale, e nel registro si legge il clic, l'apertura, la pausa, il comando di FFmpeg e gli errori. Se lanci la build mentre DaP è già aperto, il registro lo dice: chiudi l'icona vicino all'orologio e rilancia, se no provi il processo vecchio.
-- **La scorciatoia dello screenshot**, nelle Impostazioni, ha la stessa altezza e la stessa scritta degli altri tasti. In ascolto resta oro.
-- **La bolla** ricorda la scheda scelta anche se non fai partire una conversione.
-- **La copertina si vede anche sul player dell'avatar.** Prima, trascinando un brano sull'avatar, c'erano solo le barrette: la foto del disco non arrivava. Ora c'è, e passandoci sopra (anche nel lettore intero) escono **Modifica** e **Download**. Download la salva nella stessa cartella del brano, senza chiedere dove; se il nome c'è già ne fa un altro. Modifica la estrae, ne carica una dal disco, oppure ne sceglie una disegnata dall'app (viola, oro, magenta, dal titolo). Su MP3, M4A e FLAC entra nel file: si scrive accanto e poi si sostituisce, e se qualcosa va storto l'originale resta. Gli altri formati non la tengono dentro: viene salvata accanto e te lo dice.
-- **«Di seguito» si chiama «Riproduci coda».**
-- **Il fulmine non sta più nella barra del lettore.** Le conversioni rapide restano col tasto U.
-- **Info del file**, nella colonna di mezzo, in una sezione che si apre e si chiude. Per la musica: titolo, artista, album, anno, traccia, copertina. Per il video (MP4, MOV, MKV): titolo e commento. Per la foto (JPG e TIFF): data dello scatto, descrizione, autore. Quello che scrivi finisce **nel file convertito**; l'originale resta com'è. Se il formato non le tiene, la sezione lo dice.
-- **L'anteprima di un brano** ha play e pausa, il volume e una timeline, tutti sotto la copertina e l'onda. Il play parte anche quando la durata letta è zero: la dice il brano stesso, appena è pronto. La timeline sposta il punto; non fa sentire il passaggio sotto il cursore. Video, foto e PDF si scorrono come prima.
-- **Il peso finale** dell'audio si vede sempre, con lo slider, anche se il formato non perde niente. I tasti dei kbit/s restano, come scorciatoie.
-- **Le carte dei formati e la colonna Sorgente** sono più piccole, così entra più schermo.
-- **Novità**, sulla barra bianca, è scura e si legge. La testata resta ferma e il testo scorre sotto, senza finirci dentro. Un link scritto come in markdown (per esempio DaProd Editor Video) diventa un link vero. Le icone della barra stanno scure, perché la barra è sempre bianca.
-- **Impostazioni** ha la stessa testata, ferma, ed è larga: due colonne, così sta in una schermata.
-- **La bolla in alto** elenca le schede video che sanno codificare e il processore. Si sceglie da lì, e la bolla mostra quella scelta. La prossima volta è ancora lì.
-- **Chiudi**, nel menu della copertina, è un tasto come gli altri, non un tondo schiacciato.
-- **Un video sull'avatar** parte come la musica, nella finestrella. Se Windows non lo sa suonare, lo apre il lettore. Da lì, e dal lettore intero, si mette la copertina: un fotogramma, un'immagine, o una disegnata. Su MP4, MOV e MKV entra nel file (è la miniatura, anche per Esplora file e per le icone di DaP). Il video vero non si ricodifica.
-- **I tagli del video** nel lettore restano Z e X, per un pezzo solo, salvato accanto col nome «(tagliato)». La striscia gialla sotto la timeline (1, 2, Q, W) non c'è più.
-- **La cartella DaPConvertitore** sta in Immagini. Ci finiscono screenshot, registrazioni e il fotogramma salvato dalla modifica di un video. Si crea all'avvio se manca, e all'installazione. Dalle Impostazioni si vede, si apre e si può cambiare.
-- **L'icona nell'area di notifica**, finché l'app è aperta: Apri, Screenshot, Registra…, Avatar (acceso o spento), Impostazioni, Esci. Il doppio clic apre il convertitore. L'icona non tiene l'app in vita da sola.
-- **Lo screenshot** (Ctrl+Maiusc+S, e si cambia dalle Impostazioni). Il riquadro della scorciatoia è chiaro, e mentre aspetti i tasti dice «Premi i tasti…» in oro. Lo schermo si scurisce appena (la zona scelta resta a piena luce), si vedono misure e lente, poi il PNG va nella cartella, negli appunti e in un'anteprima in basso a destra. Esc o il tasto destro annullano.
-- **Registra** (dal vassoio o dal tasto destro sull'avatar): un menu per lo schermo con l'audio, oppure solo l'audio, e per scegliere il microfono e l'audio del PC (quello che esce dalle casse). Mentre registra c'è una barra in basso: il tempo, Pausa, Riprendi, Salva, Annulla. La pausa chiude un pezzo e la ripresa ne apre un altro; Salva li unisce. La barra e il menu non entrano nel video. Il file (MP4, oppure M4A se è solo audio) finisce nella cartella. È lo schermo intero del monitor principale, non una zona.
-- **Modifica da un file aperto nel lettore**: il lettore si chiude e resta la piastra. Sulla barra bianca, «Indietro» (icona scura) riapre il lettore e chiude la modifica.
-- **L'anteprima di un brano**: il clic sull'onda (non solo sulla barra) sposta il punto, senza farlo sentire. Poi si preme Play e parte da lì.
-- **L'anteprima di un video**: niente colonna di fotogrammi a destra. Sotto ci sono play, il tempo, il tasto Fotogramma e il volume. La barra si clicca e si trascina. Con l'anteprima selezionata, ← e → vanno di un fotogramma, J indietro di 10 secondi, K play/pausa, L avanti di 10. Fotogramma salva il PNG in Immagini\DaPConvertitore (la stessa cartella di screenshot e registrazioni). Nel lettore intero, il tasto S salva ancora accanto al video.
+### Registrare lo schermo
+
+- **Registra si apre accanto all'avatar.** Dal vassoio o dal tasto destro sull'avatar. Se l'avatar è su un altro monitor, la finestra sta su quello, dentro lo schermo, e se sposti l'avatar lei lo segue. Se l'avatar è spento, la finestra sta al centro del monitor principale.
+- **Si vede lo schermo, dal vivo**, dentro la finestra, prima di partire e mentre registra. La finestra non entra nel video: nell'anteprima, nel punto dove sta lei, c'è un buco. Non è uno specchio.
+- **Si sceglie come registrare.** Il monitor, se ne hai più di uno. Tutto lo schermo, una zona che trascini, oppure una finestra. 30 o 60 fotogrammi al secondo. Qualità leggera, buona o alta. Il microfono e l'audio del PC (quello che esce dalle casse), oppure Nessuno, con una tacca che si muove se il suono c'è. Il cursore si può lasciare fuori. Si può aspettare un conto alla rovescia di tre secondi. Si può registrare solo l'audio. La scelta resta per la prossima volta.
+- **I tasti** sono Avvia, Pausa, Riprendi, Salva e Annulla, con il tempo. «Riduci» lascia una barra piccola, sempre accanto all'avatar, con gli stessi tasti. La pausa chiude un pezzo e la ripresa ne apre un altro; Salva li unisce in un file solo. Annulla non lascia niente. Il file è un MP4, oppure un M4A se è solo audio, in Immagini\DaPConvertitore.
+- **Se lanci la build mentre DaP è già aperto**, non parte la copia nuova. Nel registro c'è scritto «non parto»: chiudi l'icona vicino all'orologio e rilancia. Nel registro si leggono anche il clic, dove si è aperta la finestra, il comando e gli errori.
+
+### Screenshot, vassoio e cartella
+
+- **Lo screenshot** (Ctrl+Maiusc+S, e si cambia dalle Impostazioni). Il riquadro della scorciatoia è alto come gli altri tasti. Cliccato, dice «Premi i tasti…» in oro. Lo schermo si scurisce appena, la zona scelta resta chiara, si vedono misure e lente. Il PNG va nella cartella, negli appunti e in un'anteprima in basso a destra. Esc o il tasto destro annullano.
+- **Screenshot e registrazioni compaiono nei Recenti** della home, con la miniatura. Un clic li apre nel lettore.
+- **La cartella DaPConvertitore** sta in Immagini. Ci finiscono screenshot, registrazioni e il fotogramma salvato da un video. Si crea da sola. Dalle Impostazioni si vede, si apre e si può cambiare.
+- **L'icona vicino all'orologio**, finché l'app è aperta: Apri, Screenshot, Registra…, Avatar (acceso o spento), Impostazioni, Esci. Il doppio clic apre il convertitore. L'icona non tiene l'app in vita da sola.
+
+### Musica, copertina e scheda del file
+
+- **La copertina si vede sul player dell'avatar** e nel lettore. Passandoci sopra escono Modifica e Download. Download la salva nella cartella del brano, senza chiedere dove; se il nome c'è già ne fa un altro. Modifica la estrae, ne carica una, oppure ne sceglie una disegnata (viola, oro, magenta, dal titolo). Su MP3, M4A e FLAC entra nel file. Gli altri formati non la tengono dentro: viene salvata accanto e te lo dice.
+- **Un video sull'avatar** parte come la musica. Se Windows non lo sa suonare, lo apre il lettore. La copertina di un MP4, MOV o MKV entra nel file ed è la miniatura, anche in Esplora file. Il film non si ricodifica.
+- **Info del file**, nella colonna di mezzo. Musica: titolo, artista, album, anno, traccia, copertina. Video (MP4, MOV, MKV): titolo e commento. Foto (JPG e TIFF): data dello scatto, descrizione, autore. Quello che scrivi finisce nel file convertito. L'originale resta com'è. Se il formato non le tiene, la sezione lo dice.
+- **«Di seguito» si chiama «Riproduci coda».** Il fulmine non sta più nella barra del lettore: le conversioni rapide restano col tasto U. Chiudi, nel menu della copertina, è un tasto come gli altri.
+
+### Anteprima, tagli e modifica
+
+- **L'anteprima di un brano** ha play, il volume e la timeline sotto la copertina e l'onda. Il clic sull'onda sposta il punto e non lo fa sentire. Il play parte anche se la durata letta è zero. Il peso finale dell'audio si vede sempre, con lo slider.
+- **L'anteprima di un video** non ha più la colonna di fotogrammi a destra. Sotto: play, il tempo, Fotogramma, il volume, e una barra che si clicca e si trascina. Con l'anteprima selezionata, le frecce vanno di un fotogramma, J e L di dieci secondi, K mette in pausa. Fotogramma salva il PNG nella cartella. Nel lettore intero, S salva ancora accanto al video.
+- **I tagli del video** nel lettore restano Z e X, per un pezzo solo, salvato accanto come «(tagliato)». L'originale resta. La striscia gialla (1, 2, Q, W) non c'è più: 1 e 2 tornano a saltare nel film.
+- **Dal lettore alla modifica**: Converti chiude il lettore e apre la piastra su quel file. Sulla barra bianca, Indietro (icona scura) riapre il lettore e chiude la modifica.
+
+### La piastra
+
+- **La bolla in alto** apre il menu delle schede che sanno codificare e del processore, segna quella in uso e la ricorda, anche se non fai partire una conversione.
+- **Novità**, sulla barra bianca, è scura e si legge. La testata resta ferma e il testo scorre sotto. Un link scritto come in markdown (per esempio DaProd Editor Video) è un link vero.
+- **Impostazioni** è larga, su due colonne, con la testata ferma. Le carte dei formati e la colonna Sorgente sono più piccole, così entra più schermo.
 
 ## 2.2.8 — 9 novembre 2026
 

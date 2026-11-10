@@ -73,6 +73,11 @@ public sealed class Ponte
         rilevazione = Task.Run(() => Hardware.Rileva(strumenti));
         Coda = new Coda(strumenti, () => hardware ?? rilevazione.GetAwaiter().GetResult(), () => new StampanteInAttesa(stampante.Task), imp.ScrittaPulita, () => imp.CestinoDaSolo) { QuandoFatto = Storico.Aggiungi };
         Coda.Cambiato += l => finestra.Dispatcher.BeginInvoke(() => LavoroCambiato(l));
+        Storico.Cambiato += () =>
+        {
+            try { finestra.Dispatcher.BeginInvoke(() => { if (pronta) Manda("recenti", null); }); }
+            catch { /* la finestra è già chiusa */ }
+        };
         timerRapide = new DispatcherTimer(TimeSpan.FromMilliseconds(450), DispatcherPriority.Normal, (_, _) => PartonoRapide(), finestra.Dispatcher) { IsEnabled = false };
         timerCarico = new DispatcherTimer(TimeSpan.FromMilliseconds(700), DispatcherPriority.Background, (_, _) => Carico(), finestra.Dispatcher) { IsEnabled = false };
         _ = rilevazione.ContinueWith(t =>
@@ -284,6 +289,17 @@ public sealed class Ponte
             {
                 var (recenti, totali) = Storico.Recenti(a["quanti"]?.GetValue<int>() ?? 6);
                 return new { recenti = recenti.Select(v => new { v.Quando, v.Nome, v.Formato, v.Uscita, v.PesoPrima, v.PesoDopo, v.Categoria }), totali };
+            }
+            case "url":
+            {
+                var p = (string?)a["percorso"];
+                return p is not null && File.Exists(p) ? risorse.Url(p) : null;
+            }
+            case "miniatura":
+            {
+                var p = (string?)a["percorso"] ?? "";
+                var png = await Task.Run(() => MiniaturaFile.PngBase64(p));
+                return new { png };
             }
             case "incolla":
             {
