@@ -45,6 +45,14 @@ public sealed class Finestra : Window
 
         SourceInitialized += (_, _) => Ambiente.Windows11(Maniglia);
         Loaded += async (_, _) => await Avvia();
+        Activated += (_, _) => { PausaPagine.Aggiorna(vista, this); Ponte.PausaSfondo(false); };
+        Deactivated += (_, _) => { PausaPagine.Aggiorna(vista, this); Ponte.PausaSfondo(true); };
+        StateChanged += (_, _) =>
+        {
+            var quieta = WindowState == WindowState.Minimized;
+            Ponte.PausaSfondo(quieta || !IsActive);
+            PausaPagine.Aggiorna(vista, this);
+        };
         Closing += async (_, e) =>
         {
             if (chiusuraPronta || !Ponte.Coda.Occupata) { Ponte.Chiudi(); return; }

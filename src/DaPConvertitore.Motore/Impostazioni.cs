@@ -70,6 +70,12 @@ public sealed class Impostazioni
     public bool RegistrazioneCursore { get; set; } = true;
     /// <summary>Tre secondi di conto alla rovescia prima di partire. Di partenza sì.</summary>
     public bool RegistrazioneConto { get; set; } = true;
+    /// <summary>Dove sta il pannello di registrazione, in pixel veri: «x,y,larghezza,altezza». Vuoto = accanto all'avatar.</summary>
+    public string? RegistrazionePosizione { get; set; }
+    /// <summary>Dove sta la barra compatta, negli stessi pixel. Vuoto = accanto all'avatar.</summary>
+    public string? RegistrazioneBarra { get; set; }
+    /// <summary>Il pannello segue l'avatar. Si stacca trascinandolo, e si riaggancia col tasto.</summary>
+    public bool RegistrazioneAgganciata { get; set; } = true;
     /// <summary>L'ultimo formato scelto per ogni categoria ("video" → "video.mp4").</summary>
     public Dictionary<string, string> Formati { get; set; } = [];
     /// <summary>Le ultime scelte dell'interfaccia (codec, qualità, motore…), tali e quali.</summary>

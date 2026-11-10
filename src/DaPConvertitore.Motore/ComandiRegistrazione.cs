@@ -1,21 +1,24 @@
 using System.Globalization;
+using System.Text;
 
 namespace DaP.Convertitore;
 
 /// <summary>
 /// Il comando di FFmpeg della registrazione, e cosa deve fare «Registra» dal vassoio, dall'avatar o dal ponte.
 /// Niente finestre: le prove lo chiamano così com'è.
-/// Lo schermo è gdigrab: un monitor, una zona, oppure una finestra per titolo. Il microfono è DirectShow (<c>audio=nome</c>),
-/// l'audio del PC è WASAPI in loopback. I tempi sono quelli dell'orologio, così video e audio restano
-/// allineati anche quando una sorgente tace un attimo: è la stessa idea della registrazione di DaProd
-/// Editor Video, che riempie di silenzio i buchi del loopback. I nomi dei dispositivi sono un argomento
-/// solo, senza virgolette aggiunte: con ArgumentList non c'è una shell, e il parser di dshow (spezza su
-/// «=» e «:», e non toglie le virgolette) le terrebbe come parte del nome.
+/// Lo schermo è gdigrab (monitor, zona o finestra per titolo). L'audio non passa da FFmpeg: questa build
+/// ha dshow, gdigrab, lavfi, openal e vfwcap, e non ha WASAPI. Microfono e audio del PC li prende il
+/// programma con WASAPI, li mescola e alla fine FFmpeg unisce il WAV al video. I nomi dei dispositivi
+/// non finiscono nel comando.
 /// </summary>
 public static class ComandiRegistrazione
 {
     public const string ApriMenu = "menu";
     public const string PortaBarra = "barra";
+
+    /// <summary>BitBlt dell'anteprima: solo SRCCOPY. CAPTUREBLT (0x40000000) fa sfarfallare il cursore.</summary>
+    public const int RopAnteprima = 0x00CC0020;
+    public const int RopCaptureBlt = 0x40000000;
 
     /// <summary>Da dove arriva «Registra»: il vassoio, il tasto destro dell'avatar, il comando del ponte. Stessa risposta.</summary>
     public static readonly string[] Origini = ["vassoio", "avatar", "ponte"];
@@ -51,110 +54,90 @@ public static class ComandiRegistrazione
         _ => 23,
     };
 
-    /// <summary>Un argomento solo: <c>audio=Microphone (Realtek Audio)</c>, senza virgolette intorno.</summary>
-    public static string ArgomentoDshow(string nome) => "audio=" + Pulisci(nome);
-
-    /// <summary>Il nome che WASAPI elenca, tale e quale, un argomento solo.</summary>
-    public static string ArgomentoWasapi(string nome) => Pulisci(nome);
-
-    public static IReadOnlyList<string> Argomenti(string modo, string? mic, string? audioPc, string uscita, Schermo? schermo, int fps = 30, int crf = 23, bool cursore = true, string? titoloFinestra = null)
+    /// <summary>Solo il video. Niente dshow e niente wasapi: l'audio arriva dopo, da un WAV.</summary>
+    public static IReadOnlyList<string> ArgomentiVideo(string modo, string uscita, Schermo? schermo, int fps = 30, int crf = 23, bool cursore = true, string? titoloFinestra = null)
     {
-        var soloAudio = modo == "audio";
         var finestra = modo == "finestra" && !string.IsNullOrWhiteSpace(titoloFinestra);
         var fotogrammi = FpsDi(fps);
         var qualita = Math.Clamp(crf, 16, 32);
         var a = new List<string> { "-hide_banner", "-y" };
-        if (!soloAudio)
+        Ingresso(a);
+        a.Add("-f"); a.Add("gdigrab");
+        a.Add("-framerate"); a.Add(fotogrammi.ToString(CultureInfo.InvariantCulture));
+        a.Add("-draw_mouse"); a.Add(cursore ? "1" : "0");
+        if (!finestra && schermo is { Larghezza: > 1, Altezza: > 1 })
         {
-            Ingresso(a);
-            a.Add("-f"); a.Add("gdigrab");
-            a.Add("-framerate"); a.Add(fotogrammi.ToString(CultureInfo.InvariantCulture));
-            a.Add("-draw_mouse"); a.Add(cursore ? "1" : "0");
-            // una finestra si prende per titolo: offset e misura non c'entrano (gdigrab segue quella finestra)
-            if (!finestra && schermo is { Larghezza: > 1, Altezza: > 1 })
-            {
-                a.Add("-offset_x"); a.Add(schermo.X.ToString(CultureInfo.InvariantCulture));
-                a.Add("-offset_y"); a.Add(schermo.Y.ToString(CultureInfo.InvariantCulture));
-                a.Add("-video_size"); a.Add($"{Pari(schermo.Larghezza)}x{Pari(schermo.Altezza)}");
-            }
-            a.Add("-i"); a.Add(finestra ? "title=" + Pulisci(titoloFinestra!) : "desktop");
+            a.Add("-offset_x"); a.Add(schermo.X.ToString(CultureInfo.InvariantCulture));
+            a.Add("-offset_y"); a.Add(schermo.Y.ToString(CultureInfo.InvariantCulture));
+            a.Add("-video_size"); a.Add($"{Pari(schermo.Larghezza)}x{Pari(schermo.Altezza)}");
         }
-        var micOk = !string.IsNullOrWhiteSpace(mic);
-        var pcOk = !string.IsNullOrWhiteSpace(audioPc);
-        if (micOk)
-        {
-            Ingresso(a);
-            a.Add("-f"); a.Add("dshow");
-            a.Add("-i"); a.Add(ArgomentoDshow(mic!));
-        }
-        if (pcOk)
-        {
-            Ingresso(a);
-            a.Add("-f"); a.Add("wasapi");
-            a.Add("-loopback"); a.Add("1");
-            a.Add("-i"); a.Add(ArgomentoWasapi(audioPc!));
-        }
-        var nAudio = (micOk ? 1 : 0) + (pcOk ? 1 : 0);
-        if (!soloAudio)
-        {
-            // -vf e -filter_complex insieme FFmpeg li rifiuta: con due audio la scala sta nel filtro
-            if (nAudio == 2)
-            {
-                a.Add("-filter_complex");
-                a.Add("[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2[v];[1:a][2:a]amix=inputs=2:duration=longest:dropout_transition=0[a]");
-                a.Add("-map"); a.Add("[v]");
-                a.Add("-map"); a.Add("[a]");
-            }
-            else
-            {
-                a.Add("-vf"); a.Add("scale=trunc(iw/2)*2:trunc(ih/2)*2");
-                if (nAudio == 1)
-                {
-                    a.Add("-map"); a.Add("0:v");
-                    a.Add("-map"); a.Add("1:a");
-                }
-            }
-            a.Add("-c:v"); a.Add("libx264");
-            a.Add("-preset"); a.Add("veryfast");
-            a.Add("-crf"); a.Add(qualita.ToString(CultureInfo.InvariantCulture));
-            a.Add("-pix_fmt"); a.Add("yuv420p");
-            if (nAudio > 0) { a.Add("-c:a"); a.Add("aac"); a.Add("-b:a"); a.Add("160k"); }
-        }
-        else
-        {
-            if (nAudio == 2)
-            {
-                a.Add("-filter_complex");
-                a.Add("[0:a][1:a]amix=inputs=2:duration=longest:dropout_transition=0[a]");
-                a.Add("-map"); a.Add("[a]");
-            }
-            a.Add("-c:a"); a.Add("aac");
-            a.Add("-b:a"); a.Add("192k");
-        }
+        a.Add("-i"); a.Add(finestra ? "title=" + Pulisci(titoloFinestra!) : "desktop");
+        a.Add("-vf"); a.Add("scale=trunc(iw/2)*2:trunc(ih/2)*2");
+        a.Add("-c:v"); a.Add("libx264");
+        a.Add("-preset"); a.Add("veryfast");
+        a.Add("-crf"); a.Add(qualita.ToString(CultureInfo.InvariantCulture));
+        a.Add("-pix_fmt"); a.Add("yuv420p");
         a.Add(uscita);
         return a;
     }
+
+    /// <summary>Unisce il video già pronto e il WAV mescolato dal programma. L'audio si allunga di silenzio se è più corto, e si taglia alla fine del video.</summary>
+    public static IReadOnlyList<string> ArgomentiMux(string video, string wav, string uscita) =>
+    [
+        "-hide_banner", "-y",
+        "-i", video,
+        "-i", wav,
+        "-filter_complex", "[1:a]apad[a]",
+        "-map", "0:v",
+        "-map", "[a]",
+        "-c:v", "copy",
+        "-c:a", "aac",
+        "-b:a", "160k",
+        "-shortest",
+        uscita,
+    ];
+
+    /// <summary>Solo audio: il WAV diventa M4A.</summary>
+    public static IReadOnlyList<string> ArgomentiDaWav(string wav, string uscita) =>
+    [
+        "-hide_banner", "-y", "-i", wav, "-c:a", "aac", "-b:a", "192k", uscita,
+    ];
 
     /// <summary>La riga che finisce nel registro. Gli argomenti con spazi prendono le virgolette solo qui, per leggerli.</summary>
     public static string Riga(IEnumerable<string> argomenti) =>
         string.Join(' ', argomenti.Select(x => x.Any(char.IsWhiteSpace) ? "\"" + x.Replace("\"", "\\\"") + "\"" : x));
 
-    /// <summary>I microfoni dall'elenco di <c>ffmpeg -f dshow -list_devices true</c> (esce su stderr).</summary>
+    /// <summary>
+    /// I microfoni dall'elenco di <c>ffmpeg -f dshow -list_devices true</c> (esce su stderr).
+    /// Vale il formato vecchio (intestazione «DirectShow audio devices») e quello nuovo di FFmpeg 8/9,
+    /// che non ha intestazioni e scrive <c>[in#0 @ …] "nome" (audio)</c>. I video restano fuori.
+    /// Le righe «Alternative name» si saltano. Il nome è quello fra la prima e l'ultima virgoletta,
+    /// così le parentesi dentro il nome (Realtek(R), Oculus) non lo spezzano.
+    /// </summary>
     public static IReadOnlyList<string> MicrofoniDaElenco(string testo)
     {
-        var audio = false;
+        var sezione = 0; // 0 non si sa, 1 video, 2 audio (solo il formato vecchio)
         var nomi = new List<string>();
-        foreach (var riga in testo.Split('\n'))
+        foreach (var grezza in testo.Split('\n'))
         {
-            if (riga.Contains("DirectShow audio", StringComparison.OrdinalIgnoreCase)) { audio = true; continue; }
-            if (riga.Contains("DirectShow video", StringComparison.OrdinalIgnoreCase)) { audio = false; continue; }
-            if (!audio || riga.Contains("Alternative name", StringComparison.OrdinalIgnoreCase)) continue;
-            if (NomeFraVirgolette(riga) is { } n && !nomi.Contains(n)) nomi.Add(n);
+            var riga = grezza.TrimEnd('\r').Trim();
+            if (riga.Length == 0) continue;
+            if (riga.Contains("Alternative name", StringComparison.OrdinalIgnoreCase)) continue;
+            if (riga.Contains("DirectShow video", StringComparison.OrdinalIgnoreCase)) { sezione = 1; continue; }
+            if (riga.Contains("DirectShow audio", StringComparison.OrdinalIgnoreCase)) { sezione = 2; continue; }
+            if (NomeFraVirgolette(riga) is not { } n) continue;
+            var audio = HaParola(riga, "audio");
+            var video = HaParola(riga, "video");
+            if (video && !audio) continue;
+            if (audio || sezione == 2)
+            {
+                if (!nomi.Contains(n)) nomi.Add(n);
+            }
         }
         return nomi;
     }
 
-    /// <summary>Le uscite del PC (playback) dall'elenco WASAPI. I microfoni, segnati capture, non ci vanno.</summary>
+    /// <summary>Le uscite del PC (playback) dall'elenco WASAPI, se un FFmpeg ce l'ha. I microfoni, segnati capture, non ci vanno. Questa build non ha wasapi: l'app non lo chiama.</summary>
     public static IReadOnlyList<string> UsciteDaElenco(string testo)
     {
         var tutti = new List<string>();
@@ -167,6 +150,34 @@ public static class ComandiRegistrazione
             if (riga.Contains("playback", StringComparison.OrdinalIgnoreCase) && !playback.Contains(n)) playback.Add(n);
         }
         return playback.Count > 0 ? playback : tutti;
+    }
+
+    /// <summary>
+    /// L'uscita di <c>ffmpeg -devices</c>. Dice se quell'ingresso c'è (per esempio wasapi).
+    /// Si guarda la colonna del nome, non una parola capitata nel mezzo di una riga.
+    /// </summary>
+    public static bool HaIngresso(string testoDevices, string nome)
+    {
+        foreach (var grezza in testoDevices.Split('\n'))
+        {
+            var riga = grezza.TrimEnd('\r').Trim();
+            if (riga.Length < 3 || riga[1] != ' ') continue;
+            var pezzi = riga.Split((char[])[' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
+            if (pezzi.Length >= 2 && pezzi[1].Equals(nome, StringComparison.OrdinalIgnoreCase)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// I byte di stderr di FFmpeg. Prima UTF-8 (anche col BOM): è così che scrive la build BtbN.
+    /// Se i byte non sono UTF-8 validi si usa Latin-1, così un accento non diventa un punto di domanda.
+    /// </summary>
+    public static string DecodificaElenco(ReadOnlySpan<byte> dati)
+    {
+        if (dati.Length >= 3 && dati[0] == 0xEF && dati[1] == 0xBB && dati[2] == 0xBF) dati = dati[3..];
+        var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        try { return utf8.GetString(dati); }
+        catch (DecoderFallbackException) { return Encoding.Latin1.GetString(dati); }
     }
 
     static void Ingresso(List<string> a)
@@ -194,11 +205,11 @@ public static class ComandiRegistrazione
         return lista;
     }
 
-    /// <summary>Un fotogramma piccolo, per la miniatura nei recenti. Esce su stdout in PNG.</summary>
+    /// <summary>Un fotogramma piccolo, per la miniatura nei recenti e nel riepilogo. Esce su stdout in PNG.</summary>
     public static IReadOnlyList<string> ArgomentiFotogramma(string percorso) =>
     [
         "-hide_banner", "-loglevel", "error", "-ss", "0.4", "-i", percorso,
-        "-frames:v", "1", "-vf", "scale=160:-2", "-f", "image2pipe", "-vcodec", "png", "-",
+        "-frames:v", "1", "-vf", "scale=320:-2", "-f", "image2pipe", "-vcodec", "png", "-",
     ];
 
     static string Pulisci(string nome)
@@ -208,12 +219,21 @@ public static class ComandiRegistrazione
         return n.Replace("\"", "");
     }
 
+    /// <summary>Dalla prima virgoletta all'ultima: il nome può contenere parentesi, non una seconda coppia di virgolette.</summary>
     static string? NomeFraVirgolette(string riga)
     {
         var a = riga.IndexOf('"');
-        var b = a >= 0 ? riga.IndexOf('"', a + 1) : -1;
+        var b = a >= 0 ? riga.LastIndexOf('"') : -1;
         if (a < 0 || b <= a) return null;
         var n = riga[(a + 1)..b].Trim();
         return n.Length == 0 ? null : n;
+    }
+
+    /// <summary><c>(audio)</c> o <c>(video)</c> come parola del formato nuovo, non un pezzo del nome fra virgolette.</summary>
+    static bool HaParola(string riga, string parola)
+    {
+        var fine = riga.LastIndexOf('"');
+        var dopo = fine >= 0 ? riga[(fine + 1)..] : riga;
+        return dopo.Contains("(" + parola + ")", StringComparison.OrdinalIgnoreCase);
     }
 }

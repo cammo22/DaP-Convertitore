@@ -136,10 +136,14 @@ public sealed class FinestraAvatar : Window
         Left = imp.AvatarX is { } x && x > area.Left - Width && x < area.Right ? x : area.Right - Width - 24;
         Top = imp.AvatarY is { } y && y > area.Top - Height && y < area.Bottom ? y : area.Bottom - Height - 24;
 
-        orologio = new DispatcherTimer(DispatcherPriority.Render, Dispatcher) { Interval = TimeSpan.FromMilliseconds(1000.0 / foglio.Fps) };
+        // Background, non Render: un timer nel passaggio di disegno di una finestra trasparente
+        // (AllowsTransparency) chiama UpdateLayeredWindow a ogni fotogramma e Windows ridisegna il cursore.
+        // Dopo un po' il mouse sfarfalla. Si salta anche il fotogramma se è già quello sullo schermo.
+        orologio = new DispatcherTimer(DispatcherPriority.Background, Dispatcher) { Interval = TimeSpan.FromMilliseconds(1000.0 / foglio.Fps) };
         orologio.Tick += (_, _) => Avanti();
         Pianifica();
-        Loaded += (_, _) => orologio.Start();
+        Loaded += (_, _) => { if (IsVisible) orologio.Start(); };
+        IsVisibleChanged += (_, _) => { if (IsVisible) orologio.Start(); else orologio.Stop(); };
         // per le prove: DAP_AVATAR_TRASFORMA=1 si trasforma subito (e poi di nuovo ogni 4 secondi)
         if (Environment.GetEnvironmentVariable("DAP_AVATAR_TRASFORMA") == "1")
             ContentRendered += (_, _) => { var t = new DispatcherTimer(TimeSpan.FromSeconds(4), DispatcherPriority.Normal, (_, _) => Trasforma(), Dispatcher); t.Start(); };
@@ -179,12 +183,18 @@ public sealed class FinestraAvatar : Window
 
     // ————————————————————————— le animazioni —————————————————————————
 
+    void Mostra(BitmapSource b)
+    {
+        if (ReferenceEquals(figura.Source, b)) return;
+        figura.Source = b;
+    }
+
     void Suona(string nome, bool inCiclo, Action? finito = null)
     {
         segue = rientro = false; angolo = 0;      // un'altra animazione vale più dello sguardo
         if (foglio is null || !foglio.Ha(nome)) { if (nome != "idle" && foglio?.Ha("idle") == true) Suona("idle", true); return; }
         animazione = nome; frame = 0; ciclo = inCiclo; alFinire = finito;
-        figura.Source = foglio.Fotogramma(nome, 0);
+        Mostra(foglio.Fotogramma(nome, 0));
     }
 
     void Avanti()
@@ -199,7 +209,7 @@ public sealed class FinestraAvatar : Window
             if (ciclo) frame = 0;
             else { frame = n - 1; var fine = alFinire; alFinire = null; if (fine is not null) fine(); else Suona("idle", true); return; }
         }
-        figura.Source = foglio.Fotogramma(animazione, frame);
+        Mostra(foglio.Fotogramma(animazione, frame));
         // ogni tanto, se nessuno guarda: un movimento o una trasformazione
         if (animazione == "idle" && !trascinando && DateTime.Now >= prossimoMovimento)
         {
@@ -227,7 +237,7 @@ public sealed class FinestraAvatar : Window
         var giro = Math.PI * 2;
         var e = Math.Clamp((angolo >= 0 ? angolo : giro + angolo) / giro, 0, 1);
         var t = 0.5 - Math.Sin(Math.Asin(Math.Clamp(1 - 2 * e, -1, 1)) / 3);
-        figura.Source = foglio.Fotogramma("gira", (int)Math.Round(t * (n - 1)));
+        Mostra(foglio.Fotogramma("gira", (int)Math.Round(t * (n - 1))));
     }
 
     /// <summary>Fra un movimento e l'altro passa del tempo, e mai due uguali di fila: non deve stancare.</summary>

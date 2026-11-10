@@ -69,7 +69,7 @@ public static class PosizioneFinestre
             // WPF, scrivendo Left e Width, può rimandare la finestra. L'ultima parola sono i pixel veri.
             var x = dove.X; var y = dove.Y; var l = dove.L; var a = dove.A;
             var mio = giri[finestra] = giri.GetValueOrDefault(finestra) + 1;
-            finestra.Dispatcher.BeginInvoke(DispatcherPriority.Render, () =>
+            finestra.Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
             {
                 if (giri.GetValueOrDefault(finestra) != mio) return;
                 if (new WindowInteropHelper(finestra).Handle == h) Metti(h, new Ancoraggio.Riquadro(x, y, l, a));
@@ -118,10 +118,92 @@ public static class PosizioneFinestre
     static void Metti(IntPtr h, Ancoraggio.Riquadro dove) =>
         SetWindowPos(h, new IntPtr(-1), dove.X, dove.Y, dove.L, dove.A, 0x0010);
 
+    /// <summary>WPF, appena può, riscrive Left e Width. L'ultima parola sono i pixel veri, ma non nel passaggio di render: lì il cursore sfarfalla.</summary>
+    static void MettiEConferma(Window finestra, IntPtr h, Ancoraggio.Riquadro dove)
+    {
+        Metti(h, dove);
+        var mio = giri[finestra] = giri.GetValueOrDefault(finestra) + 1;
+        var x = dove.X; var y = dove.Y; var l = dove.L; var a = dove.A;
+        finestra.Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+        {
+            if (giri.GetValueOrDefault(finestra) != mio) return;
+            if (new WindowInteropHelper(finestra).Handle == h) Metti(h, new Ancoraggio.Riquadro(x, y, l, a));
+        });
+    }
+
     static Point Logica(IntPtr hwnd, int x, int y, uint dpi)
     {
         var pt = new POINT { X = x, Y = y };
         if (PhysicalToLogicalPointForPerMonitorDPI(hwnd, ref pt)) return new Point(pt.X, pt.Y);
         return new Point(x * 96.0 / dpi, y * 96.0 / dpi);
     }
+
+    /// <summary>Le aree di lavoro, in pixel veri, un rettangolo per monitor.</summary>
+    public static IReadOnlyList<Ancoraggio.Riquadro> Schermi()
+    {
+        var lista = new List<Ancoraggio.Riquadro>();
+        try
+        {
+            foreach (var s in System.Windows.Forms.Screen.AllScreens)
+            {
+                var w = s.WorkingArea;
+                if (w.Width > 2 && w.Height > 2)
+                    lista.Add(new Ancoraggio.Riquadro(w.X, w.Y, w.Width, w.Height));
+            }
+        }
+        catch { /* senza l'elenco si lascia la finestra dov'è */ }
+        return lista;
+    }
+
+    public static Ancoraggio.Riquadro? Leggi(Window finestra)
+    {
+        var h = new WindowInteropHelper(finestra).Handle;
+        if (h == IntPtr.Zero || !GetWindowRect(h, out var r)) return null;
+        var l = r.Right - r.Left;
+        var a = r.Bottom - r.Top;
+        if (l < 2 || a < 2) return null;
+        return new Ancoraggio.Riquadro(r.Left, r.Top, l, a);
+    }
+
+    /// <summary>Mette la finestra in quei pixel e, se sborda, la riporta dentro uno schermo.</summary>
+    public static void Applica(Window finestra, Ancoraggio.Riquadro dove)
+    {
+        var h = new WindowInteropHelper(finestra).Handle;
+        if (h == IntPtr.Zero) return;
+        var schermi = Schermi();
+        if (schermi.Count > 0) dove = Ancoraggio.DentroSchermi(dove, schermi);
+        MettiEConferma(finestra, h, dove);
+    }
+
+    /// <summary>
+    /// Accanto all'avatar, tenendo la misura che la finestra ha già (così un ridimensionamento non si perde).
+    /// Se non ha ancora una misura, si usano i pixel di partenza.
+    /// </summary>
+    public static void Accanto(Window finestra, Window? ancora, int pixelLarghezza, int pixelAltezza)
+    {
+        var h = new WindowInteropHelper(finestra).Handle;
+        if (h == IntPtr.Zero) return;
+        try
+        {
+            var letto = Leggi(finestra);
+            var l = letto is { L: > 80 } r ? r.L : pixelLarghezza;
+            var a = letto is { A: > 40 } r2 ? r2.A : pixelAltezza;
+            var (monitor, area) = AreaDi(ancora, h);
+            _ = monitor;
+            Ancoraggio.Riquadro dove;
+            if (ancora is not null && ancora.IsVisible && GetWindowRect(new WindowInteropHelper(ancora).Handle, out var ar))
+            {
+                var box = new Ancoraggio.Riquadro(ar.Left, ar.Top, Math.Max(1, ar.Right - ar.Left), Math.Max(1, ar.Bottom - ar.Top));
+                dove = Ancoraggio.Accanto(box, l, a, area);
+            }
+            else dove = Ancoraggio.Centro(l, a, area);
+            var schermi = Schermi();
+            if (schermi.Count > 0) dove = Ancoraggio.DentroSchermi(dove, schermi);
+            else dove = Ancoraggio.Blocca(dove, area);
+            MettiEConferma(finestra, h, dove);
+        }
+        catch (Exception e) { Registro.Errore("registrazione: posizione", e); }
+    }
+
+    public static void Dimentica(Window finestra) => giri.Remove(finestra);
 }

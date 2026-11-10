@@ -1,6 +1,7 @@
 /* DaP Lettore — nero notte, i colori DaProd (oro e magenta) e una tinta per ogni tipo di file: magenta il cinema,
    verde il giradischi, ciano il tavolo luminoso, rosso la scrivania dei PDF… Tutto quello che si muove entra piano. */
 @font-face { font-family: 'DSEG7'; src: url('../font/DSEG7Classic-Bold.woff2') format('woff2'); font-display: block; }
+html.in-pausa, html.in-pausa * { animation-play-state: paused !important; }
 
 :root {
   --fondo: #07060a;

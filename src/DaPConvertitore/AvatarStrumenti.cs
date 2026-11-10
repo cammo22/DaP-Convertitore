@@ -127,7 +127,12 @@ public sealed class Cronometro : Window
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); else if (e.Key == Key.Space) Gira(); else if (e.Key is Key.L or Key.Enter) Giro(); };
     }
 
-    void Gira() { if (tempo.IsRunning) tempo.Stop(); else tempo.Start(); Aggiorna(); }
+    void Gira()
+    {
+        if (tempo.IsRunning) { tempo.Stop(); orologio.Stop(); }
+        else { tempo.Start(); orologio.Start(); }
+        Aggiorna();
+    }
 
     void Azzera() { tempo.Reset(); giri.Clear(); elencoGiri.Children.Clear(); scorrevole.Visibility = Visibility.Collapsed; Aggiorna(); }
 
@@ -174,7 +179,8 @@ public sealed class Cronometro : Window
     void Aggiorna()
     {
         var t = tempo.Elapsed;
-        cifre.Text = Tm(t);
+        var cifreNuove = Tm(t);
+        if (cifre.Text != cifreNuove) cifre.Text = cifreNuove;
         var qui = tempo.IsRunning ? "in corso" : t == TimeSpan.Zero && giri.Count == 0 ? "a zero" : "in pausa";
         stato.Text = giri.Count == 0 ? qui : $"{qui}  ·  {giri.Count} {(giri.Count == 1 ? "giro" : "giri")}  ·  totale {Tm(giri.Aggregate(t, (s, g) => s + g))}";
         // un solo tasto per partire e fermarsi: il disegno cambia, il tasto si rifà solo quando serve
