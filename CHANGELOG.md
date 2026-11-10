@@ -2,11 +2,11 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
-## In lavorazione
+## 2.2.10 — 10 novembre 2026
 
-- **Registrare.** Il pannello si prende da qualsiasi punto vuoto e si sposta, si ridimensiona, si ricorda dove stava e quanto era grande, e non esce dagli schermi. Si aggancia all'avatar e si stacca trascinandolo. «Riduci» lo fa diventare una barra, «Apri» lo riporta. Dentro: sorgente (monitor, finestra, zona), microfono e audio del PC con le tacche, fotogrammi, qualità, cursore, conto alla rovescia, solo audio. F9 avvia o mette in pausa, F10 salva. Alla fine c'è il riepilogo, con un fotogramma e Apri, Mostra nella cartella, Modifica, Elimina. La finestra resta fuori dal video e si vede lo stesso.
-- **L'audio del PC e il microfono non passano più da FFmpeg.** Quella build non ha WASAPI (ci sono solo dshow, gdigrab, lavfi, openal e vfwcap): per questo il registro diceva «nessun dispositivo» anche quando il microfono c'era. Ora li elenca Windows, con i suoi nomi, e li cattura il programma. Il parser dell'elenco di FFmpeg, quello nuovo senza la riga «DirectShow audio devices», è sistemato lo stesso. A fine pezzo il WAV si unisce al video.
-- **Il mouse non dovrebbe più mettersi a sfarfallare** dopo che l'app è aperta da un po'. L'avatar trasparente non si ridisegna più nel passaggio di disegno, l'anteprima dello schermo si ferma quando il pannello non si vede e non usa il flag che fa sparire il cursore, il contatore della scheda video non si accavalla, e la pagina smette di animare quando la finestra non è davanti. Ogni cinque minuti il registro annota GDI, oggetti USER, handle, memoria e thread.
+- **Registrare.** Il pannello si prende da qualsiasi punto vuoto e si sposta, si ridimensiona, si ricorda dove stava e quanto era grande, e non esce dagli schermi. Resta accanto all'avatar; se lo trascini si stacca, e «Aggancia» lo rimette vicino. «Riduci» lo fa diventare una barra, «Apri» lo riporta. Dentro: il monitor, una finestra o una zona; il microfono e l'audio del PC, con le tacche; i fotogrammi, la qualità, il cursore, il conto alla rovescia, oppure solo l'audio. F9 avvia o mette in pausa, F10 salva. Alla fine c'è il riepilogo, con un fotogramma e Apri, Mostra nella cartella, Modifica, Elimina. La finestra non entra nel video, e si vede lo stesso.
+- **Il microfono e l'audio del PC si vedono, con i nomi di Windows.** Prima il registro diceva «nessun dispositivo» anche se il microfono c'era. Ora li elenca Windows e finiscono nel file, insieme al video.
+- **Il cursore non sfarfalla più** dopo che l'app è aperta da un po', anche se non stai registrando. Quello che non serve (l'anteprima, le tacche, le animazioni) si ferma.
 
 ## 2.2.9 — 10 novembre 2026
 
