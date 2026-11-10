@@ -1,21 +1,29 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shell;
 using System.Windows.Threading;
 
 namespace DaP.Convertitore.App;
 
 /// <summary>
-/// La finestra di registrazione: l'anteprima dello schermo, i tasti e le impostazioni.
-/// Sta accanto all'avatar (o al centro del monitor principale) e lo segue se si sposta.
-/// È esclusa dalla cattura, quindi non entra nel video e non fa da specchio.
+/// Il pannello di registrazione. Si trascina da qualsiasi punto vuoto, si ridimensiona, si ricorda
+/// dove stava e quanto era grande, e non esce dagli schermi. Si aggancia all'avatar e si stacca
+/// trascinandolo. «Riduci» lo fa diventare la barra. È escluso dalla cattura, ma è opaco: così si vede.
 /// </summary>
 public sealed class MenuRegistrazione : Window
 {
-    const double MisuraL = 400;
-    const double MisuraA = 680;
+    static readonly SolidColorBrush Fondo = Colore(0x12, 0x10, 0x1A);
+    static readonly SolidColorBrush Oro = Colore(0xFF, 0xD5, 0x4A);
+    static readonly SolidColorBrush Testo = Colore(0xF4, 0xF0, 0xE6);
+    static readonly SolidColorBrush Spento = Colore(0x2A, 0x26, 0x36);
+    static readonly SolidColorBrush Muto = Colore(0xA1, 0x9D, 0xB0);
+    static readonly SolidColorBrush Magenta = Colore(0xFF, 0x3D, 0xF2);
 
     static MenuRegistrazione? aperta;
     readonly Image quadro = new() { Stretch = Stretch.Uniform };
@@ -23,7 +31,7 @@ public sealed class MenuRegistrazione : Window
     readonly TextBlock contoTesto;
     readonly TextBlock tempo;
     readonly TextBlock nota;
-    readonly TextBlock chiudiTesto;
+    readonly TextBlock aggancioTesto;
     readonly ComboBox monitor = Combo();
     readonly ComboBox microfono = Combo();
     readonly ComboBox uscita = Combo();
@@ -36,6 +44,7 @@ public sealed class MenuRegistrazione : Window
     readonly CheckBox cursore, conto, solo;
     readonly AnteprimaSchermo anteprima;
     readonly DispatcherTimer orologio;
+    AudioWasapi.Metro? metro;
     Window? ancora;
     Ancoraggio.Riquadro? zona;
     string area = "intero";
@@ -48,24 +57,32 @@ public sealed class MenuRegistrazione : Window
 
     public static void Mostra(Window? accanto, string da)
     {
-        if (Registrazione.Attiva) { PortaDavanti(); return; }
+        if (Registrazione.Attiva && aperta is null) { BarraRegistrazione.Mostra(); return; }
         if (aperta is not null)
         {
+            BarraRegistrazione.Chiudi();
             aperta.Aggancia(accanto);
             aperta.Show();
             aperta.Activate();
-            Registro.Scrivi("registrazione: la finestra era già aperta, la porto davanti");
+            TastiRegistrazione.Accendi();
+            Registro.Scrivi("registrazione: il pannello era già aperto, lo porto davanti");
             return;
         }
         try
         {
             aperta = new MenuRegistrazione(accanto, da);
             Registrazione.Escludi(aperta);
-            aperta.Closed += (_, _) => { Registro.Scrivi("registrazione: finestra chiusa"); aperta = null; };
+            aperta.Closed += (_, _) =>
+            {
+                Registro.Scrivi("registrazione: pannello chiuso");
+                PosizioneFinestre.Dimentica(aperta!);
+                aperta = null;
+                TastiRegistrazione.Sistema();
+            };
             aperta.Show();
             aperta.Activate();
             aperta.Topmost = true;
-            if (!aperta.IsVisible) Registro.Scrivi("registrazione: Show() è tornato ma la finestra non è visibile");
+            TastiRegistrazione.Accendi();
         }
         catch (Exception e)
         {
@@ -80,71 +97,95 @@ public sealed class MenuRegistrazione : Window
         if (aperta is null) { BarraRegistrazione.PortaDavanti(); return; }
         BarraRegistrazione.Chiudi();
         aperta.Show();
-        aperta.Posiziona(true);
         aperta.Topmost = true;
         try { aperta.Activate(); } catch { /* già davanti */ }
     }
 
     public static void Aggiorna() => aperta?.Rinfresca();
 
+    /// <summary>F9, o il tasto Pausa: parte, mette in pausa, o riprende.</summary>
+    public static void TastoPausa()
+    {
+        if (Registrazione.Attiva)
+        {
+            if (Registrazione.InPausa) Registrazione.Riprendi();
+            else Registrazione.Pausa();
+            Aggiorna();
+            BarraRegistrazione.Aggiorna();
+            return;
+        }
+        if (aperta is not null) _ = aperta.Parti();
+        else Mostra(Registrazione.Ancora, "tasto");
+    }
+
     MenuRegistrazione(Window? accanto, string da)
     {
         WindowStyle = WindowStyle.None;
-        ResizeMode = ResizeMode.NoResize;
+        ResizeMode = ResizeMode.CanResize;
         ShowInTaskbar = false;
         Topmost = true;
         ShowActivated = true;
         WindowStartupLocation = WindowStartupLocation.Manual;
-        Width = MisuraL;
-        Height = MisuraA;
-        Background = Sfondo();
+        MinWidth = 380;
+        MinHeight = 460;
+        Width = 440;
+        Height = 680;
+        Background = Fondo;
         Title = "Registra";
+        WindowChrome.SetWindowChrome(this, new WindowChrome
+        {
+            CaptionHeight = 0,
+            ResizeBorderThickness = new Thickness(6),
+            GlassFrameThickness = new Thickness(0),
+            CornerRadius = new CornerRadius(0),
+            UseAeroCaptionButtons = false,
+        });
 
         soloAudioTesto = new TextBlock
         {
-            Text = "Solo audio",
-            Foreground = Pennello("#ffd54a"),
-            FontSize = 18,
-            FontWeight = FontWeights.Bold,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
+            Text = "Solo audio", Foreground = Oro, FontSize = 22, FontWeight = FontWeights.Bold,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
             Visibility = Visibility.Collapsed,
         };
         contoTesto = new TextBlock
         {
-            Foreground = Pennello("#ffd54a"),
-            FontSize = 64,
-            FontWeight = FontWeights.Bold,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = Oro, FontSize = 72, FontWeight = FontWeights.Bold,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
             Visibility = Visibility.Collapsed,
         };
-        var palco = new Grid { Height = 200, Background = Brushes.Black, Margin = new Thickness(0, 6, 0, 6) };
+        var palco = new Grid { Background = Brushes.Black, MinHeight = 120 };
         palco.Children.Add(quadro);
         palco.Children.Add(soloAudioTesto);
         palco.Children.Add(contoTesto);
         anteprima = new AnteprimaSchermo(quadro);
 
-        tempo = new TextBlock { Text = "00:00", Foreground = Pennello("#ffd54a"), FontFamily = new FontFamily("Consolas"), FontSize = 18, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center, MinWidth = 58 };
-        var rigaTempo = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
+        tempo = new TextBlock
+        {
+            Text = "00:00", Foreground = Oro, FontFamily = new FontFamily("Consolas"), FontSize = 22,
+            FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center, MinWidth = 72,
+        };
+        var rigaTempo = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 6) };
         rigaTempo.Children.Add(tempo);
         rigaTempo.Children.Add(EtichettaLivello("Mic", barraMic));
         rigaTempo.Children.Add(EtichettaLivello("PC", barraPc));
 
-        avvia = Tasto("Avvia", "#ff3df2", () => _ = Parti());
-        pausa = Tasto("Pausa", "#3a3548", () => { if (Registrazione.InPausa) Registrazione.Riprendi(); else Registrazione.Pausa(); Rinfresca(); });
-        salva = Tasto("Salva", "#1c9a62", Registrazione.Salva);
-        annulla = Tasto("Annulla", "#8a2a3c", Registrazione.Annulla);
+        avvia = Tasto("Avvia", Magenta, () => _ = Parti());
+        pausa = Tasto("Pausa", Spento, () => TastoPausa());
+        salva = Tasto("Salva", Colore(0x1C, 0x9A, 0x62), Registrazione.Salva);
+        annulla = Tasto("Annulla", Colore(0x8A, 0x2A, 0x3C), Registrazione.Annulla);
         pausa.Visibility = Visibility.Collapsed;
-        var rigaTasti = new WrapPanel { Margin = new Thickness(0, 0, 0, 8) };
-        foreach (var b in new[] { avvia, pausa, salva, annulla }) { b.Margin = new Thickness(0, 0, 6, 6); rigaTasti.Children.Add(b); }
+        avvia.ToolTip = "F9";
+        pausa.ToolTip = "F9";
+        salva.ToolTip = "F10";
+        var rigaTasti = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) };
+        foreach (var b in new[] { avvia, pausa, salva, annulla }) { b.Margin = new Thickness(0, 0, 8, 8); rigaTasti.Children.Add(b); }
 
-        areaIntero = Mini("Intero", () => ScegliArea("intero"));
+        areaIntero = Mini("Monitor", () => ScegliArea("intero"));
         areaZona = Mini("Zona", () => ScegliArea("zona"));
         areaFinestra = Mini("Finestra", () => ScegliArea("finestra"));
         var scegliZona = Mini("Scegli la zona", () => _ = PrendiZona());
-        fps30 = Mini("30", () => ScegliFps(30));
-        fps60 = Mini("60", () => ScegliFps(60));
+        fps30 = Mini("30 fps", () => ScegliFps(30));
+        fps60 = Mini("60 fps", () => ScegliFps(60));
         qLeggera = Mini("Leggera", () => ScegliQualita("leggera"));
         qBuona = Mini("Buona", () => ScegliQualita("buona"));
         qAlta = Mini("Alta", () => ScegliQualita("alta"));
@@ -152,88 +193,116 @@ public sealed class MenuRegistrazione : Window
         conto = Spunta("Conto alla rovescia");
         solo = Spunta("Solo audio");
 
-        var pila = new StackPanel { Margin = new Thickness(14, 12, 14, 14) };
-        var testa = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
-        var titolo = new TextBlock { Text = "REGISTRA", Foreground = Pennello("#ffd54a"), FontWeight = FontWeights.Bold, FontSize = 13, FontFamily = new FontFamily("Segoe UI") };
-        chiudiTesto = new TextBlock { Text = "Chiudi", Foreground = Pennello("#a19db0"), FontSize = 12, Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Right };
-        chiudiTesto.MouseLeftButtonUp += (_, _) => ChiudiORiduci();
-        DockPanel.SetDock(chiudiTesto, Dock.Right);
-        testa.Children.Add(chiudiTesto);
-        testa.Children.Add(titolo);
-        pila.Children.Add(testa);
-        pila.Children.Add(palco);
-        pila.Children.Add(rigaTempo);
-        pila.Children.Add(rigaTasti);
+        var griglia = new Grid { Margin = new Thickness(14, 10, 14, 12) };
+        griglia.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        griglia.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star), MinHeight = 100 });
+        griglia.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        griglia.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        griglia.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1.2, GridUnitType.Star) });
 
-        impostazioni.Children.Add(Etichetta("MONITOR"));
+        var testa = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+        var titolo = new TextBlock { Text = "REGISTRA", Foreground = Oro, FontWeight = FontWeights.Bold, FontSize = 13 };
+        var comandi = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        aggancioTesto = Voce("Stacca", () => GiraAggancio());
+        comandi.Children.Add(aggancioTesto);
+        comandi.Children.Add(Voce("Riduci", () => Riduci()));
+        comandi.Children.Add(Voce("Chiudi", () => Close()));
+        DockPanel.SetDock(comandi, Dock.Right);
+        testa.Children.Add(comandi);
+        testa.Children.Add(titolo);
+        Grid.SetRow(testa, 0);
+        griglia.Children.Add(testa);
+        Grid.SetRow(palco, 1);
+        griglia.Children.Add(palco);
+        var mezzo = new StackPanel();
+        mezzo.Children.Add(rigaTempo);
+        mezzo.Children.Add(rigaTasti);
+        Grid.SetRow(mezzo, 2);
+        griglia.Children.Add(mezzo);
+
+        impostazioni.Children.Add(Etichetta("SORGENTE"));
         impostazioni.Children.Add(monitor);
-        impostazioni.Children.Add(Etichetta("AREA"));
         impostazioni.Children.Add(Riga(areaIntero, areaZona, areaFinestra, scegliZona));
         impostazioni.Children.Add(finestre);
-        impostazioni.Children.Add(Etichetta("FOTOGRAMMI E QUALITÀ"));
-        impostazioni.Children.Add(Riga(fps30, fps60, qLeggera, qBuona, qAlta));
-        impostazioni.Children.Add(Etichetta("MICROFONO"));
+        impostazioni.Children.Add(Etichetta("AUDIO"));
+        impostazioni.Children.Add(new TextBlock { Text = "Microfono", Foreground = Muto, FontSize = 12, Margin = new Thickness(0, 2, 0, 0) });
         impostazioni.Children.Add(microfono);
-        impostazioni.Children.Add(Etichetta("AUDIO DEL PC"));
+        impostazioni.Children.Add(new TextBlock { Text = "Audio del PC", Foreground = Muto, FontSize = 12 });
         impostazioni.Children.Add(uscita);
+        impostazioni.Children.Add(Etichetta("QUALITÀ"));
+        impostazioni.Children.Add(Riga(fps30, fps60, qLeggera, qBuona, qAlta));
         impostazioni.Children.Add(cursore);
         impostazioni.Children.Add(conto);
         impostazioni.Children.Add(solo);
-        pila.Children.Add(impostazioni);
         nota = new TextBlock
         {
             Text = "Cerco microfoni e l'audio del PC…",
-            Foreground = Pennello("#a19db0"),
-            FontSize = 12,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 8, 0, 0),
+            Foreground = Muto, FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0),
         };
-        pila.Children.Add(nota);
-        pila.Children.Add(new TextBlock
+        impostazioni.Children.Add(nota);
+        impostazioni.Children.Add(new TextBlock
         {
-            Text = "Questa finestra non entra nel video. Nell'anteprima, dove sta lei, si vede un buco: non è lo specchio.",
-            Foreground = Pennello("#6e6a7a"),
-            FontSize = 11,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 6, 0, 0),
+            Text = "F9 avvia o mette in pausa, F10 salva. Questa finestra non entra nel video: nell'anteprima, dove sta lei, si vede un buco.",
+            Foreground = Colore(0x6E, 0x6A, 0x7A), FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0),
         });
-        Content = new Border
-        {
-            Background = Sfondo(),
-            BorderBrush = Pennello("#ffd54a"),
-            BorderThickness = new Thickness(1),
-            Child = new ScrollViewer { Content = pila, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
-        };
+        var scorrere = new ScrollViewer { Content = impostazioni, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        Grid.SetRow(scorrere, 4);
+        griglia.Children.Add(scorrere);
+        Content = new Border { Background = Fondo, BorderBrush = Oro, BorderThickness = new Thickness(1), Child = griglia };
 
         monitor.SelectionChanged += (_, _) => { if (!blocco) { Ricorda(); AggiornaAnteprima(); } };
         microfono.SelectionChanged += (_, _) => Ricorda();
         uscita.SelectionChanged += (_, _) => Ricorda();
-        finestre.SelectionChanged += (_, _) => Ricorda();
+        finestre.SelectionChanged += (_, _) => { if (!blocco) { Ricorda(); AggiornaAnteprima(); } };
         cursore.Checked += (_, _) => Ricorda();
         cursore.Unchecked += (_, _) => Ricorda();
         conto.Checked += (_, _) => Ricorda();
         conto.Unchecked += (_, _) => Ricorda();
         solo.Checked += (_, _) => { if (!blocco) { Ricorda(); AggiornaAnteprima(); } };
         solo.Unchecked += (_, _) => { if (!blocco) { Ricorda(); AggiornaAnteprima(); } };
-        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) ChiudiORiduci(); };
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Escape) { RiduciOChiudi(); e.Handled = true; }
+            else if (e.Key == Key.F9) { TastoPausa(); e.Handled = true; }
+            else if (e.Key == Key.F10 && Registrazione.Attiva) { Registrazione.Salva(); e.Handled = true; }
+        };
+        MouseLeftButtonDown += (_, e) =>
+        {
+            if (Interattivo(e.OriginalSource) || e.LeftButton != MouseButtonState.Pressed) return;
+            Stacca();
+            try { DragMove(); } catch { /* il mouse è già stato rilasciato */ }
+            RestaNegliSchermi();
+            RicordaPosto();
+        };
 
-        orologio = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
-        orologio.Tick += (_, _) => { if (Registrazione.Attiva || Registrazione.InPausa) tempo.Text = Registrazione.TestoTempo(); Livelli(); };
+        orologio = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        orologio.Tick += (_, _) =>
+        {
+            if (!IsVisible) return;
+            if (Registrazione.Attiva || Registrazione.InPausa) tempo.Text = Registrazione.TestoTempo();
+            Livelli();
+        };
         SourceInitialized += (_, _) => Posiziona(false);
         ContentRendered += (_, _) =>
         {
             Posiziona(true);
-            Registro.Scrivi($"registrazione: finestra aperta da {da}");
+            Registro.Scrivi($"registrazione: pannello aperto da {da}");
+        };
+        IsVisibleChanged += (_, _) => VistaCambiata();
+        SizeChanged += (_, _) =>
+        {
+            if (sistemo || !IsVisible || Mouse.LeftButton == MouseButtonState.Pressed) return;
+            RestaNegliSchermi();
+            RicordaPosto();
         };
         Loaded += async (_, _) =>
         {
-            orologio.Start();
             RiempiMonitori();
             RiempiFinestre();
             ApplicaSalvato();
             blocco = false;
             SegnaTutto();
-            AggiornaAnteprima();
+            VistaCambiata();
             Rinfresca();
             DispositiviAudio d;
             try { d = await Task.Run(Registrazione.Elenca); }
@@ -250,13 +319,16 @@ public sealed class MenuRegistrazione : Window
             RiempiAudio(uscita, d.Uscite, imp.RegistrazionePc);
             blocco = false;
             nota.Text = d.Microfoni.Count == 0 && d.Uscite.Count == 0
-                ? "Non vedo dispositivi. Il microfono arriva da DirectShow, l'audio del PC da WASAPI."
+                ? "Non vedo dispositivi audio. Li elenca Windows (WASAPI), non FFmpeg."
                 : "Scegli e premi Avvia. La scelta resta per la prossima volta.";
+            SegnaAggancio();
         };
         Closed += (_, _) =>
         {
             orologio.Stop();
             anteprima.Dispose();
+            metro?.Dispose();
+            metro = null;
             if (ancora is not null) ancora.LocationChanged -= Segui;
         };
         Aggancia(accanto);
@@ -273,6 +345,7 @@ public sealed class MenuRegistrazione : Window
         avvia.IsEnabled = false;
         if (conto.IsChecked == true && modo != "audio")
         {
+            if (!IsVisible) { BarraRegistrazione.Chiudi(); Show(); }
             for (var n = 3; n >= 1 && IsVisible; n--)
             {
                 contoTesto.Text = n.ToString();
@@ -284,8 +357,8 @@ public sealed class MenuRegistrazione : Window
         }
         ComandiRegistrazione.Schermo? schermo = null;
         if (modo == "zona" && zona is { } z) schermo = new(z.X, z.Y, z.L, z.A);
-        else if (modo == "intero") { var m = MonitorScelto(); schermo = new(m.X, m.Y, m.L, m.A); }
-        var modoFf = modo == "audio" ? "audio" : modo == "finestra" ? "finestra" : "schermo";
+        else if (modo is "intero" or "schermo") { var m = MonitorScelto(); schermo = new(m.X, m.Y, m.L, m.A); }
+        var modoFf = modo == "audio" ? "audio" : modo == "finestra" ? "finestra" : modo == "zona" ? "zona" : "schermo";
         Registro.Scrivi($"registrazione: scelto {modoFf}, mic «{mic ?? "no"}», pc «{pc ?? "no"}», {fps} fps");
         var ok = Registrazione.Inizia(modoFf, mic, pc, schermo, fps, ComandiRegistrazione.CrfDi(qualita), cursore.IsChecked == true, titolo);
         if (!ok) nota.Text = "Non è partita. Il motivo è nel registro.";
@@ -312,7 +385,7 @@ public sealed class MenuRegistrazione : Window
         Hide();
         Ancoraggio.Riquadro? presa;
         try { presa = await SceltaZona.Chiedi(m); }
-        finally { Show(); Posiziona(false); try { Activate(); } catch { /* già chiusa */ } }
+        finally { Show(); try { Activate(); } catch { /* già chiusa */ } }
         if (presa is { } r && Ancoraggio.Tocca(r, m))
         {
             zona = Ancoraggio.Blocca(r, m);
@@ -327,6 +400,7 @@ public sealed class MenuRegistrazione : Window
 
     void AggiornaAnteprima()
     {
+        if (!IsVisible) { anteprima.Ferma(); return; }
         var audio = solo.IsChecked == true;
         soloAudioTesto.Visibility = audio ? Visibility.Visible : Visibility.Collapsed;
         if (audio) { anteprima.Ferma(); quadro.Source = null; return; }
@@ -347,37 +421,112 @@ public sealed class MenuRegistrazione : Window
         pausa.Content = Registrazione.InPausa ? "Riprendi" : "Pausa";
         tempo.Text = Registrazione.TestoTempo();
         impostazioni.IsEnabled = !on;
-        chiudiTesto.Text = on ? "Riduci" : "Chiudi";
     }
 
     void Livelli()
     {
-        barraMic.Width = 72 * LivelloAudio.Microfono(Valore(microfono));
-        barraPc.Width = 72 * LivelloAudio.Uscita(Valore(uscita));
+        metro ??= new AudioWasapi.Metro();
+        barraMic.Width = 72 * metro.Microfono(Valore(microfono));
+        barraPc.Width = 72 * metro.Uscita(Valore(uscita));
     }
 
-    void ChiudiORiduci()
+    void VistaCambiata()
     {
-        if (Registrazione.Attiva) { Hide(); BarraRegistrazione.Mostra(); return; }
-        Close();
+        if (IsVisible)
+        {
+            if (!orologio.IsEnabled) orologio.Start();
+            AggiornaAnteprima();
+        }
+        else
+        {
+            orologio.Stop();
+            anteprima.Ferma();
+            metro?.Dispose();
+            metro = null;
+        }
     }
+
+    void Riduci()
+    {
+        RicordaPosto();
+        Hide();
+        BarraRegistrazione.Mostra();
+    }
+
+    void RiduciOChiudi()
+    {
+        if (Registrazione.Attiva) Riduci();
+        else Close();
+    }
+
+    void Stacca()
+    {
+        var imp = Impostazioni.Comune;
+        if (!imp.RegistrazioneAgganciata) return;
+        imp.RegistrazioneAgganciata = false;
+        imp.Salva();
+        SegnaAggancio();
+        Registro.Scrivi("registrazione: pannello staccato dall'avatar");
+    }
+
+    void GiraAggancio()
+    {
+        var imp = Impostazioni.Comune;
+        imp.RegistrazioneAgganciata = !imp.RegistrazioneAgganciata;
+        imp.Salva();
+        SegnaAggancio();
+        if (imp.RegistrazioneAgganciata) Posiziona(false);
+        Registro.Scrivi(imp.RegistrazioneAgganciata ? "registrazione: pannello agganciato all'avatar" : "registrazione: pannello staccato dall'avatar");
+    }
+
+    void SegnaAggancio() => aggancioTesto.Text = Impostazioni.Comune.RegistrazioneAgganciata ? "Stacca" : "Aggancia";
 
     void Aggancia(Window? a)
     {
         if (ancora is not null) ancora.LocationChanged -= Segui;
         ancora = a;
+        if (a is not null) Registrazione.Ancora = a;
         if (ancora is not null) ancora.LocationChanged += Segui;
         Posiziona(false);
     }
 
-    void Segui(object? sender, EventArgs e) => Posiziona(false);
+    void Segui(object? sender, EventArgs e)
+    {
+        if (Impostazioni.Comune.RegistrazioneAgganciata && IsVisible) Posiziona(false);
+    }
 
     void Posiziona(bool scrivi)
     {
         if (sistemo) return;
         sistemo = true;
-        try { PosizioneFinestre.Sistema(this, ancora, MisuraL, MisuraA, scrivi); }
+        try
+        {
+            var imp = Impostazioni.Comune;
+            if (!imp.RegistrazioneAgganciata && Ancoraggio.ProvaChiave(imp.RegistrazionePosizione, out var salvata))
+                PosizioneFinestre.Applica(this, salvata);
+            else
+                PosizioneFinestre.Accanto(this, ancora, 440, 680);
+            if (scrivi && PosizioneFinestre.Leggi(this) is { } r)
+                Registro.Scrivi($"registrazione: pannello a {r.X},{r.Y} ({r.L}×{r.A} px)");
+        }
         finally { sistemo = false; }
+    }
+
+    void RestaNegliSchermi()
+    {
+        if (PosizioneFinestre.Leggi(this) is not { } r) return;
+        sistemo = true;
+        try { PosizioneFinestre.Applica(this, r); }
+        finally { sistemo = false; }
+    }
+
+    void RicordaPosto()
+    {
+        if (blocco || !IsLoaded) return;
+        if (PosizioneFinestre.Leggi(this) is not { } r) return;
+        var imp = Impostazioni.Comune;
+        imp.RegistrazionePosizione = Ancoraggio.Chiave(r);
+        imp.Salva();
     }
 
     void RiempiMonitori()
@@ -428,7 +577,7 @@ public sealed class MenuRegistrazione : Window
                 if (!IsWindowVisible(h)) return true;
                 var n = GetWindowTextLength(h);
                 if (n <= 0) return true;
-                var sb = new System.Text.StringBuilder(n + 1);
+                var sb = new StringBuilder(n + 1);
                 GetWindowText(h, sb, sb.Capacity);
                 lista.Add(sb.ToString());
                 return true;
@@ -460,6 +609,7 @@ public sealed class MenuRegistrazione : Window
             if (i is not null) finestre.SelectedItem = i;
         }
         finestre.Visibility = area == "finestra" ? Visibility.Visible : Visibility.Collapsed;
+        SegnaAggancio();
     }
 
     void Ricorda()
@@ -496,14 +646,12 @@ public sealed class MenuRegistrazione : Window
         if (Registrazione.Attiva)
         {
             e.Cancel = true;
-            Hide();
-            BarraRegistrazione.Mostra();
+            Riduci();
             return;
         }
         base.OnClosing(e);
     }
 
-    /// <summary>Il rettangolo della finestra con quel titolo, in pixel veri. Serve all'anteprima.</summary>
     static Ancoraggio.Riquadro? RettangoloDi(string titolo)
     {
         Ancoraggio.Riquadro? trovato = null;
@@ -514,7 +662,7 @@ public sealed class MenuRegistrazione : Window
                 if (!IsWindowVisible(h)) return true;
                 var n = GetWindowTextLength(h);
                 if (n <= 0) return true;
-                var sb = new System.Text.StringBuilder(n + 1);
+                var sb = new StringBuilder(n + 1);
                 GetWindowText(h, sb, sb.Capacity);
                 if (!string.Equals(sb.ToString().Trim(), titolo, StringComparison.Ordinal)) return true;
                 if (GetWindowRect(h, out var r))
@@ -544,42 +692,51 @@ public sealed class MenuRegistrazione : Window
         return string.IsNullOrEmpty(t) ? null : t;
     }
 
+    static bool Interattivo(object? o)
+    {
+        var d = o as DependencyObject;
+        while (d is not null)
+        {
+            if (d is Button or ComboBox or CheckBox or TextBox or ScrollBar or Slider or RepeatButton) return true;
+            d = VisualTreeHelper.GetParent(d);
+        }
+        return false;
+    }
+
     static ComboBox Combo() => new()
     {
-        Margin = new Thickness(0, 2, 0, 6),
-        FontSize = 13,
-        Background = Brushes.White,
-        Foreground = Brushes.Black,
-        MaxDropDownHeight = 220,
+        Margin = new Thickness(0, 2, 0, 6), FontSize = 13,
+        Background = Brushes.White, Foreground = Brushes.Black, MaxDropDownHeight = 220,
     };
 
     static TextBlock Etichetta(string testo) => new()
     {
-        Text = testo,
-        Foreground = Pennello("#ffd54a"),
-        FontSize = 10.5,
-        FontWeight = FontWeights.Bold,
-        Margin = new Thickness(0, 6, 0, 0),
+        Text = testo, Foreground = Oro, FontSize = 10.5, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 8, 0, 2),
     };
+
+    static TextBlock Voce(string testo, Action fai)
+    {
+        var t = new TextBlock { Text = testo, Foreground = Muto, FontSize = 12, Cursor = Cursors.Hand, Margin = new Thickness(10, 0, 0, 0) };
+        t.MouseLeftButtonUp += (_, _) => fai();
+        return t;
+    }
 
     static StackPanel EtichettaLivello(string nome, Border barra)
     {
         var pista = new Border
         {
-            Width = 72, Height = 6, Margin = new Thickness(8, 0, 0, 0),
-            Background = Pennello("#2a2636"), CornerRadius = new CornerRadius(3),
+            Width = 72, Height = 8, CornerRadius = new CornerRadius(4), Background = Spento,
             VerticalAlignment = VerticalAlignment.Center, Child = barra, ClipToBounds = true,
         };
-        var riga = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-        riga.Children.Add(new TextBlock { Text = nome, Foreground = Pennello("#a19db0"), FontSize = 11, VerticalAlignment = VerticalAlignment.Center });
+        var riga = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
+        riga.Children.Add(new TextBlock { Text = nome, Foreground = Muto, FontSize = 11, Width = 28, VerticalAlignment = VerticalAlignment.Center });
         riga.Children.Add(pista);
         return riga;
     }
 
     static Border BarraLivello() => new()
     {
-        Width = 0, Height = 6, HorizontalAlignment = HorizontalAlignment.Left,
-        Background = Pennello("#ffd54a"), CornerRadius = new CornerRadius(3),
+        Width = 0, Height = 8, HorizontalAlignment = HorizontalAlignment.Left, Background = Oro, CornerRadius = new CornerRadius(4),
     };
 
     static WrapPanel Riga(params UIElement[] figli)
@@ -593,15 +750,9 @@ public sealed class MenuRegistrazione : Window
     {
         var b = new Button
         {
-            Content = testo,
-            Margin = new Thickness(0, 0, 6, 4),
-            Padding = new Thickness(8, 4, 8, 4),
-            FontSize = 12.5,
-            FontWeight = FontWeights.Bold,
-            Foreground = Brushes.White,
-            Background = Pennello("#2a2636"),
-            BorderThickness = new Thickness(0),
-            Cursor = Cursors.Hand,
+            Content = testo, Margin = new Thickness(0, 0, 6, 4), Padding = new Thickness(10, 5, 10, 5),
+            FontSize = 12.5, FontWeight = FontWeights.Bold, Foreground = Brushes.White, Background = Spento,
+            BorderThickness = new Thickness(0), Cursor = Cursors.Hand,
         };
         b.Click += (_, _) => fai();
         return b;
@@ -609,22 +760,16 @@ public sealed class MenuRegistrazione : Window
 
     static void Segna(Button b, bool su)
     {
-        b.Background = su ? Pennello("#ffd54a") : Pennello("#2a2636");
-        b.Foreground = su ? Pennello("#1a1408") : Brushes.White;
+        b.Background = su ? Oro : Spento;
+        b.Foreground = su ? Colore(0x1A, 0x14, 0x08) : Brushes.White;
     }
 
-    static Button Tasto(string testo, string sfondo, Action fai)
+    static Button Tasto(string testo, Brush sfondo, Action fai)
     {
         var b = new Button
         {
-            Content = testo,
-            Padding = new Thickness(12, 6, 12, 6),
-            Background = Pennello(sfondo),
-            Foreground = Brushes.White,
-            BorderThickness = new Thickness(0),
-            FontWeight = FontWeights.Bold,
-            FontSize = 13,
-            Cursor = Cursors.Hand,
+            Content = testo, Padding = new Thickness(14, 7, 14, 7), Background = sfondo, Foreground = Brushes.White,
+            BorderThickness = new Thickness(0), FontWeight = FontWeights.Bold, FontSize = 13, Cursor = Cursors.Hand,
         };
         b.Click += (_, _) => fai();
         return b;
@@ -632,21 +777,21 @@ public sealed class MenuRegistrazione : Window
 
     static CheckBox Spunta(string testo) => new()
     {
-        Content = testo,
-        Foreground = Pennello("#f4f0e6"),
-        FontSize = 13,
-        Margin = new Thickness(0, 3, 0, 0),
+        Content = testo, Foreground = Testo, FontSize = 13, Margin = new Thickness(0, 4, 0, 0),
     };
 
-    static SolidColorBrush Sfondo() => new(Color.FromRgb(0x12, 0x10, 0x1a));
-    static SolidColorBrush Pennello(string hex) => new((Color)ColorConverter.ConvertFromString(hex));
+    static SolidColorBrush Colore(byte r, byte g, byte b)
+    {
+        var p = new SolidColorBrush(Color.FromRgb(r, g, b));
+        p.Freeze();
+        return p;
+    }
 
     delegate bool EnumProc(IntPtr h, IntPtr l);
-    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RETT r);
-    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr l);
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    struct RETT { public int Left, Top, Right, Bottom; }
-    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
-    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int n);
-    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern int GetWindowTextLength(IntPtr h);
+    [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RETT r);
+    [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr l);
+    [StructLayout(LayoutKind.Sequential)] struct RETT { public int Left, Top, Right, Bottom; }
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+    [DllImport("user32.dll")] static extern int GetWindowTextLength(IntPtr h);
 }

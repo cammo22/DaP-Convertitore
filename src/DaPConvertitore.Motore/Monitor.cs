@@ -27,10 +27,14 @@ public sealed class Monitor : IDisposable
         catch { motori = null; }
     }
 
-    public Carico Leggi()
+    Carico ultimo = new(0, 0, 0, 0);
+
+    /// <param name="gpu">La scheda si legge solo ogni tanto: l'elenco dei motori è pesante e, chiamato di continuo, fa faticare il PC.</param>
+    public Carico Leggi(bool gpu = true)
     {
         double c = 0;
         try { c = Math.Clamp(cpu?.NextValue() ?? 0, 0, 100); } catch { }
+        if (!gpu) return ultimo with { Cpu = Math.Round(c, 1) };
         double enc = 0, dec = 0, g3d = 0;
         if (motori is not null)
         {
@@ -63,7 +67,8 @@ public sealed class Monitor : IDisposable
             }
             catch { }
         }
-        return new Carico(Math.Round(c, 1), Math.Round(Math.Min(enc, 100), 1), Math.Round(Math.Min(dec, 100), 1), Math.Round(Math.Min(g3d, 100), 1));
+        ultimo = new Carico(Math.Round(c, 1), Math.Round(Math.Min(enc, 100), 1), Math.Round(Math.Min(dec, 100), 1), Math.Round(Math.Min(g3d, 100), 1));
+        return ultimo;
     }
 
     public void Dispose() => cpu?.Dispose();

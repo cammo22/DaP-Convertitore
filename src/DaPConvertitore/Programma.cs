@@ -110,7 +110,8 @@ public static class Programma
             System.Windows.Forms.Application.ThreadException += (_, e) => Registro.Errore("vassoio", e.Exception);
         }
         catch (Exception e) { Registro.Scrivi($"eccezioni del vassoio non agganciate: {e.Message}"); }
-        app.Exit += (_, _) => { Vassoio.Chiudi(); Aggiornamenti.AllaChiusura(); };
+        app.Exit += (_, _) => { Registrazione.Spegni(); Vassoio.Chiudi(); Aggiornamenti.AllaChiusura(); };
+        Sorveglia(app);
         Regia.Avvia(app);
         try { CartellaLavori.Assicura(); } catch (Exception e) { Registro.Errore("cartella", e); }
         SegnaIstanza();
@@ -124,6 +125,35 @@ public static class Programma
         _ = Task.Run(Lettore.Media.PulisciCache);
         app.Run();
     }
+
+    static Contatori? risorsePrima;
+
+    /// <summary>Ogni cinque minuti, nel registro: GDI, USER, handle, memoria, thread. Una crescita si vede prima che il cursore sfarfalli.</summary>
+    static void Sorveglia(Application app)
+    {
+        var t = new System.Windows.Threading.DispatcherTimer(TimeSpan.FromMinutes(5), System.Windows.Threading.DispatcherPriority.Background, (_, _) => AnnotaRisorse(), app.Dispatcher);
+        t.Start();
+        AnnotaRisorse();
+    }
+
+    static void AnnotaRisorse()
+    {
+        try
+        {
+            using var p = Process.GetCurrentProcess();
+            p.Refresh();
+            var h = p.Handle;
+            int handle = 0;
+            try { GetProcessHandleCount(h, out handle); } catch { handle = 0; }
+            var adesso = new Contatori(GetGuiResources(h, 0), GetGuiResources(h, 1), handle, p.WorkingSet64, p.Threads.Count);
+            Registro.Scrivi(risorsePrima is { } prima ? PerditaRisorse.Riga(prima, adesso) : adesso.Riga());
+            risorsePrima = adesso;
+        }
+        catch (Exception e) { Registro.Scrivi($"risorse: {e.Message}"); }
+    }
+
+    [DllImport("user32.dll")] static extern int GetGuiResources(IntPtr processo, int tipo);
+    [DllImport("kernel32.dll")] static extern bool GetProcessHandleCount(IntPtr processo, out int n);
 
     /// <summary>Chi è il processo aperto: la copia nuova, se ne trova uno già acceso, lo scrive nel registro.</summary>
     static void SegnaIstanza()

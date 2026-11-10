@@ -33,91 +33,65 @@ public class ProveRegistrazione
     }
 
     [Fact]
-    public void LoSchermoPrendeIlMonitorPrincipaleEIlMicrofonoEUnArgomentoSolo()
+    public void LoSchermoESoloVideoENonChiedeWasapiNeDshow()
     {
-        var a = ComandiRegistrazione.Argomenti("schermo", Mic, null, @"C:\out\reg.mp4", new ComandiRegistrazione.Schermo(-1920, 0, 1921, 1080)).ToList();
-        var testo = string.Join("\n", a);
-        Assert.Contains("-f", a);
+        var a = ComandiRegistrazione.ArgomentiVideo("schermo", @"C:\out\reg.mp4", new ComandiRegistrazione.Schermo(-1920, 0, 1921, 1080)).ToList();
         Assert.Contains("gdigrab", a);
         Assert.Contains("desktop", a);
         Assert.Equal("-1920", a[a.IndexOf("-offset_x") + 1]);
         Assert.Equal("1920x1080", a[a.IndexOf("-video_size") + 1]);
-        var ingresso = a[a.IndexOf("-i", a.IndexOf("dshow")) + 1];
-        Assert.Equal("audio=" + Mic, ingresso);
-        Assert.DoesNotContain("\"", ingresso);
-        Assert.Contains("-c:v", a);
         Assert.Contains("libx264", a);
-        Assert.Contains("-map", a);
-        Assert.Equal("0:v", a[a.IndexOf("-map") + 1]);
-        Assert.Equal("1:a", a[a.LastIndexOf("-map") + 1]);
-        Assert.DoesNotContain("-filter_complex", a);
+        Assert.Contains("-vf", a);
+        Assert.DoesNotContain("dshow", a);
+        Assert.DoesNotContain("wasapi", a);
+        Assert.DoesNotContain("-c:a", a);
         Assert.Equal(@"C:\out\reg.mp4", a[^1]);
         Assert.Contains("-use_wallclock_as_timestamps", a);
-        Assert.DoesNotContain("wasapi", testo.Split('\n'));
+        Assert.Equal(0, ComandiRegistrazione.RopAnteprima & ComandiRegistrazione.RopCaptureBlt);
     }
 
     [Fact]
-    public void DueAudioSiMescolanoSenzaUsareVfInsiemeAlFiltro()
+    public void IlMuxCopiaIlVideoECodificaIlWav()
     {
-        var a = ComandiRegistrazione.Argomenti("schermo", Mic, Casse, "out.mp4", new ComandiRegistrazione.Schermo(0, 0, 1280, 720)).ToList();
-        Assert.Contains("-filter_complex", a);
-        Assert.DoesNotContain("-vf", a);
-        var filtro = a[a.IndexOf("-filter_complex") + 1];
-        Assert.Contains("amix=inputs=2", filtro);
-        Assert.Contains("scale=trunc(iw/2)*2:trunc(ih/2)*2", filtro);
-        Assert.Equal("[v]", a[a.IndexOf("-map") + 1]);
-        Assert.Equal("[a]", a[a.LastIndexOf("-map") + 1]);
-        Assert.Equal("audio=" + Mic, a[a.IndexOf("-i", a.IndexOf("dshow")) + 1]);
-        var wasapi = a.IndexOf("wasapi");
-        Assert.Equal("1", a[a.IndexOf("-loopback") + 1]);
-        Assert.Equal(Casse, a[a.IndexOf("-i", wasapi) + 1]);
-        Assert.DoesNotContain("\"", a[a.IndexOf("-i", wasapi) + 1]);
+        var a = ComandiRegistrazione.ArgomentiMux("v.mp4", "a.wav", "out.mp4").ToList();
+        Assert.Contains("apad", a[a.IndexOf("-filter_complex") + 1]);
+        Assert.Equal("copy", a[a.IndexOf("-c:v") + 1]);
+        Assert.Equal("aac", a[a.IndexOf("-c:a") + 1]);
+        Assert.Equal("160k", a[a.IndexOf("-b:a") + 1]);
+        Assert.Contains("-shortest", a);
+        Assert.DoesNotContain("wasapi", a);
+        Assert.DoesNotContain("dshow", a);
+        Assert.DoesNotContain("gdigrab", a);
+        Assert.Equal("out.mp4", a[^1]);
     }
 
     [Fact]
-    public void SoloAudioEUnM4aSenzaVideo()
+    public void SoloAudioEUnM4aDalWav()
     {
-        var a = ComandiRegistrazione.Argomenti("audio", null, Casse, "out.m4a", null).ToList();
+        var a = ComandiRegistrazione.ArgomentiDaWav("preso.wav", "out.m4a").ToList();
         Assert.DoesNotContain("gdigrab", a);
         Assert.DoesNotContain("libx264", a);
-        Assert.Contains("wasapi", a);
+        Assert.DoesNotContain("wasapi", a);
+        Assert.DoesNotContain("dshow", a);
         Assert.Contains("aac", a);
         Assert.Equal("192k", a[a.IndexOf("-b:a") + 1]);
+        Assert.Equal("preso.wav", a[a.IndexOf("-i") + 1]);
         Assert.Equal("out.m4a", a[^1]);
-        Assert.DoesNotContain("dshow", a);
-    }
-
-    [Fact]
-    public void SoloAudioConMicrofonoECasseHaIlFiltroSuiDueIngressi()
-    {
-        var a = ComandiRegistrazione.Argomenti("audio", Mic, Casse, "out.m4a", null).ToList();
-        var filtro = a[a.IndexOf("-filter_complex") + 1];
-        Assert.Contains("[0:a][1:a]amix=inputs=2", filtro);
-        Assert.DoesNotContain("scale=", filtro);
-        Assert.Equal("[a]", a[a.IndexOf("-map") + 1]);
     }
 
     [Fact]
     public void LoSchermoSenzaAudioNonChiedeUnaTracciaAudio()
     {
-        var a = ComandiRegistrazione.Argomenti("schermo", null, " ", "film.mp4", null).ToList();
+        var a = ComandiRegistrazione.ArgomentiVideo("schermo", "film.mp4", null).ToList();
         Assert.Contains("gdigrab", a);
         Assert.Contains("desktop", a);
         Assert.DoesNotContain("-offset_x", a);
         Assert.DoesNotContain("dshow", a);
         Assert.DoesNotContain("wasapi", a);
         Assert.DoesNotContain("-c:a", a);
-        Assert.DoesNotContain("-map", a);
         Assert.Equal("film.mp4", a[^1]);
-    }
-
-    [Fact]
-    public void LeVirgoletteDelNomeNonEntranoNelDispositivo()
-    {
-        Assert.Equal("audio=Cuffie", ComandiRegistrazione.ArgomentoDshow("\"Cuffie\""));
-        Assert.Equal("Cuffie", ComandiRegistrazione.ArgomentoWasapi("  \"Cuffie\"  "));
-        var riga = ComandiRegistrazione.Riga(ComandiRegistrazione.Argomenti("audio", Mic, null, "a.m4a", null));
-        Assert.Contains("\"audio=" + Mic + "\"", riga);
+        var riga = ComandiRegistrazione.Riga(a);
+        Assert.Contains("film.mp4", riga);
     }
 
     [Fact]
@@ -134,6 +108,88 @@ public class ProveRegistrazione
             """;
         var nomi = ComandiRegistrazione.MicrofoniDaElenco(testo);
         Assert.Equal(new[] { "Microphone (Realtek(R) Audio)", "Stereo Mix (Realtek(R) Audio)" }, nomi);
+    }
+
+    [Fact]
+    public void IlFormatoNuovoDiFfmpegElencaIMicrofoniSenzaIntestazione()
+    {
+        // proprio l'uscita di ffmpeg n9.0.2 (build 20261109): niente «DirectShow audio devices»
+        var testo = """
+            [in#0 @ 000001dc56289c80] "usb-webcam" (video)
+            [in#0 @ 000001dc56289c80]   Alternative name "@device_pnp_\\?\usb#vid_1234"
+            [in#0 @ 000001dc56289c80] "Lavaliello (USB Microphone)" (audio)
+            [in#0 @ 000001dc56289c80]   Alternative name "@device_cm_{33D9A762-90C8-11D0-BD43-00A0C911CE86}\wave_{A73B5C10-1111-2222-3333-444455556666}"
+            [in#0 @ 000001dc56289c80] "Headset Microphone (Oculus Virtual Audio Device)" (audio)
+            [in#0 @ 000001dc56289c80]   Alternative name "@device_cm_{33D9A762-90C8-11D0-BD43-00A0C911CE86}\wave_{A73B0002}"
+            [in#0 @ 000001dc56289c80] "CABLE Output (VB-Audio Virtual Cable)" (audio)
+            [in#0 @ 000001dc56289c80]   Alternative name "@device_cm_{33D9A762-90C8-11D0-BD43-00A0C911CE86}\wave_{A73B0003}"
+            """;
+        var nomi = ComandiRegistrazione.MicrofoniDaElenco(testo);
+        Assert.Equal(
+            new[]
+            {
+                "Lavaliello (USB Microphone)",
+                "Headset Microphone (Oculus Virtual Audio Device)",
+                "CABLE Output (VB-Audio Virtual Cable)",
+            },
+            nomi);
+        Assert.DoesNotContain("usb-webcam", nomi);
+        Assert.DoesNotContain(nomi, n => n.Contains("Alternative", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(nomi, n => n.StartsWith("@device", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void IlPrefissoVecchioEGliAccentiRestanoNelNome()
+    {
+        var testo = """
+            [dshow @ 000001dc] DirectShow audio devices
+            [dshow @ 000001dc]  "Cuffie àé (Realtek)"
+            [dshow @ 000001dc]     Alternative name "@device_cm_{GUID}"
+            """;
+        Assert.Equal(new[] { "Cuffie àé (Realtek)" }, ComandiRegistrazione.MicrofoniDaElenco(testo));
+        var utf8 = System.Text.Encoding.UTF8.GetBytes("[dshow @ 1] \"Cuffie àé\" (audio)\n");
+        var letto = ComandiRegistrazione.DecodificaElenco(utf8);
+        Assert.Contains("àé", letto);
+        Assert.Equal(new[] { "Cuffie àé" }, ComandiRegistrazione.MicrofoniDaElenco(letto));
+        var bom = new byte[] { 0xEF, 0xBB, 0xBF }.Concat(System.Text.Encoding.UTF8.GetBytes("\"Microfono\" (audio)\n")).ToArray();
+        Assert.Equal(new[] { "Microfono" }, ComandiRegistrazione.MicrofoniDaElenco(ComandiRegistrazione.DecodificaElenco(bom)));
+        Assert.Contains("à", ComandiRegistrazione.DecodificaElenco(new byte[] { 0x22, 0xE0, 0x22, 0x20, 0x28, 0x61, 0x75, 0x64, 0x69, 0x6F, 0x29 }));
+    }
+
+    [Fact]
+    public void FfmpegDevicesDiQuestaBuildNonHaWasapi()
+    {
+        var testo = """
+             D. = Demuxing supported
+             .E = Muxing supported
+             --
+             D  dshow           DirectShow capture
+             D  gdigrab         GDI API Windows frame grabber
+             D  lavfi           Libavfilter virtual input device
+              E openal
+             D  vfwcap          VfW video capture
+            """;
+        Assert.True(ComandiRegistrazione.HaIngresso(testo, "dshow"));
+        Assert.True(ComandiRegistrazione.HaIngresso(testo, "gdigrab"));
+        Assert.False(ComandiRegistrazione.HaIngresso(testo, "wasapi"));
+        Assert.False(ComandiRegistrazione.HaIngresso(testo, "DirectShow"));
+    }
+
+    [Fact]
+    public void LaFinestraRestaNelMonitorCheToccaDiPiu()
+    {
+        var sinistra = new Ancoraggio.Riquadro(-1920, 0, 1920, 1080);
+        var principale = new Ancoraggio.Riquadro(0, 0, 1920, 1080);
+        var schermi = new[] { sinistra, principale };
+        var appesa = Ancoraggio.DentroSchermi(new Ancoraggio.Riquadro(-380, 40, 400, 300), schermi);
+        Assert.True(Ancoraggio.Dentro(appesa, sinistra));
+        var aCavallo = Ancoraggio.DentroSchermi(new Ancoraggio.Riquadro(-50, 10, 400, 200), schermi);
+        Assert.True(Ancoraggio.Dentro(aCavallo, principale));
+        var nelVuoto = Ancoraggio.DentroSchermi(new Ancoraggio.Riquadro(8000, 8000, 300, 200), schermi);
+        Assert.True(Ancoraggio.Dentro(nelVuoto, principale) || Ancoraggio.Dentro(nelVuoto, sinistra));
+        var grossa = Ancoraggio.DentroSchermi(new Ancoraggio.Riquadro(-2000, -10, 4000, 2000), schermi);
+        Assert.True(grossa.L <= 1920 && grossa.A <= 1080);
+        Assert.True(Ancoraggio.Dentro(grossa, sinistra) || Ancoraggio.Dentro(grossa, principale));
     }
 
     [Fact]
@@ -166,7 +222,7 @@ public class ProveRegistrazione
         Assert.Equal(18, ComandiRegistrazione.CrfDi("alta"));
         Assert.Equal(28, ComandiRegistrazione.CrfDi("leggera"));
         Assert.Equal(23, ComandiRegistrazione.CrfDi(null));
-        var a = ComandiRegistrazione.Argomenti("finestra", null, null, "out.mp4", new ComandiRegistrazione.Schermo(0, 0, 800, 600), 60, 18, false, "Blocco note").ToList();
+        var a = ComandiRegistrazione.ArgomentiVideo("finestra", "out.mp4", new ComandiRegistrazione.Schermo(0, 0, 800, 600), 60, 18, false, "Blocco note").ToList();
         Assert.Equal("60", a[a.IndexOf("-framerate") + 1]);
         Assert.Equal("0", a[a.IndexOf("-draw_mouse") + 1]);
         Assert.Equal("18", a[a.IndexOf("-crf") + 1]);
@@ -175,7 +231,7 @@ public class ProveRegistrazione
         Assert.DoesNotContain("-offset_x", a);
         Assert.Equal("Scegli la zona da registrare.", ComandiRegistrazione.MotivoRifiuto("zona", null, null, zonaSenzaRettangolo: true));
         Assert.Equal("Scegli la finestra da registrare.", ComandiRegistrazione.MotivoRifiuto("finestra", null, null, finestraSenzaTitolo: true));
-        var zona = ComandiRegistrazione.Argomenti("zona", null, null, "z.mp4", new ComandiRegistrazione.Schermo(100, 80, 640, 480), 30, 28, true, null).ToList();
+        var zona = ComandiRegistrazione.ArgomentiVideo("zona", "z.mp4", new ComandiRegistrazione.Schermo(100, 80, 640, 480), 30, 28, true, null).ToList();
         Assert.Contains("desktop", zona);
         Assert.Equal("640x480", zona[zona.IndexOf("-video_size") + 1]);
         Assert.Equal("28", zona[zona.IndexOf("-crf") + 1]);
@@ -240,6 +296,8 @@ public class ProveRegistrazione
             Assert.Equal("immagine", recenti[0].Categoria);
             Assert.Equal(4, recenti[0].PesoDopo);
             Assert.Equal(0, totali.Conversioni);
+            Storico.Togli(file);
+            Assert.Empty(Storico.Recenti(6).Recenti);
             File.Delete(file);
             Assert.Empty(Storico.Recenti(6).Recenti);
         }

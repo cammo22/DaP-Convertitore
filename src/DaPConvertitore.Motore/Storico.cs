@@ -93,6 +93,25 @@ public static class Storico
         catch (Exception e) { Registro.Errore("storico: file", e); }
     }
 
+    /// <summary>Toglie un file dai recenti (l'hai cancellato dal riepilogo). I totali delle conversioni restano.</summary>
+    public static void Togli(string percorso)
+    {
+        try
+        {
+            Action? avviso;
+            lock (chiave)
+            {
+                var d = Leggi();
+                var n = d.Voci.RemoveAll(v => string.Equals(v.Uscita, percorso, StringComparison.OrdinalIgnoreCase));
+                if (n == 0) return;
+                Scrivi(d);
+                avviso = Cambiato;
+            }
+            avviso?.Invoke();
+        }
+        catch (Exception e) { Registro.Errore("storico: togli", e); }
+    }
+
     /// <summary>Le ultime <paramref name="quante"/> conversioni il cui risultato c'è ancora, e i totali.</summary>
     public static (List<VoceStorico> Recenti, TotaliStorico Totali) Recenti(int quante)
     {

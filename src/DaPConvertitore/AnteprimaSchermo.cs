@@ -9,8 +9,10 @@ namespace DaP.Convertitore.App;
 
 /// <summary>
 /// Lo schermo, dal vivo, dentro la finestra di registrazione. Pochi fotogrammi al secondo, rimpiccioliti:
-/// è un'anteprima, non il video. BitBlt del desktop rispetta l'esclusione della finestra
-/// (WDA_EXCLUDEFROMCAPTURE), così non si vede l'effetto specchio.
+/// è un'anteprima, non il video. BitBlt del desktop è SRCCOPY, mai CAPTUREBLT:
+/// quel flag fa sparire e ridisegnare il cursore, e dopo un po' il mouse sfarfalla.
+/// La finestra esclusa dalla cattura (WDA_EXCLUDEFROMCAPTURE) non entra nel fotogramma,
+/// così non si vede l'effetto specchio. Il timer si ferma appena il pannello non si vede.
 /// </summary>
 public sealed class AnteprimaSchermo : IDisposable
 {
@@ -19,6 +21,7 @@ public sealed class AnteprimaSchermo : IDisposable
     WriteableBitmap? bmp;
     int x, y, w, h;
     int occupata;
+    int serie;
     bool detto;
 
     public AnteprimaSchermo(Image img)
@@ -34,14 +37,15 @@ public sealed class AnteprimaSchermo : IDisposable
         if (w > 1 && h > 1 && !timer.IsEnabled) timer.Start();
     }
 
-    public void Ferma() => timer.Stop();
+    public void Ferma() { serie++; timer.Stop(); }
 
-    public void Dispose() => timer.Stop();
+    public void Dispose() { serie++; timer.Stop(); }
 
     void Scatta()
     {
-        if (w < 2 || h < 2) return;
+        if (!timer.IsEnabled || w < 2 || h < 2) return;
         if (Interlocked.Exchange(ref occupata, 1) == 1) return;
+        var mia = serie;
         var (sx, sy, sw, sh) = (x, y, w, h);
         Task.Run(() => Cattura(sx, sy, sw, sh)).ContinueWith(t =>
         {
@@ -50,6 +54,7 @@ public sealed class AnteprimaSchermo : IDisposable
             {
                 try
                 {
+                    if (mia != serie) return;
                     if (px is { } f) Dipingi(f);
                     else if (!detto && t.IsFaulted) { detto = true; Registro.Errore("anteprima schermo", t.Exception?.GetBaseException() ?? new Exception("vuota")); }
                 }
@@ -80,7 +85,7 @@ public sealed class AnteprimaSchermo : IDisposable
         try
         {
             SetStretchBltMode(mem, 3);
-            if (StretchBlt(mem, 0, 0, dw, dh, hdc, x, y, w, h, 0x00CC0020) == 0) return null;
+            if (StretchBlt(mem, 0, 0, dw, dh, hdc, x, y, w, h, ComandiRegistrazione.RopAnteprima) == 0) return null;
             var info = new BITMAPINFO { biSize = 40, biWidth = dw, biHeight = -dh, biPlanes = 1, biBitCount = 32 };
             var pixel = new byte[dw * dh * 4];
             if (GetDIBits(mem, bmp, 0, (uint)dh, pixel, ref info, 0) == 0) return null;

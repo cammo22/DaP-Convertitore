@@ -62,6 +62,31 @@ public static class Ancoraggio
     public static bool Dentro(Riquadro r, Riquadro area) =>
         r.L > 0 && r.A > 0 && r.X >= area.X && r.Y >= area.Y && r.Destra <= area.Destra && r.Fondo <= area.Fondo;
 
+    /// <summary>
+    /// Tiene la finestra dentro uno schermo vero. Se ne tocca più di uno, resta in quello dove sta
+    /// di più. Se è finita nel vuoto, va in quello che contiene il centro, o nel primo.
+    /// </summary>
+    public static Riquadro DentroSchermi(Riquadro finestra, IReadOnlyList<Riquadro> schermi)
+    {
+        if (schermi is null || schermi.Count == 0) return finestra;
+        var meglio = schermi[0];
+        var area = -1;
+        foreach (var s in schermi)
+        {
+            if (s.L < 2 || s.A < 2) continue;
+            var a = Sovrapposizione(finestra, s);
+            if (a > area) { area = a; meglio = s; }
+        }
+        if (area <= 0)
+        {
+            var cx = finestra.X + Math.Max(1, finestra.L) / 2;
+            var cy = finestra.Y + Math.Max(1, finestra.A) / 2;
+            foreach (var s in schermi)
+                if (cx >= s.X && cx < s.Destra && cy >= s.Y && cy < s.Fondo) { meglio = s; break; }
+        }
+        return Blocca(finestra, meglio);
+    }
+
     public static bool Tocca(Riquadro a, Riquadro b) =>
         a.L > 0 && a.A > 0 && a.X < b.Destra && a.Destra > b.X && a.Y < b.Fondo && a.Fondo > b.Y;
 

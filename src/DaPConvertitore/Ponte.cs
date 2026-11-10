@@ -741,16 +741,33 @@ public sealed class Ponte
             Notifiche.Errore(l);
     }
 
+    int caricoInCorso, giroCarico;
+
+    /// <summary>La finestra è minimizzata o non è davanti: il contatore della scheda si ferma.</summary>
+    public void PausaSfondo(bool pausa)
+    {
+        if (pausa) timerCarico.Stop();
+        else if (pronta && finestra.WindowState != WindowState.Minimized) timerCarico.Start();
+    }
+
     void Carico()
     {
-        if (!pronta || finestra.WindowState == WindowState.Minimized) return;
+        if (!pronta || finestra.WindowState == WindowState.Minimized || !finestra.IsVisible) return;
         if (!Coda.Occupata && finestra.Modo == "rapido") return;
+        // una lettura alla volta: se la precedente è ancora lì, non se ne accatastano
+        if (Interlocked.Exchange(ref caricoInCorso, 1) == 1) return;
         monitor ??= new Monitor();
         var m = monitor;
+        var gpu = giroCarico++ % 4 == 0;
         _ = Task.Run(() =>
         {
-            var c = m.Leggi();
-            Manda("carico", new { c.Cpu, c.Encoder, c.Decoder, c.Grafica });
+            try
+            {
+                var c = m.Leggi(gpu);
+                Manda("carico", new { c.Cpu, c.Encoder, c.Decoder, c.Grafica });
+            }
+            catch (Exception e) { Registro.Scrivi($"carico: {e.Message}"); }
+            finally { Interlocked.Exchange(ref caricoInCorso, 0); }
         });
     }
 

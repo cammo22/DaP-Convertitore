@@ -43,7 +43,13 @@ public sealed class FinestraLettore : Window
         Ponte = new PonteLettore(this, vista, file);
         SourceInitialized += (_, _) => Ambiente.Windows11(Maniglia);
         Loaded += async (_, _) => await Avvia();
-        StateChanged += (_, _) => vista.Margin = new Thickness(WindowState == WindowState.Maximized || primaDelloSchermo is not null ? 0 : 4);
+        Activated += (_, _) => PausaPagine.Aggiorna(vista, this);
+        Deactivated += (_, _) => PausaPagine.Aggiorna(vista, this);
+        StateChanged += (_, _) =>
+        {
+            vista.Margin = new Thickness(WindowState == WindowState.Maximized || primaDelloSchermo is not null ? 0 : 4);
+            PausaPagine.Aggiorna(vista, this);
+        };
         Closing += (_, _) => { Ricorda(); Ponte.Chiudi(); };
     }
 

@@ -157,7 +157,7 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
 - **Quello che l'app produce** (screenshot, registrazioni) va in Immagini\DaPConvertitore (`CartellaLavori`).
   Si crea all'avvio e nel hook di Velopack. `Impostazioni.CartellaMia` la sposta. Dalle Impostazioni si apre e si vedono gli ultimi file.
 - **Il vassoio** (`Vassoio.cs`) c'è finché l'app è aperta e non la tiene in vita da solo. Menu: apri, screenshot,
-  Registra… (il menu dei dispositivi, o la barra se si sta già registrando), Avatar acceso/spento, impostazioni, esci.
+  Registra… (il pannello, o la barra se si sta già registrando), Avatar acceso/spento, impostazioni, esci.
 - **Lo screenshot** (`Schermata.cs`): scorciatoia globale (`Impostazioni.ScorciatoiaSchermo`, di partenza Ctrl+Maiusc+S).
   Il campo nelle Impostazioni è chiaro, alto come gli altri tasti, e in ascolto dice «Premi i tasti…» in oro. Lo schermo fermo resta luminoso
   (l'immagine sotto è a opacità 0.72); la zona scelta è a piena luce. Tasto destro o Esc annullano. Misure, lente,
@@ -172,10 +172,15 @@ Cosa fa e come si usa: `README.md` (corto, per l'utente) e `docs/GUIDA.md` (comp
   Dentro c'è l'anteprima dal vivo (BitBlt, 8 fps, rimpicciolita) del monitor o della zona che si sta per registrare,
   anche prima di Avvia e durante. Impostazioni: monitor, intero/zona/finestra, 30 o 60 fps, qualità (CRF 28/23/18),
   microfono, audio del PC, cursore, conto alla rovescia, solo audio. La scelta si ricorda. «Riduci» lascia la barra
-  (tempo, Pausa, Salva, Annulla), anch'essa accanto all'avatar. gdigrab con offset del monitor o della zona, oppure
-  `title=` per una finestra; microfono DirectShow (`audio=nome`, senza virgolette aggiunte) e audio del PC in loopback
-  WASAPI. I livelli sono il misuratore di Windows, non un secondo FFmpeg. Screenshot e registrazioni entrano in
+  (tempo, Pausa, Salva, Annulla), anch'essa accanto all'avatar.  gdigrab con offset del monitor o della zona, oppure
+ `title=` per una finestra. FFmpeg di questa build non ha WASAPI (solo dshow, gdigrab, lavfi, openal, vfwcap):
+ microfono e audio del PC li cattura il programma con WASAPI (NAudio), li mescola in un WAV allineato all'orologio
+ (i buchi diventano silenzio) e alla fine FFmpeg unisce. I nomi sono quelli di Windows. Il parser dshow
+ (`MicrofoniDaElenco`) legge sia il formato vecchio sia quello nuovo `[in#0 @ …] "nome" (audio)`, in UTF-8.
+ Le tacche usano lo stesso misuratore WASAPI e si chiudono col pannello. L'anteprima è BitBlt SRCCOPY, mai
+ CAPTUREBLT. Il pannello si trascina, si ridimensiona, si ricorda e si stacca dall'avatar; F9 e F10 sono
+ RegisterHotKey, non un hook. A fine registrazione c'è il riepilogo. Screenshot e registrazioni entrano in
   `storico.json` (`Storico.AggiungiFile`) e nei recenti della home, con miniatura; il clic li apre nel lettore.
-  Nel registro: clic, apertura, posizione in pixel, avvio, pausa, il comando ffmpeg, gli errori. Se si rilancia l'exe
-  mentre uno è già aperto, il registro dice «non parto». Su questa macchina ffmpeg non ha dshow né wasapi.
+  Nel registro: clic, apertura, posizione in pixel, avvio, pausa, il comando ffmpeg, gli errori, e ogni cinque minuti
+  GDI, USER, handle, memoria e thread. Se si rilancia l'exe mentre uno è già aperto, il registro dice «non parto».
   Il video sull'avatar è un `MediaElement`: se Windows non lo sa suonare, lo apre il lettore.

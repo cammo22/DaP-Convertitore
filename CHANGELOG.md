@@ -2,7 +2,11 @@
 
 Le novità di ogni versione, dette come stanno. La più nuova sta in alto.
 
-## In lavorazione
+## 2.2.10 — 10 novembre 2026
+
+- **Registrare.** Il pannello si prende da qualsiasi punto vuoto e si sposta, si ridimensiona, si ricorda dove stava e quanto era grande, e non esce dagli schermi. Resta accanto all'avatar; se lo trascini si stacca, e «Aggancia» lo rimette vicino. «Riduci» lo fa diventare una barra, «Apri» lo riporta. Dentro: il monitor, una finestra o una zona; il microfono e l'audio del PC, con le tacche; i fotogrammi, la qualità, il cursore, il conto alla rovescia, oppure solo l'audio. F9 avvia o mette in pausa, F10 salva. Alla fine c'è il riepilogo, con un fotogramma e Apri, Mostra nella cartella, Modifica, Elimina. La finestra non entra nel video, e si vede lo stesso.
+- **Il microfono e l'audio del PC si vedono, con i nomi di Windows.** Prima il registro diceva «nessun dispositivo» anche se il microfono c'era. Ora li elenca Windows e finiscono nel file, insieme al video.
+- **Il cursore non sfarfalla più** dopo che l'app è aperta da un po', anche se non stai registrando. Quello che non serve (l'anteprima, le tacche, le animazioni) si ferma.
 
 ## 2.2.9 — 10 novembre 2026
 
